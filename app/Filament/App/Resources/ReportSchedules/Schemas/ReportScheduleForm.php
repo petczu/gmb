@@ -1,0 +1,85 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Filament\App\Resources\ReportSchedules\Schemas;
+
+use App\Models\Location;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+
+class ReportScheduleForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make(__('resources/report_schedules.schedule_section'))->schema([
+                TextInput::make('name')->required()->maxLength(120)->default(__('resources/report_schedules.default_name')),
+
+                Toggle::make('enabled')->default(true),
+
+                Grid::make(2)->schema([
+                    Select::make('frequency')
+                        ->label(__('resources/report_schedules.frequency'))
+                        ->options(['monthly' => __('resources/report_schedules.frequency_monthly_opt'), 'weekly' => __('resources/report_schedules.frequency_weekly_opt')])
+                        ->default('monthly')
+                        ->selectablePlaceholder(false)
+                        ->live()
+                        ->required(),
+
+                    TextInput::make('send_day')
+                        ->label(__('resources/report_schedules.day_of_month'))
+                        ->numeric()->minValue(1)->maxValue(28)->default(1)
+                        ->helperText(__('resources/report_schedules.day_of_month_helper'))
+                        ->visible(fn (callable $get): bool => $get('frequency') === 'monthly')
+                        ->required(),
+
+                    Select::make('send_day')
+                        ->label(__('resources/report_schedules.day_of_week'))
+                        ->options([
+                            1 => __('resources/report_schedules.monday'),
+                            2 => __('resources/report_schedules.tuesday'),
+                            3 => __('resources/report_schedules.wednesday'),
+                            4 => __('resources/report_schedules.thursday'),
+                            5 => __('resources/report_schedules.friday'),
+                            6 => __('resources/report_schedules.saturday'),
+                            7 => __('resources/report_schedules.sunday'),
+                        ])
+                        ->default(1)
+                        ->selectablePlaceholder(false)
+                        ->visible(fn (callable $get): bool => $get('frequency') === 'weekly')
+                        ->required(),
+                ]),
+            ]),
+
+            Section::make(__('resources/report_schedules.contents_section'))->schema([
+                Grid::make(2)->schema([
+                    Select::make('period')
+                        ->label(__('resources/report_schedules.period'))
+                        ->options(__('common.periods_no_custom'))
+                        ->default('last_month')
+                        ->selectablePlaceholder(false)
+                        ->required(),
+
+                    Select::make('location_id')
+                        ->label(__('resources/report_schedules.location'))
+                        ->placeholder(__('common.all_locations'))
+                        ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all()),
+                ]),
+
+                Toggle::make('compare')->label(__('resources/report_schedules.compare'))->default(true),
+
+                TagsInput::make('recipients')
+                    ->label(__('resources/report_schedules.recipients'))
+                    ->placeholder(__('resources/report_schedules.recipients_placeholder'))
+                    ->nestedRecursiveRules(['email'])
+                    ->helperText(__('resources/report_schedules.recipients_helper')),
+            ]),
+        ]);
+    }
+}

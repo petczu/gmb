@@ -1,0 +1,121 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    // Header action
+    'manage_billing' => 'Abrechnung verwalten',
+
+    // Tabs
+    'tab_plan' => 'Tarif',
+    'tab_invoices' => 'Rechnungen',
+
+    // Cancel / resume
+    'cancel' => 'Abo kündigen',
+    'cancel_heading' => 'Abo kündigen?',
+    'cancel_desc' => 'Dein Tarif bleibt bis zum Ende des aktuellen Abrechnungszeitraums (bzw. der Testphase) aktiv. Du kannst bis dahin jederzeit fortsetzen.',
+    'cancel_confirm' => 'Abo kündigen',
+    'canceled' => 'Abo gekündigt',
+    'canceled_body' => 'Du behältst den Zugriff bis zum Ende des aktuellen Zeitraums.',
+    'cancels_on' => 'Endet am :date',
+    'resume' => 'Abo fortsetzen',
+    'resumed' => 'Abo fortgesetzt',
+
+    // Kredite kaufen
+    'credits_section' => 'Kredite kaufen',
+    'credits_section_desc' => 'Kredite werden verbraucht, sobald dein monatliches Tarif-Kontingent aufgebraucht ist: 1 Antwort = 1 Kredit, 1 Bericht = :report Kredite.',
+    'extra_credits' => 'Extra-Kredite',
+    'never_expire_short' => 'verfallen nie',
+    'credits_spent_month' => ':count diesen Monat verbraucht',
+    'credits_word' => 'Kredite',
+    'credits_label' => 'Kredite:',
+    'price_per_credit' => 'Preis pro Kredit:',
+    'total_label' => 'Gesamt:',
+    'pay_now' => 'Jetzt bezahlen',
+    'credits_never_expire' => 'Einmaliger Kauf. Kredite verfallen nie.',
+    'volume_hint' => 'Spare :percent% ab :qty Krediten.',
+
+    // Auto top-up
+    'auto_recharge_section' => 'Automatische Aufladung',
+    'auto_recharge_desc' => 'Kaufe automatisch mehr Kredite, wenn dein Guthaben niedrig ist, damit KI-Funktionen nie pausieren.',
+    'auto_recharge_enable' => 'Automatische Aufladung aktivieren',
+    'auto_recharge_threshold' => 'Wenn Guthaben fällt auf',
+    'auto_recharge_amount' => 'So viele Kredite kaufen',
+    'auto_recharge_amount_help' => 'Wenn dein Guthaben den Schwellenwert erreicht, belasten wir deine gespeicherte Karte für diese Anzahl Kredite. Höchstens eine Belastung pro Stunde.',
+    'auto_recharge_save' => 'Speichern',
+    'auto_recharge_saved' => 'Einstellungen für automatische Aufladung gespeichert',
+    'auto_recharge_needs_card' => 'Füge eine Zahlungsmethode hinzu, um die automatische Aufladung zu aktivieren.',
+    'add_payment_method' => 'Zahlungsmethode hinzufügen',
+
+    // Invoices
+    'invoices' => 'Rechnungen',
+    'invoices_desc' => 'Lade Belege für deine vergangenen Zahlungen herunter.',
+    'invoices_unavailable' => 'Rechnungen erscheinen hier, sobald du ein aktives Abo hast.',
+    'invoices_loading' => 'Rechnungen werden geladen…',
+    'invoices_empty' => 'Noch keine Rechnungen.',
+    'invoice_date' => 'Datum',
+    'invoice_total' => 'Betrag',
+    'invoice_download' => 'Herunterladen',
+    'invoice_product' => 'Abonnement',
+
+    // Subscribe modal
+    'subscribe_heading' => 'Rechnungsdaten hinzufügen?',
+    'subscribe_desc' => 'Gib deinen Firmennamen, dein Land und deine USt-IdNr. an, damit sie auf deinen Rechnungen erscheinen und die Kasse vorausgefüllt wird. Du kannst das auch später erledigen oder als Privatperson fortfahren.',
+    'subscribe_submit' => 'Weiter zur Kasse',
+    'add_billing_details' => 'Rechnungsdaten hinzufügen',
+
+    // Notifications
+    'plan_updated' => 'Tarif aktualisiert',
+    'subscription_active' => 'Abonnement aktiv',
+    'subscription_active_body' => 'Danke! Dein Tarif ist eingerichtet.',
+    'topup_purchased' => 'Aufladung gekauft',
+    'topup_purchased_body' => 'Danke! Deine KI-Antwort-Credits erscheinen in Kürze.',
+
+    // Blade view
+    'not_configured' => 'Abrechnung nicht konfiguriert',
+    'not_configured_body' => 'Füge <code>STRIPE_KEY</code>, <code>STRIPE_SECRET</code> und die Tarif-Preis-IDs zur <code>.env</code> hinzu.',
+    'current_plan' => 'Aktueller Tarif',
+    'trial_days_left' => 'Testphase, noch :days Tage',
+    'cancels_at_period_end' => 'Endet zum Periodenende',
+    'active' => 'Aktiv',
+    'no_active_plan' => 'Kein aktiver Tarif',
+    'first_payment' => 'Erste Zahlung',
+    'next_payment' => 'Nächste Zahlung',
+    'payment_on' => 'am :date',
+    'locations' => 'Standorte',
+    'billed_per_location' => 'Abrechnung pro Standort',
+    'ai_auto_replies' => 'KI-Auto-Antworten',
+    'allowance_used_credits' => 'Kontingent verbraucht · läuft auf Credits',
+    'limit_paused' => 'Limit erreicht, pausiert bis nächsten Monat',
+    'this_month_resets' => 'diesen Monat · setzt sich monatlich zurück',
+    'topup_credits' => '+:count Kredite · verfallen nie',
+    'ai_reports' => 'KI-Berichte',
+    'limit_basic_only' => 'Limit erreicht, nur einfache Berichte',
+    'banner_on_credits' => 'Du hast dein monatliches KI-Kontingent aufgebraucht. Antworten laufen jetzt auf deinen <strong>:count Auflade-Credits</strong>, bis sie sich am 1. zurücksetzen. Kaufe unten ein weiteres Paket oder upgrade für ein höheres monatliches Kontingent.',
+    'banner_all_used' => 'Du hast alle KI-Auto-Antworten diesen Monat aufgebraucht. Automatisierungen sind pausiert, <strong>manuelle Antworten funktionieren weiterhin</strong>. Sie setzen sich am 1. zurück. Oder <strong>kaufe unten ein Auflade-Paket</strong> oder upgrade für ein höheres Kontingent.',
+    'topup_section' => 'KI-Antworten aufladen',
+    'topup_section_desc' => 'Keine monatlichen Antworten mehr? Kaufe ein einmaliges Paket, und Credits greifen automatisch, sobald dein Tarif-Kontingent aufgebraucht ist.',
+    'topup_have_credits' => '<strong style="color:rgb(22 101 52);">Du hast +:count Credits</strong> (:replies Antworten).',
+    'pack_replies' => ':count Antworten',
+    'pack_one_time' => 'Einmalig · läuft nie ab',
+    'not_available' => 'Nicht verfügbar',
+    'buy_pack' => 'Paket kaufen',
+    'monthly' => 'Monatlich',
+    'yearly' => 'Jährlich',
+    'plan_ai_summary' => ':replies KI-Auto-Antworten/Mon. · :reports KI-Berichte/Mon.',
+    'feat_inbox' => 'Bewertungs-Posteingang + manuelle Antworten (unbegrenzt)',
+    'feat_automations' => 'Automatisierungen + Freigabe-Option',
+    'feat_scheduled' => 'Geplante & Vergleichsberichte',
+    'feat_monthly_pdf' => 'Monatlicher PDF-Bericht',
+    'feat_white_label' => 'White-Label-Berichte',
+    'feat_custom_roles' => 'Eigene Rollen + Kundenzugang',
+    'feat_mcp' => 'MCP (schreibgeschützt) + API',
+    'configure_stripe' => 'Stripe einrichten',
+    'current_plan_btn' => 'Aktueller Tarif',
+    'switch_to' => 'Wechseln zu :plan',
+    'subscribe' => 'Abonnieren',
+    'start_trial' => '14-tägige Testphase starten',
+    'footer_note' => '14-tägige kostenlose Testphase, keine Abbuchung bis zum Ende. Ein erreichtes KI-Limit pausiert nur die KI-Funktionen, manuelle Antworten und die Berichtsansicht bleiben verfügbar, und die Limits setzen sich monatlich zurück. Mehr nötig? Kontaktiere uns für Custom.',
+    'per_loc_yr' => '/Std./Jahr',
+    'per_loc_mo' => '/Std./Mon.',
+];

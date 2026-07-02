@@ -1,0 +1,163 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'greeting' => 'Hallo :name,',
+    'signoff' => 'Danke',
+    'team' => 'Dein Repunio-Team',
+
+    'welcome' => [
+        'subject' => 'Willkommen bei Repunio',
+        'intro' => 'Dein Konto ist bereit. Mit Repunio sammelst du Google-Bewertungen, beantwortest sie und erstellst Berichte, alles an einem Ort.',
+        'next' => 'Als Nächstes: verbinde deinen ersten Standort und wähle einen Tarif, um deine 14-tägige Testphase zu starten.',
+        'cta' => 'Repunio öffnen',
+    ],
+
+    'trial_ending' => [
+        'subject' => 'Deine Testphase endet in :days Tagen',
+        'intro' => 'Deine kostenlose Repunio-Testphase endet am :date. Hinterlege jetzt eine Zahlungsmethode, damit nichts stoppt: Bewertungen werden weiter synchronisiert und KI-Antworten funktionieren weiter.',
+        'note' => 'Es wird erst nach Ablauf der Testphase abgebucht, und du kannst jederzeit kündigen.',
+        'cta' => 'Zahlungsmethode hinzufügen',
+    ],
+
+    'payment_succeeded' => [
+        'subject' => 'Zahlung erhalten',
+        'intro' => 'Wir haben deine Zahlung über :amount erhalten. Dein Repunio-Abo ist aktiv.',
+        'cta' => 'Zur Abrechnung',
+    ],
+
+    'payment_failed' => [
+        'subject' => 'Zahlung fehlgeschlagen, Aktion erforderlich',
+        'intro' => 'Wir konnten deine letzte Zahlung nicht verarbeiten. Dein Konto funktioniert noch :days Tage, bitte aktualisiere deine Zahlungsdaten, um eine Unterbrechung zu vermeiden.',
+        'cta' => 'Zahlungsdaten aktualisieren',
+    ],
+
+    'subscription_canceled' => [
+        'subject' => 'Dein Abo wird gekündigt',
+        'intro' => 'Dein Repunio-Abo wurde gekündigt. Du behältst vollen Zugriff bis zum :date, danach wird es nicht verlängert.',
+        'note' => 'Anders überlegt? Du kannst bis dahin jederzeit fortsetzen, ohne Abbuchung.',
+        'cta' => 'Abo fortsetzen',
+    ],
+
+    'subscription_resumed' => [
+        'subject' => 'Dein Abo ist wieder aktiv',
+        'intro' => 'Dein Repunio-Abo wurde fortgesetzt und verlängert sich wie gewohnt weiter. Es ist nichts weiter zu tun.',
+        'cta' => 'Abrechnung ansehen',
+    ],
+
+    'ai_limit' => [
+        'subject' => 'Du hast diesen Monat alle KI-Antworten aufgebraucht',
+        'intro' => 'Du hast dein monatliches Limit für KI-Antworten im Tarif :plan erreicht. Erweitere den Tarif für ein höheres Limit oder antworte bis zum nächsten Monat manuell.',
+        'cta' => 'Tarife ansehen',
+    ],
+
+    'auto_recharge_failed' => [
+        'subject' => 'Automatische KI-Aufladung fehlgeschlagen',
+        'intro' => 'Wir wollten deine KI-Antworten automatisch aufladen, aber die Zahlung ist fehlgeschlagen. Bitte aktualisiere deine Karte, damit die automatische Aufladung weiter funktioniert.',
+        'cta' => 'Abrechnung aktualisieren',
+    ],
+
+    'new_reviews' => [
+        'subject' => ':count neue Bewertung(en) für dein Unternehmen',
+        'intro' => 'Du hast :count neue Bewertung(en) für :location.',
+        'col_author' => 'Autor',
+        'col_rating' => 'Sterne',
+        'col_location' => 'Standort',
+        'col_review' => 'Bewertung',
+        'cta' => 'Bewertungen ansehen',
+    ],
+
+    'account_disconnected' => [
+        'subject' => 'Aktion erforderlich: Deine Google-Verbindung funktioniert nicht mehr',
+        'intro' => 'Die Google-Verbindung für ":account" funktioniert nicht mehr, daher werden deine Bewertungen nicht mehr synchronisiert.',
+        'detail' => 'Verbinde das Konto erneut, um die Synchronisierung von Bewertungen und das Veröffentlichen von Antworten fortzusetzen.',
+        'cta' => 'Erneut verbinden',
+    ],
+
+    'sync_restored' => [
+        'subject' => 'Deine Google-Verbindung ist wiederhergestellt',
+        'intro' => 'Gute Nachrichten: Die Verbindung für ":account" ist wiederhergestellt und die Synchronisierung läuft wieder. Deine Bewertungen sind wieder aktuell.',
+        'cta' => 'Repunio öffnen',
+    ],
+
+    'negative_review' => [
+        'subject' => ':rating★-Bewertung erfordert deine Aufmerksamkeit',
+        'intro' => 'Eine neue Bewertung für :business erfordert deine Aufmerksamkeit.',
+        'col_author' => 'Autor',
+        'col_rating' => 'Bewertung',
+        'col_review' => 'Bewertung',
+        'cta' => 'Jetzt antworten',
+    ],
+
+    'reply_failed' => [
+        'subject' => 'Deine Antwort konnte nicht veröffentlicht werden',
+        'intro' => 'Wir haben versucht, eine Antwort auf eine Bewertung für :business zu veröffentlichen, aber es ist fehlgeschlagen.',
+        'col_author' => 'Autor',
+        'col_review' => 'Bewertung',
+        'detail' => 'Bitte versuche, die Antwort erneut über die App zu veröffentlichen.',
+        'cta' => 'Bewertungen öffnen',
+    ],
+
+    'approvals_pending' => [
+        'subject' => ':count Antwort(en) warten auf Freigabe',
+        'intro' => 'Du hast :count Antwort(en), die auf deine Freigabe warten. Prüfe und genehmige sie, damit sie veröffentlicht werden können.',
+        'cta' => 'Freigaben prüfen',
+    ],
+
+    'review_goal' => [
+        'subject_mid' => 'Dein Bewertungsziel: So läuft der Monat',
+        'subject_recap' => 'Bewertungs-Rückblick für :month',
+        'intro_mid_ahead' => 'Starkes Tempo! Du hast diesen Monat :actual neue Bewertungen, mehr als die bis jetzt erwarteten :expected (Ziel :goal). Weiter so.',
+        'intro_mid_on_track' => 'Du bist im Plan: :actual neue Bewertungen diesen Monat, genau um die bis jetzt erwarteten :expected (Ziel :goal).',
+        'intro_mid_behind' => 'Ein kleiner Schubs: du hast diesen Monat :actual neue Bewertungen, unter den bis jetzt erwarteten :expected (Ziel :goal). Etwas Nachdruck hilft.',
+        'intro_recap' => 'So endete :month: :actual neue Bewertungen bei einem Ziel von :goal.',
+        'col_location' => 'Standort',
+        'col_goal' => 'Ziel',
+        'col_so_far' => 'Bisher',
+        'col_projected' => 'Hochrechnung',
+        'col_pace' => 'Tempo',
+        'col_got' => 'Erhalten',
+        'col_vs_goal' => 'vs Ziel',
+        'col_vs_prev' => 'vs Vormonat',
+        'status_ahead' => 'Voraus',
+        'status_on_track' => 'Im Plan',
+        'status_behind' => 'Zurück',
+        'cta' => 'Bewertungen ansehen',
+    ],
+
+    'coaching' => [
+        'subject' => 'Dein Bewertungsziel: bleiben wir dran',
+        'intro_almost' => 'Fast geschafft! Nur noch :remaining bis zu deinem Ziel von :goal diesen Monat. Das schaffst du!',
+        'intro_behind' => 'Du bist bei :actual von :goal diesen Monat. Ein gleichmäßiger Schub diese Woche bringt dich zurück in den Plan. Hier ein paar Ideen.',
+        'intro_on_track' => 'Gut gemacht! :actual von :goal und genau im Plan. Ein paar Anfragen diese Woche halten das Momentum.',
+        'intro_ahead' => 'Tolles Tempo! :actual von :goal, dem Plan voraus. Halte es mit diesen Ideen am Laufen.',
+        'steady' => 'Eine Sache: Verteile die Anfragen über die Tage. Eine plötzliche Flut von Bewertungen wirkt für Google verdächtig und kann gefiltert werden. Gleichmäßig gewinnt.',
+        'cta' => 'Bewertungen öffnen',
+    ],
+
+    'goal_reached' => [
+        'subject' => 'Ziel erreicht! :goal Bewertungen diesen Monat! 🎉',
+        'intro' => 'Glückwunsch! Du hast dein Ziel von :goal neuen Bewertungen diesen Monat erreicht! Das ist echtes Momentum für deine Reputation.',
+        'note' => 'Bleib mit gleichmäßigem Tempo dran, dann wird der nächste Monat noch leichter.',
+        'cta' => 'Bewertungen öffnen',
+    ],
+
+    'review_anomaly' => [
+        'subject' => 'Achtung: :count Sache(n) bei deinen Bewertungen prüfen',
+        'intro' => 'Uns ist etwas aufgefallen, das einen Blick wert ist:',
+        'stalled' => 'seit :days Tagen keine neuen Bewertungen, obwohl normalerweise aktiv.',
+        'negative_streak' => ':count Bewertungen mit wenig Sternen innerhalb von 3 Tagen. Antworte schnell, um den Schaden zu begrenzen.',
+        'spike' => 'ungewöhnlicher Anstieg: :recent Bewertungen in 7 Tagen (normalerweise etwa :baseline pro Woche). Gute Nachricht, oder auf Spam prüfen.',
+        'rating_drop' => 'Bewertung sinkt: :recent★ zuletzt vs :prior★ davor.',
+        'cta' => 'Bewertungen öffnen',
+    ],
+
+    'invite' => [
+        'subject' => 'Du wurdest eingeladen, :workspace bei Repunio beizutreten',
+        'greeting' => 'Hallo,',
+        'intro' => ':inviter hat dich eingeladen, :workspace bei Repunio als :role beizutreten.',
+        'note' => 'Diese Einladung läuft in 14 Tagen ab. Wenn du sie nicht erwartet hast, kannst du diese E-Mail ignorieren.',
+        'cta' => 'Einladung annehmen',
+    ],
+];

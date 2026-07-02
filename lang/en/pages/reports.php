@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'location' => 'Location',
+    'compare' => 'Compare',
+    'compare_options' => [
+        'none' => 'Don’t compare',
+        'previous' => 'Previous period',
+        'custom' => 'Custom range…',
+    ],
+    'compare_from' => 'Compare from',
+    'compare_to' => 'Compare to',
+    'report_language' => 'Report language',
+
+    'content_section' => 'Report content',
+    'content_section_desc' => 'Pick a preset, then fine-tune which blocks appear in the report.',
+    'preset' => 'Preset',
+    'blocks' => 'Blocks',
+    'ai_instructions' => 'AI instructions',
+    'ai_instructions_help' => 'Optional guidance for the AI narrative. Most useful for staff names: list your team and any nicknames so mentions are matched to the right person. Saved once and applied to every future report, including scheduled ones.',
+    'ai_instructions_placeholder' => 'Our staff: Eva, Alette, Suleyman (also written Suly), Lisa. Merge nicknames into the full name.',
+    'ai_improve' => 'Improve with AI',
+    'ai_improve_empty' => 'Write a few notes first, then improve them.',
+    'ai_improve_rate_limited' => 'Too many attempts, try again later.',
+    'ai_improve_done' => 'Instructions improved',
+    'ai_improve_failed' => 'Could not improve the instructions, please try again.',
+
+    // Usage line ("N of M AI reports left this month")
+    'usage' => ':left of :cap AI reports left this month',
+
+    // Generate modal
+    'generate_heading' => 'Generate AI report?',
+    'generate_desc' => 'Generate the AI executive summary for the current selection.',
+    'generate_desc_left' => 'This uses 1 of your monthly AI reports, :left left.',
+    'generate_submit' => 'Generate',
+
+    // Generate notifications
+    'report_generated' => 'Report generated',
+    'report_generated_body' => 'AI summary is ready, the preview updated. Use Download to save the PDF.',
+    'limit_reached' => 'Monthly report limit reached',
+    'limit_reached_body' => 'Showing a basic report without AI. Upgrade for a higher monthly limit.',
+
+    // Blade view
+    'generate_report' => 'Generate report',
+    'generating' => 'Generating…',
+    'download_pdf' => 'Download PDF',
+    'download_first_tooltip' => 'Generate the report first',
+    'building' => 'Building report…',
+    'preview_title' => 'Report preview',
+];

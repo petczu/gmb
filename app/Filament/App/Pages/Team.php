@@ -1,0 +1,241 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Filament\App\Pages;
+
+use App\Models\User;
+use App\Models\Workspace;
+use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Spatie\Permission\PermissionRegistrar;
+
+class Team extends Page implements HasTable
+{
+    use InteractsWithTable;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Settings';
+
+    protected static ?int $navigationSort = 80;
+
+    protected static ?string $slug = 'team';
+
+    protected string $view = 'filament.app.pages.team';
+
+    /** Roles defined in the current workspace (name => Title). */
+    protected function roleOptions(): array
+    {
+        return \App\Models\Role::query()
+            ->where('team_id', $this->workspace()->id)
+            ->orderBy('name')
+            ->pluck('name', 'name')
+            ->map(fn (string $name): string => \Illuminate\Support\Str::headline($name))
+            ->all();
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.team');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return tenancy()->initialized && auth()->user()?->can('manage_team');
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('manage_team') ?? false;
+    }
+
+    protected function workspace(): Workspace
+    {
+        return once(fn () => Workspace::findOrFail(session('current_workspace_id')));
+    }
+
+    protected function applyTeamScope(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId($this->workspace()->id);
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(fn (): Builder => User::query()
+                ->whereIn('id', $this->workspace()->users()->pluck('users.id')))
+            ->columns([
+                TextColumn::make('name')->label(__('pages/team.col_name'))->searchable()->sortable(),
+                TextColumn::make('email')->label(__('pages/team.col_email'))->searchable(),
+                TextColumn::make('role')
+                    ->label(__('pages/team.col_role'))
+                    ->badge()
+                    ->state(fn (User $record): string => $this->roleOf($record))
+                    ->color(fn (string $state): string => match ($state) {
+                        'owner' => 'success',
+                        'admin' => 'warning',
+                        default => 'gray',
+                    }),
+            ])
+            ->recordActions([
+                Action::make('edit')
+                    ->label(__('pages/team.edit'))
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->fillForm(fn (User $record): array => [
+                        'name' => $record->name,
+                        'email' => $record->email,
+                        'allowed_locations' => $this->allowedLocationsOf($record),
+                    ])
+                    ->schema([
+                        TextInput::make('name')->required()->maxLength(120),
+                        TextInput::make('email')->email()->required()->maxLength(160),
+                        Select::make('allowed_locations')
+                            ->label(__('pages/team.location_access'))
+                            ->multiple()
+                            ->options(fn (): array => \App\Models\Location::query()->orderBy('name')->pluck('name', 'id')->all())
+                            ->placeholder(__('common.all_locations'))
+                            ->helperText(__('pages/team.location_access_helper')),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        $record->forceFill(['name' => $data['name'], 'email' => $data['email']])->save();
+
+                        $this->workspace()->users()->updateExistingPivot($record->id, [
+                            'permissions' => json_encode(['allowed_locations' => array_values($data['allowed_locations'] ?? [])]),
+                        ]);
+
+                        Notification::make()->title(__('pages/team.member_updated'))->success()->send();
+                    }),
+
+                Action::make('changeRole')
+                    ->label(__('pages/team.change_role'))
+                    ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
+                    ->schema([
+                        Select::make('role')->options($this->roleOptions())->required()
+                            ->default(fn (User $record): string => $this->roleOf($record) ?: 'member'),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        $this->applyTeamScope();
+                        $record->syncRoles([$data['role']]);
+                        // Keep the pivot role in sync so notification role-groups stay accurate.
+                        $this->workspace()->users()->updateExistingPivot($record->id, ['role' => $data['role']]);
+                        Notification::make()->title(__('pages/team.role_updated', ['role' => $data['role']]))->success()->send();
+                    }),
+
+                Action::make('remove')
+                    ->label(__('pages/team.remove'))
+                    ->icon(Heroicon::OutlinedTrash)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn (User $record): bool => $record->id !== auth()->id())
+                    ->action(function (User $record): void {
+                        $this->applyTeamScope();
+                        $record->syncRoles([]);
+                        $this->workspace()->users()->detach($record->id);
+                        Notification::make()->title(__('pages/team.member_removed'))->success()->send();
+                    }),
+            ])
+            ->headerActions([
+                Action::make('addMember')
+                    ->label(__('pages/team.add_member'))
+                    ->icon(Heroicon::OutlinedUserPlus)
+                    ->schema([
+                        TextInput::make('email')->email()->required()
+                            ->helperText(__('pages/team.add_member_email_helper')),
+                        // Guests are added through their own action (no login invite).
+                        Select::make('role')->options(collect($this->roleOptions())->except('guest')->all())->default('member')->required(),
+                    ])
+                    ->action(function (array $data): void {
+                        $workspace = $this->workspace();
+                        $email = mb_strtolower(trim($data['email']));
+
+                        $invitation = \App\Models\Invitation::updateOrCreate(
+                            ['workspace_id' => $workspace->id, 'email' => $email],
+                            [
+                                'token' => \App\Models\Invitation::makeToken(),
+                                'role' => $data['role'],
+                                'invited_by' => auth()->id(),
+                                'expires_at' => now()->addDays(14),
+                                'accepted_at' => null,
+                            ],
+                        );
+
+                        \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\InviteMail(
+                            inviterName: (string) auth()->user()?->name,
+                            workspaceName: $workspace->name,
+                            acceptUrl: route('invite.show', $invitation->token),
+                            role: $data['role'],
+                        ));
+
+                        Notification::make()->title(__('pages/team.invitation_sent'))->success()->send();
+                    }),
+
+                // A Guest is a notification-only contact: no login invite, no
+                // password, no permissions — just selectable as an email recipient.
+                Action::make('addGuest')
+                    ->label(__('pages/team.add_guest'))
+                    ->icon(Heroicon::OutlinedBellAlert)
+                    ->color('gray')
+                    ->schema([
+                        TextInput::make('name')->label(__('pages/team.name'))->required()->maxLength(120),
+                        TextInput::make('email')->email()->required()
+                            ->helperText(__('pages/team.add_guest_helper')),
+                    ])
+                    ->action(function (array $data): void {
+                        $workspace = $this->workspace();
+                        $email = mb_strtolower(trim($data['email']));
+
+                        $user = User::firstOrCreate(
+                            ['email' => $email],
+                            [
+                                'name' => $data['name'],
+                                'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(40)),
+                                'locale' => app()->getLocale(),
+                            ],
+                        );
+
+                        if (! $user->wasRecentlyCreated && filled($data['name'])) {
+                            $user->forceFill(['name' => $data['name']])->save();
+                        }
+
+                        $workspace->users()->syncWithoutDetaching([
+                            $user->id => ['role' => 'guest', 'membership_type' => 'guest'],
+                        ]);
+
+                        $this->applyTeamScope();
+                        $user->unsetRelation('roles');
+                        $user->syncRoles(['guest']);
+
+                        Notification::make()->title(__('pages/team.guest_added'))->success()->send();
+                    }),
+            ]);
+    }
+
+    /** @return array<int, int> location ids the user is limited to ([] = all). */
+    protected function allowedLocationsOf(User $user): array
+    {
+        $perms = $this->workspace()->users()->where('users.id', $user->id)->first()?->pivot->permissions;
+        $arr = $perms ? (json_decode($perms, true)['allowed_locations'] ?? []) : [];
+
+        return is_array($arr) ? array_map('intval', $arr) : [];
+    }
+
+    /** The user's role name in the current workspace, or '' if none. */
+    protected function roleOf(User $user): string
+    {
+        $this->applyTeamScope();
+        $user->unsetRelation('roles');
+
+        return (string) ($user->getRoleNames()->first() ?? '');
+    }
+}

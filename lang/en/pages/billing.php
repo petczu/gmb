@@ -1,0 +1,121 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    // Header action
+    'manage_billing' => 'Manage billing',
+
+    // Tabs
+    'tab_plan' => 'Plan',
+    'tab_invoices' => 'Invoices',
+
+    // Cancel / resume
+    'cancel' => 'Cancel subscription',
+    'cancel_heading' => 'Cancel subscription?',
+    'cancel_desc' => 'Your plan stays active until the end of the current billing period (or trial). You can resume any time before then.',
+    'cancel_confirm' => 'Cancel subscription',
+    'canceled' => 'Subscription canceled',
+    'canceled_body' => 'You keep access until the end of the current period.',
+    'cancels_on' => 'Cancels on :date',
+    'resume' => 'Resume subscription',
+    'resumed' => 'Subscription resumed',
+
+    // Buy credits
+    'credits_section' => 'Buy credits',
+    'credits_section_desc' => 'Credits are spent once your monthly plan allowance runs out: 1 reply = 1 credit, 1 report = :report credits.',
+    'extra_credits' => 'Extra credits',
+    'never_expire_short' => 'never expire',
+    'credits_spent_month' => ':count spent this month',
+    'credits_word' => 'credits',
+    'credits_label' => 'Credits:',
+    'price_per_credit' => 'Price per credit:',
+    'total_label' => 'Total:',
+    'pay_now' => 'Pay now',
+    'credits_never_expire' => 'One-time purchase. Credits never expire.',
+    'volume_hint' => 'Save :percent% when you buy :qty credits or more.',
+
+    // Auto top-up
+    'auto_recharge_section' => 'Auto top-up',
+    'auto_recharge_desc' => 'Automatically buy more credits when your balance is low, so AI features never pause.',
+    'auto_recharge_enable' => 'Enable auto top-up',
+    'auto_recharge_threshold' => 'When credits drop to',
+    'auto_recharge_amount' => 'Buy this many credits',
+    'auto_recharge_amount_help' => 'When your balance reaches the threshold we charge your saved card for this many credits. One charge per hour at most.',
+    'auto_recharge_save' => 'Save',
+    'auto_recharge_saved' => 'Auto top-up settings saved',
+    'auto_recharge_needs_card' => 'Add a payment method to enable automatic top-ups.',
+    'add_payment_method' => 'Add a payment method',
+
+    // Invoices
+    'invoices' => 'Invoices',
+    'invoices_desc' => 'Download receipts for your past payments.',
+    'invoices_unavailable' => 'Invoices appear here once you have an active subscription.',
+    'invoices_loading' => 'Loading invoices…',
+    'invoices_empty' => 'No invoices yet.',
+    'invoice_date' => 'Date',
+    'invoice_total' => 'Total',
+    'invoice_download' => 'Download',
+    'invoice_product' => 'Subscription',
+
+    // Subscribe modal
+    'subscribe_heading' => 'Add your billing details?',
+    'subscribe_desc' => 'Fill in your company name, country and VAT so they appear on your invoices and pre-fill checkout. You can also do this later, or continue as an individual.',
+    'subscribe_submit' => 'Continue to checkout',
+    'add_billing_details' => 'Add billing details',
+
+    // Notifications
+    'plan_updated' => 'Plan updated',
+    'subscription_active' => 'Subscription active',
+    'subscription_active_body' => 'Thanks! Your plan is set up.',
+    'topup_purchased' => 'Top-up purchased',
+    'topup_purchased_body' => 'Thanks! Your AI reply credits will appear within a moment.',
+
+    // Blade view
+    'not_configured' => 'Billing not configured',
+    'not_configured_body' => 'Add <code>STRIPE_KEY</code>, <code>STRIPE_SECRET</code> and the plan price ids to <code>.env</code>.',
+    'current_plan' => 'Current plan',
+    'trial_days_left' => 'Trial, :days days left',
+    'cancels_at_period_end' => 'Cancels at period end',
+    'active' => 'Active',
+    'no_active_plan' => 'No active plan',
+    'first_payment' => 'First payment',
+    'next_payment' => 'Next payment',
+    'payment_on' => 'on :date',
+    'locations' => 'Locations',
+    'billed_per_location' => 'Billed per location',
+    'ai_auto_replies' => 'AI auto-replies',
+    'allowance_used_credits' => 'Allowance used · running on credits',
+    'limit_paused' => 'Limit reached, paused until next month',
+    'this_month_resets' => 'this month · resets monthly',
+    'topup_credits' => '+:count credits · never expire',
+    'ai_reports' => 'AI reports',
+    'limit_basic_only' => 'Limit reached, basic reports only',
+    'banner_on_credits' => 'You’ve used your monthly AI allowance. Replies now run on your <strong>:count top-up credits</strong> until they reset on the 1st. Buy another pack below or upgrade for a higher monthly allowance.',
+    'banner_all_used' => 'You’ve used all AI auto-replies this month. Automations are paused, <strong>manual replies still work</strong>. They reset on the 1st. Or <strong>buy a top-up pack below</strong> or upgrade for a higher allowance.',
+    'topup_section' => 'Top up AI replies',
+    'topup_section_desc' => 'Out of monthly replies? Buy a one-time pack, and credits kick in automatically once your plan allowance is used up.',
+    'topup_have_credits' => '<strong style="color:rgb(22 101 52);">You have +:count credits</strong> (:replies replies).',
+    'pack_replies' => ':count replies',
+    'pack_one_time' => 'One-time · never expires',
+    'not_available' => 'Not available',
+    'buy_pack' => 'Buy pack',
+    'monthly' => 'Monthly',
+    'yearly' => 'Yearly',
+    'plan_ai_summary' => ':replies AI auto-replies/mo · :reports AI reports/mo',
+    'feat_inbox' => 'Reviews inbox + manual replies (unlimited)',
+    'feat_automations' => 'Automations + approval option',
+    'feat_scheduled' => 'Scheduled & comparison reports',
+    'feat_monthly_pdf' => 'Monthly PDF report',
+    'feat_white_label' => 'White-label reports',
+    'feat_custom_roles' => 'Custom roles + client access',
+    'feat_mcp' => 'MCP (read-only) + API',
+    'configure_stripe' => 'Configure Stripe',
+    'current_plan_btn' => 'Current plan',
+    'switch_to' => 'Switch to :plan',
+    'subscribe' => 'Subscribe',
+    'start_trial' => 'Start 14-day trial',
+    'footer_note' => '14-day free trial, no charge until it ends. Reaching an AI limit only pauses AI features, manual replies and report viewing stay available, and limits reset monthly. Need more? Contact us for Custom.',
+    'per_loc_yr' => '/loc/yr',
+    'per_loc_mo' => '/loc/mo',
+];

@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Filament\App\Resources\Automations\Tables;
+
+use App\Filament\App\Resources\Automations\AutomationResource;
+use App\Models\Automation;
+use App\Models\Workspace;
+use App\Services\Ai\AutomationService;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+
+class AutomationsTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            ->searchable(Automation::query()->exists())
+            ->emptyStateIcon(Heroicon::OutlinedBolt)
+            ->emptyStateHeading(__('resources/automations.empty_heading'))
+            ->emptyStateDescription(__('resources/automations.empty_desc'))
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label(__('resources/automations.empty_cta'))
+                    ->icon(Heroicon::OutlinedPlus)
+                    ->url(fn (): string => AutomationResource::getUrl('create')),
+            ])
+            ->columns([
+                TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+
+                IconColumn::make('enabled')
+                    ->boolean(),
+
+                TextColumn::make('rating_filter')
+                    ->label(__('resources/automations.col_rating'))
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => $state ? $state.'★' : __('resources/automations.rating_any'))
+                    ->placeholder(__('resources/automations.rating_any'))
+                    ->visibleFrom('md'),
+
+                TextColumn::make('content_type')
+                    ->label(__('resources/automations.col_reply'))
+                    ->formatStateUsing(fn (Automation $record): string => $record->content_type === 'ai_agent'
+                        ? __('resources/automations.reply_ai', ['agent' => $record->aiAgent?->name ?? '—'])
+                        : __('resources/automations.reply_default'))
+                    ->visibleFrom('lg'),
+
+                TextColumn::make('approve_before_posting')
+                    ->label(__('resources/automations.col_mode'))
+                    ->badge()
+                    ->formatStateUsing(fn (bool $state): string => $state ? __('resources/automations.mode_approval') : __('resources/automations.mode_auto'))
+                    ->color(fn (bool $state): string => $state ? 'warning' : 'success')
+                    ->visibleFrom('md'),
+
+                TextColumn::make('all_locations')
+                    ->label(__('resources/automations.col_scope'))
+                    ->formatStateUsing(fn (Automation $record): string => $record->all_locations
+                        ? __('resources/automations.scope_all')
+                        : __('resources/automations.scope_count', ['count' => count($record->location_ids ?? [])]))
+                    ->visibleFrom('lg'),
+            ])
+            ->recordActions([
+                ActionGroup::make([
+                Action::make('run')
+                    ->label(__('resources/automations.run_now'))
+                    ->icon(Heroicon::OutlinedPlay)
+                    ->requiresConfirmation()
+                    ->modalHeading(__('resources/automations.run_heading'))
+                    ->modalDescription(__('resources/automations.run_desc'))
+                    ->visible(fn (Automation $record): bool => $record->enabled)
+                    ->action(function (Automation $record): void {
+                        $workspace = Workspace::findOrFail(session('current_workspace_id'));
+                        $stats = app(AutomationService::class)->processAutomation($workspace, $record);
+
+                        Notification::make()
+                            ->title(__('resources/automations.run_title', ['name' => $record->name]))
+                            ->body(__('resources/automations.run_body', [
+                                'generated' => $stats['generated'],
+                                'published' => $stats['published'],
+                                'queued' => $stats['queued'],
+                                'skipped' => $stats['skipped'],
+                            ]))
+                            ->success()
+                            ->send();
+                    }),
+
+                EditAction::make(),
+                DeleteAction::make(),
+                ]),
+            ]);
+    }
+}
