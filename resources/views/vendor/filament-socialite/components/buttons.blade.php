@@ -13,9 +13,12 @@
 
         @if (count($visibleProviders))
             @if($showDivider)
-                <div class="relative flex items-center justify-center text-center">
-                    <div class="absolute border-t border-gray-200 w-full h-px"></div>
-                    <p class="inline-block relative bg-white text-sm p-2 rounded-full font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-100">
+                {{-- Plain "or" divider: no pill background, just the line broken
+                     by small muted text (inline styles — the vendor's Tailwind
+                     utility classes aren't part of the compiled panel CSS). --}}
+                <div style="position:relative; display:flex; align-items:center; justify-content:center; text-align:center;">
+                    <div style="position:absolute; inset-inline:0; top:50%; border-top:1px solid #e5e7eb; height:1px;"></div>
+                    <p style="position:relative; margin:0; background:#fff; padding:0 .8rem; font-size:.8rem; color:#9ca3af;">
                         {{ __('filament-socialite::auth.login-via') }}
                     </p>
                 </div>

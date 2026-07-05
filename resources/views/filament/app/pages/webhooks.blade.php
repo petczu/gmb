@@ -10,7 +10,11 @@
         </div>
     @else
         <div style="border:1px solid #e5e7eb; border-radius:.9rem; padding:1rem 1.25rem; margin-bottom:1.25rem; font-size:.85rem; color:#6b7280;">
-            {{ __('pages/webhooks.intro') }}
+            {{ __('pages/webhooks.intro') }}<br>
+            <a href="{{ route('docs.show', 'webhooks') }}" target="_blank" rel="noopener"
+               style="display:inline-block; margin-top:.45rem; color:#2d19ec; font-weight:600; text-decoration:none;">
+                {{ __('pages/webhooks.docs_link') }} &rarr;
+            </a>
         </div>
 
         {{ $this->table }}

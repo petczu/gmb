@@ -8,6 +8,7 @@ return [
     'see_plans' => 'Tarife ansehen',
 
     'endpoint' => 'Endpunkt',
+    'docs_link' => 'MCP-Dokumentation',
     'connect_help' => 'Füge diese URL in deinen KI-Client ein (z. B. den claude.ai Custom Connector). Bei der ersten Anfrage wirst du zur Anmeldung und Freigabe aufgefordert — kein Token zum Kopieren.',
 
     'write_section' => 'Schreibzugriff',

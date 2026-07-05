@@ -27,6 +27,13 @@ return [
     'ai_improve_done' => 'Instructions improved',
     'ai_improve_failed' => 'Could not improve the instructions, please try again.',
 
+    'schedule_report' => 'Send on a schedule',
+    'schedule_heading' => 'Schedule this report',
+    'schedule_desc' => 'The current selection (period, location, comparison, blocks) will be emailed as a PDF on a recurring schedule.',
+    'schedule_submit' => 'Create schedule',
+    'schedule_created' => 'Schedule created',
+    'schedule_created_body' => 'Manage it under Reports → Scheduled reports.',
+
     // Usage line ("N of M AI reports left this month")
     'usage' => ':left of :cap AI reports left this month',
 

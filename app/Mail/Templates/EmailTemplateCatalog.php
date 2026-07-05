@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Mail\Templates;
 
+use App\Support\ReviewTips;
+
 /**
  * The registry of editable email templates. Each entry carries a title,
  * category, sample data (for live preview / test sends) and the default subject
@@ -117,7 +119,7 @@ class EmailTemplateCatalog
                     ['label' => $t('review_goal.col_vs_prev'), 'value' => EmailBlocks::trend(6)],
                 ]],
             ])],
-            'review_coaching' => ['tips' => EmailBlocks::progressBar(18, 100).EmailBlocks::list(\App\Support\ReviewTips::pick('entertainment', 3, 0, $locale))],
+            'review_coaching' => ['tips' => EmailBlocks::progressBar(18, 100).EmailBlocks::list(ReviewTips::pick('entertainment', 3, 0, $locale))],
             default => [],
         };
     }
@@ -141,7 +143,7 @@ class EmailTemplateCatalog
 
     public static function defaultBody(string $key, string $locale): string
     {
-        return match ($key) {
+        $body = match ($key) {
             'welcome' => self::shell($locale, self::greeting($locale), [
                 __('emails.welcome.intro', [], $locale),
                 __('emails.welcome.next', [], $locale),
@@ -234,6 +236,41 @@ class EmailTemplateCatalog
 
             default => '',
         };
+
+        return $body === '' ? '' : self::heroImage($key).$body;
+    }
+
+    /**
+     * Decorative hero illustration ({{ image:key }} placeholder) prepended to
+     * the default body of selected templates. Files live in public/images/email;
+     * the renderer whitelists the keys (EmailTemplateRenderer::IMAGES).
+     */
+    private static function heroImage(string $key): string
+    {
+        $map = [
+            'welcome' => 'welcome',
+            'invite' => 'team',
+            'trial_ending' => 'time',
+            'payment_succeeded' => 'payment-ok',
+            'payment_failed' => 'payment-issue',
+            'auto_recharge_failed' => 'payment-issue',
+            'ai_limit' => 'robot',
+            'subscription_canceled' => 'pause',
+            'subscription_resumed' => 'welcome',
+            'account_disconnected' => 'disconnected',
+            'sync_restored' => 'connected',
+            'approvals_pending' => 'inbox',
+            'new_reviews' => 'reviews',
+            'negative_review' => 'attention',
+            'reply_failed' => 'send-failed',
+            'review_anomaly' => 'attention',
+            'review_goal_mid' => 'progress',
+            'review_goal_recap' => 'recap',
+            'review_coaching' => 'tips',
+            'review_goal_reached' => 'celebration',
+        ];
+
+        return isset($map[$key]) ? '{{ image:'.$map[$key]." }}\n\n" : '';
     }
 
     private static function greeting(string $locale): string

@@ -15,10 +15,13 @@
             </div>
         </div>
 
-        <a href="{{ \App\Filament\App\Pages\Billing::getUrl() }}"
-           style="background:#1800ff; color:#fff; font-weight:600; padding:.55rem 1.1rem; border-radius:.6rem; text-decoration:none; white-space:nowrap;">
+        <x-filament::button
+            tag="a"
+            :href="\App\Filament\App\Pages\Billing::getUrl()"
+            icon="heroicon-o-circle-stack"
+        >
             {{ __('pages/credits.get_more') }}
-        </a>
+        </x-filament::button>
     </div>
 
     {{ $this->table }}

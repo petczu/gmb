@@ -29,7 +29,7 @@ return [
     'team' => 'Team',
     'roles' => 'Rollen',
     'billing' => 'Abrechnung',
-    'credits' => 'Credits',
+    'credits' => 'Credits-Nutzung',
     'alerts' => 'Alarme',
     'notifications' => 'Benachrichtigungen',
     'mcp' => 'MCP',

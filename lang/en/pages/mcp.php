@@ -8,6 +8,7 @@ return [
     'see_plans' => 'See plans',
 
     'endpoint' => 'Endpoint',
+    'docs_link' => 'MCP documentation',
     'connect_help' => 'Paste this URL into your AI client (e.g. the claude.ai custom connector). On first request you will be asked to sign in and authorize access — no token to copy.',
 
     'write_section' => 'Write access',

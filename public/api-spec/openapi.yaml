@@ -1,0 +1,333 @@
+openapi: 3.1.0
+info:
+  title: Repunio API
+  version: "1.0"
+  description: |
+    REST API for reading a workspace's Google Business Profile reviews,
+    locations and analytics, and for publishing replies.
+
+    Authenticate with a workspace API key (Settings → API keys, Pro plan):
+
+    ```
+    Authorization: Bearer ak_live_…
+    ```
+
+    Every key carries scopes; each endpoint below lists the scope it requires.
+servers:
+  - url: /api/v1
+security:
+  - apiKey: []
+
+paths:
+  /locations:
+    get:
+      operationId: listLocations
+      summary: List locations
+      description: "All connected business locations. Scope: `locations:read`."
+      tags: [Locations]
+      responses:
+        "200":
+          description: Locations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Location"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /reviews:
+    get:
+      operationId: listReviews
+      summary: List reviews
+      description: "Reviews, newest first, paginated. Scope: `reviews:read`."
+      tags: [Reviews]
+      parameters:
+        - name: rating
+          in: query
+          description: Filter by star rating.
+          schema: { type: integer, minimum: 1, maximum: 5 }
+        - name: replied
+          in: query
+          description: "`true` = only reviews with a reply; `false` = only without."
+          schema: { type: boolean }
+        - name: has_text
+          in: query
+          description: "`true` = only reviews with written text; `false` = rating-only."
+          schema: { type: boolean }
+        - name: location_id
+          in: query
+          description: Limit to a single location (see List locations).
+          schema: { type: integer }
+        - name: from
+          in: query
+          description: Earliest review date (YYYY-MM-DD).
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          description: Latest review date (YYYY-MM-DD).
+          schema: { type: string, format: date }
+        - name: per_page
+          in: query
+          description: Page size (default 20, max 100).
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Paginated reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Review"
+                  links: { type: object }
+                  meta: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /reviews/{id}:
+    get:
+      operationId: getReview
+      summary: Get a review
+      description: "Full review detail incl. Google-translated text. Scope: `reviews:read`."
+      tags: [Reviews]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Review" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /reviews/{id}/reply:
+    post:
+      operationId: replyToReview
+      summary: Publish a reply
+      description: |
+        Publishes a public reply to the review on Google and stores it.
+        Permanent. Scope: `reviews:reply`.
+      tags: [Reviews]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reply]
+              properties:
+                reply:
+                  type: string
+                  maxLength: 4096
+                  examples: ["Thank you for the kind words, we hope to see you again!"]
+      responses:
+        "200":
+          description: Updated review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Review" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /stats:
+    get:
+      operationId: getStats
+      summary: Review stats
+      description: "Aggregate review analytics. Scope: `analytics:read`."
+      tags: [Analytics]
+      parameters:
+        - name: location_id
+          in: query
+          schema: { type: integer }
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Stats" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+webhooks:
+  review.created:
+    post:
+      summary: New review synced
+      description: |
+        Sent when a new review arrives from Google. All webhook deliveries are
+        signed: `X-Webhook-Signature: sha256=HMAC_SHA256(body, endpoint secret)`,
+        plus `X-Webhook-Event` and `X-Webhook-Id` headers. Non-2xx responses are
+        retried with backoff (up to 5 attempts).
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookEnvelope" }
+      responses:
+        "200": { description: "Return any 2xx to acknowledge." }
+  reply.published:
+    post:
+      summary: Reply published
+      description: Sent when a reply is published (manual, AI, automation or API).
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookEnvelope" }
+      responses:
+        "200": { description: "Return any 2xx to acknowledge." }
+  goal.reached:
+    post:
+      summary: Monthly review goal reached
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookEnvelope" }
+      responses:
+        "200": { description: "Return any 2xx to acknowledge." }
+  anomaly.detected:
+    post:
+      summary: Review anomaly detected
+      description: Negative streak, volume spike, stalled location or rating drop.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookEnvelope" }
+      responses:
+        "200": { description: "Return any 2xx to acknowledge." }
+
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: Workspace API key (`ak_live_…`) from Settings → API keys.
+
+  responses:
+    Unauthorized:
+      description: Missing, invalid or expired API key.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { message: "Invalid or missing API key." }
+    Forbidden:
+      description: Plan or scope does not allow this request.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { message: "This API key is missing the required scope: reviews:reply." }
+    NotFound:
+      description: Resource not found in this workspace.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { message: "Review not found." }
+    ValidationError:
+      description: Invalid input.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string }
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items: { type: string }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+
+    Location:
+      type: object
+      properties:
+        id: { type: integer, examples: [1] }
+        name: { type: string, examples: ["GAME OVER Escape Rooms Vienna"] }
+        address: { type: [string, "null"], examples: ["Operngasse 36, 1040 Wien"] }
+        rating: { type: [number, "null"], examples: [4.9] }
+        reviews_count: { type: integer, examples: [312] }
+        monthly_goal: { type: [integer, "null"], examples: [30] }
+
+    Review:
+      type: object
+      properties:
+        id: { type: integer, examples: [42] }
+        location_id: { type: integer, examples: [1] }
+        location: { type: [string, "null"], examples: ["GAME OVER Escape Rooms Vienna"] }
+        author: { type: [string, "null"], examples: ["Laura Rozic"] }
+        rating: { type: integer, examples: [5] }
+        text: { type: [string, "null"], examples: ["Suly war sehr hilfsbereit und freundlich."] }
+        text_translated: { type: [string, "null"] }
+        reply: { type: [string, "null"] }
+        reply_status: { type: [string, "null"], enum: [published, draft, failed, null] }
+        reply_source: { type: [string, "null"], enum: [manual, ai_auto, ai_draft, mcp, api, external, null] }
+        replied_at: { type: [string, "null"], format: date-time }
+        review_link: { type: [string, "null"] }
+        date: { type: [string, "null"], format: date-time }
+
+    Stats:
+      type: object
+      properties:
+        total: { type: integer, examples: [312] }
+        average_rating: { type: [number, "null"], examples: [4.83] }
+        distribution:
+          type: object
+          description: Review count per star rating (keys 1-5).
+          additionalProperties: { type: integer }
+        replied: { type: integer, examples: [280] }
+        reply_rate_percent: { type: integer, examples: [90] }
+        rating_only: { type: integer, examples: [45] }
+        new_this_month: { type: integer, examples: [18] }
+
+    WebhookEnvelope:
+      type: object
+      properties:
+        event:
+          type: string
+          enum: [review.created, reply.published, goal.reached, anomaly.detected]
+        workspace:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+        occurred_at: { type: string, format: date-time }
+        data:
+          type: object
+          description: Event payload (a review object for review events).

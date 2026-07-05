@@ -4,18 +4,39 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Filament\App\Clusters\ReportsCluster;
+use App\Models\GeneratedReport;
 use App\Models\Location;
+use App\Models\ReportSchedule;
+use App\Models\Workspace;
+use App\Services\Ai\InstructionImprover;
+use App\Services\Billing\AiUsageService;
+use App\Services\Reports\ReportBranding;
+use App\Services\Reports\ReportData;
+use App\Services\Reports\ReportGenerator;
+use App\Support\DashboardPeriod;
+use App\Support\ReportBlocks;
 use BackedEnum;
+use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 
 class Reports extends Page implements HasForms
 {
@@ -23,11 +44,12 @@ class Reports extends Page implements HasForms
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentChartBar;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Reports';
+    protected static ?string $cluster = ReportsCluster::class;
 
     protected static ?int $navigationSort = 1;
 
-    protected static ?string $slug = 'reports';
+    // Inside the reports cluster: /reports/builder
+    protected static ?string $slug = 'builder';
 
     protected string $view = 'filament.app.pages.reports';
 
@@ -51,7 +73,7 @@ class Reports extends Page implements HasForms
 
     public function mount(): void
     {
-        $workspace = \App\Models\Workspace::find(session('current_workspace_id'));
+        $workspace = Workspace::find(session('current_workspace_id'));
         $savedBlocks = $workspace?->report_blocks; // last-used selection, if any
 
         $this->form->fill([
@@ -60,7 +82,7 @@ class Reports extends Page implements HasForms
             'compareMode' => 'previous',
             'language' => 'en',
             'preset' => 'full',
-            'blocks' => \App\Support\ReportBlocks::normalize($savedBlocks),
+            'blocks' => ReportBlocks::normalize($savedBlocks),
             'ai_instructions' => (string) $workspace?->getAttribute('report_ai_instructions'),
         ]);
     }
@@ -130,24 +152,24 @@ class Reports extends Page implements HasForms
                     ->schema([
                         Select::make('preset')
                             ->label(__('pages/reports.preset'))
-                            ->options(\App\Support\ReportBlocks::presetLabels())
+                            ->options(ReportBlocks::presetLabels())
                             ->default('full')
                             ->selectablePlaceholder(false)
                             ->live()
                             ->afterStateUpdated(function (?string $state, callable $set): void {
-                                $set('blocks', \App\Support\ReportBlocks::presets()[$state] ?? \App\Support\ReportBlocks::default());
+                                $set('blocks', ReportBlocks::presets()[$state] ?? ReportBlocks::default());
                             }),
 
                         CheckboxList::make('blocks')
                             ->label(__('pages/reports.blocks'))
-                            ->options(\App\Support\ReportBlocks::labels())
+                            ->options(ReportBlocks::labels())
                             ->columns(2)
                             ->bulkToggleable()
                             ->live(),
 
                         // Owner guidance passed to the AI narrative — most useful
                         // for the staff roster and name aliases (Suly = Suleyman).
-                        \Filament\Forms\Components\Textarea::make('ai_instructions')
+                        Textarea::make('ai_instructions')
                             ->label(__('pages/reports.ai_instructions'))
                             ->helperText(__('pages/reports.ai_instructions_help'))
                             ->placeholder(__('pages/reports.ai_instructions_placeholder'))
@@ -155,36 +177,36 @@ class Reports extends Page implements HasForms
                             ->maxLength(2000)
                             // Rewrite the owner's rough notes into crisp AI guidance.
                             ->hintAction(
-                                \Filament\Actions\Action::make('improveInstructions')
+                                Action::make('improveInstructions')
                                     ->label(__('pages/reports.ai_improve'))
                                     ->icon(Heroicon::OutlinedSparkles)
-                                    ->action(function (\Filament\Schemas\Components\Utilities\Get $get, \Filament\Schemas\Components\Utilities\Set $set): void {
+                                    ->action(function (Get $get, Set $set): void {
                                         $rough = trim((string) $get('ai_instructions'));
 
                                         if ($rough === '') {
-                                            \Filament\Notifications\Notification::make()->title(__('pages/reports.ai_improve_empty'))->warning()->send();
+                                            Notification::make()->title(__('pages/reports.ai_improve_empty'))->warning()->send();
 
                                             return;
                                         }
 
                                         $key = 'report-instr-improve:'.(auth()->id() ?? 'guest');
-                                        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($key, maxAttempts: 10)) {
-                                            \Filament\Notifications\Notification::make()->title(__('pages/reports.ai_improve_rate_limited'))->warning()->send();
+                                        if (RateLimiter::tooManyAttempts($key, maxAttempts: 10)) {
+                                            Notification::make()->title(__('pages/reports.ai_improve_rate_limited'))->warning()->send();
 
                                             return;
                                         }
-                                        \Illuminate\Support\Facades\RateLimiter::hit($key, 3600);
+                                        RateLimiter::hit($key, 3600);
 
                                         try {
-                                            $improved = app(\App\Services\Ai\InstructionImprover::class)->improve(
+                                            $improved = app(InstructionImprover::class)->improve(
                                                 $rough,
-                                                \App\Models\Workspace::find((string) session('current_workspace_id')),
+                                                Workspace::find((string) session('current_workspace_id')),
                                             );
                                             $set('ai_instructions', $improved);
-                                            \Filament\Notifications\Notification::make()->title(__('pages/reports.ai_improve_done'))->success()->send();
+                                            Notification::make()->title(__('pages/reports.ai_improve_done'))->success()->send();
                                         } catch (\Throwable $e) {
-                                            \Illuminate\Support\Facades\Log::warning('Report instruction improve failed', ['error' => $e->getMessage()]);
-                                            \Filament\Notifications\Notification::make()->title(__('pages/reports.ai_improve_failed'))->danger()->send();
+                                            Log::warning('Report instruction improve failed', ['error' => $e->getMessage()]);
+                                            Notification::make()->title(__('pages/reports.ai_improve_failed'))->danger()->send();
                                         }
                                     }),
                             ),
@@ -224,14 +246,14 @@ class Reports extends Page implements HasForms
     /** Enabled report blocks as a comma-separated, canonically-ordered string. */
     protected function blocksParam(): string
     {
-        return implode(',', \App\Support\ReportBlocks::normalize($this->data['blocks'] ?? null));
+        return implode(',', ReportBlocks::normalize($this->data['blocks'] ?? null));
     }
 
     /** @return array{used:int, cap:int} */
     protected function reportUsage(): array
     {
-        $workspace = \App\Models\Workspace::findOrFail(session('current_workspace_id'));
-        $usage = app(\App\Services\Billing\AiUsageService::class);
+        $workspace = Workspace::findOrFail(session('current_workspace_id'));
+        $usage = app(AiUsageService::class);
 
         return ['used' => $usage->reportsThisMonth($workspace), 'cap' => $usage->reportCap($workspace)];
     }
@@ -249,12 +271,12 @@ class Reports extends Page implements HasForms
     }
 
     /** Confirm modal before spending an AI report generation. */
-    public function generateAction(): \Filament\Actions\Action
+    public function generateAction(): Action
     {
         ['used' => $used, 'cap' => $cap] = $this->reportUsage();
         $left = $cap >= PHP_INT_MAX ? null : max(0, $cap - $used);
 
-        return \Filament\Actions\Action::make('generate')
+        return Action::make('generate')
             ->modalIcon('heroicon-o-sparkles')
             ->modalHeading(__('pages/reports.generate_heading'))
             ->modalDescription($left === null
@@ -264,15 +286,95 @@ class Reports extends Page implements HasForms
             ->action(fn () => $this->generate());
     }
 
+    /**
+     * Create a ReportSchedule from the CURRENT builder selection (period,
+     * location, compare) — the modal only asks for the delivery details, so the
+     * report is configured once, in one place.
+     */
+    public function scheduleAction(): Action
+    {
+        return Action::make('schedule')
+            ->modalIcon('heroicon-o-clock')
+            ->modalHeading(__('pages/reports.schedule_heading'))
+            ->modalDescription(__('pages/reports.schedule_desc'))
+            ->modalSubmitActionLabel(__('pages/reports.schedule_submit'))
+            ->schema([
+                TextInput::make('name')
+                    ->default(__('resources/report_schedules.default_name'))
+                    ->required()->maxLength(120),
+
+                Grid::make(2)->schema([
+                    Select::make('frequency')
+                        ->label(__('resources/report_schedules.frequency'))
+                        ->options(['monthly' => __('resources/report_schedules.frequency_monthly_opt'), 'weekly' => __('resources/report_schedules.frequency_weekly_opt')])
+                        ->default('monthly')->selectablePlaceholder(false)->live()->required(),
+
+                    TextInput::make('send_day')
+                        ->label(__('resources/report_schedules.day_of_month'))
+                        ->numeric()->minValue(1)->maxValue(28)->default(1)
+                        ->visible(fn (callable $get): bool => $get('frequency') === 'monthly')
+                        ->required(),
+
+                    Select::make('send_day')
+                        ->label(__('resources/report_schedules.day_of_week'))
+                        ->options([
+                            1 => __('resources/report_schedules.monday'),
+                            2 => __('resources/report_schedules.tuesday'),
+                            3 => __('resources/report_schedules.wednesday'),
+                            4 => __('resources/report_schedules.thursday'),
+                            5 => __('resources/report_schedules.friday'),
+                            6 => __('resources/report_schedules.saturday'),
+                            7 => __('resources/report_schedules.sunday'),
+                        ])
+                        ->default(1)->selectablePlaceholder(false)
+                        ->visible(fn (callable $get): bool => $get('frequency') === 'weekly')
+                        ->required(),
+                ]),
+
+                TagsInput::make('recipients')
+                    ->label(__('resources/report_schedules.recipients'))
+                    ->placeholder(__('resources/report_schedules.recipients_placeholder'))
+                    ->nestedRecursiveRules(['email'])
+                    ->helperText(__('resources/report_schedules.recipients_helper')),
+            ])
+            ->action(function (array $data): void {
+                $filters = $this->filterArray();
+
+                // Schedules run on rolling periods only — a custom date range
+                // can't repeat, so it falls back to "last month".
+                $period = array_key_exists($filters['period'], (array) __('common.periods_no_custom'))
+                    ? $filters['period']
+                    : 'last_month';
+
+                ReportSchedule::create([
+                    'name' => $data['name'],
+                    'enabled' => true,
+                    'frequency' => $data['frequency'],
+                    'send_day' => (int) $data['send_day'],
+                    'period' => $period,
+                    'language' => in_array($filters['language'] ?? 'en', ['en', 'de'], true) ? $filters['language'] : 'en',
+                    'location_id' => $filters['location_id'],
+                    'compare' => ($filters['compareMode'] ?? 'previous') !== 'none',
+                    'recipients' => array_values($data['recipients'] ?? []),
+                ]);
+
+                Notification::make()
+                    ->title(__('pages/reports.schedule_created'))
+                    ->body(__('pages/reports.schedule_created_body'))
+                    ->success()
+                    ->send();
+            });
+    }
+
     /** Produce the AI summary for the current selection (the explicit, paid action). */
     public function generate(): void
     {
-        $period = \App\Support\DashboardPeriod::fromFilters($this->filterArray());
-        $report = app(\App\Services\Reports\ReportData::class)->build($period);
-        $workspace = \App\Models\Workspace::findOrFail(session('current_workspace_id'));
+        $period = DashboardPeriod::fromFilters($this->filterArray());
+        $report = app(ReportData::class)->build($period);
+        $workspace = Workspace::findOrFail(session('current_workspace_id'));
 
         $language = $this->data['language'] ?? 'en';
-        $blocks = \App\Support\ReportBlocks::normalize($this->data['blocks'] ?? null);
+        $blocks = ReportBlocks::normalize($this->data['blocks'] ?? null);
 
         // Persist the builder choices BEFORE generating: the AI guidance is read
         // back from the workspace inside ReportInsights, so it must be saved
@@ -281,7 +383,7 @@ class Reports extends Page implements HasForms
         $workspace->setAttribute('report_ai_instructions', trim((string) ($this->data['ai_instructions'] ?? '')));
         $workspace->save();
 
-        $result = app(\App\Services\Reports\ReportGenerator::class)->generate($period, $report, $workspace, $language);
+        $result = app(ReportGenerator::class)->generate($period, $report, $workspace, $language);
 
         // Save a snapshot (rendered HTML) so it can be re-viewed later without
         // spending another AI generation.
@@ -290,13 +392,13 @@ class Reports extends Page implements HasForms
         $html = view('reports.monthly', [
             'data' => $report,
             'insights' => $result['insights'],
-            'generatedAt' => \Carbon\CarbonImmutable::now()->format('M j, Y'),
+            'generatedAt' => CarbonImmutable::now()->format('M j, Y'),
             'blocks' => $blocks,
-            'brand' => \App\Services\Reports\ReportBranding::for($workspace),
+            'brand' => ReportBranding::for($workspace),
         ])->render();
         app()->setLocale($previousLocale);
 
-        \App\Models\GeneratedReport::create([
+        GeneratedReport::create([
             'title' => $report['businessName'],
             'period_label' => $report['periodLabel'],
             'language' => $language,
@@ -307,7 +409,7 @@ class Reports extends Page implements HasForms
 
         $this->generation++; // reloads the iframe → preview now shows the cached AI summary
 
-        \Filament\Notifications\Notification::make()
+        Notification::make()
             ->title($result['ai'] ? __('pages/reports.report_generated') : __('pages/reports.limit_reached'))
             ->body($result['ai']
                 ? __('pages/reports.report_generated_body')
@@ -329,9 +431,9 @@ class Reports extends Page implements HasForms
     /** True once an AI report has been generated for the current selection. */
     public function reportReady(): bool
     {
-        $period = \App\Support\DashboardPeriod::fromFilters($this->filterArray());
+        $period = DashboardPeriod::fromFilters($this->filterArray());
         $language = $this->data['language'] ?? 'en';
 
-        return app(\App\Services\Reports\ReportGenerator::class)->hasCached($period, $language);
+        return app(ReportGenerator::class)->hasCached($period, $language);
     }
 }

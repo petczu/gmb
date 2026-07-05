@@ -27,6 +27,13 @@ return [
     'ai_improve_done' => 'Anweisungen verbessert',
     'ai_improve_failed' => 'Anweisungen konnten nicht verbessert werden, bitte erneut versuchen.',
 
+    'schedule_report' => 'Regelmäßig senden',
+    'schedule_heading' => 'Diesen Bericht planen',
+    'schedule_desc' => 'Die aktuelle Auswahl (Zeitraum, Standort, Vergleich, Blöcke) wird wiederkehrend als PDF per E-Mail versendet.',
+    'schedule_submit' => 'Zeitplan erstellen',
+    'schedule_created' => 'Zeitplan erstellt',
+    'schedule_created_body' => 'Verwalte ihn unter Berichte → Geplante Berichte.',
+
     // Usage line ("N of M AI reports left this month")
     'usage' => 'Noch :left von :cap KI-Berichten diesen Monat',
 

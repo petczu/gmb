@@ -12,10 +12,10 @@
     @include('partials.favicons')
     <style>
         body { margin:0; background:#f9fafb; color:#111827; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height:1.65; }
-        .wrap { max-width:44rem; margin:0 auto; padding:2.5rem 1.5rem 4rem; }
-        .top { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:2rem; }
-        .logo { display:inline-flex; align-items:center; height:30px; }
-        .logo img, .logo svg { height:30px !important; width:auto !important; }
+        .wrap { max-width:44rem; margin:0 auto; padding:5.5rem 1.5rem 4rem; }
+        .corner-logo { position:fixed; top:1.25rem; left:1.5rem; z-index:20; display:inline-flex; align-items:center; height:2rem; }
+        .corner-logo img, .corner-logo svg { height:2rem !important; width:auto !important; }
+        .corner-lang { position:fixed; top:1.25rem; right:1.5rem; z-index:20; }
         h1 { font-size:1.9rem; margin:0 0 .25rem; }
         .updated { color:#9ca3af; font-size:.85rem; margin-bottom:2rem; }
         h2 { font-size:1.15rem; margin:2rem 0 .5rem; }
@@ -25,14 +25,12 @@
     </style>
 </head>
 <body>
-    <div class="wrap">
-        <div class="top">
-            <a href="{{ url('/') }}"><span class="logo">{!! view('filament.logo', ['theme' => 'light'])->render() !!}</span></a>
-            <div class="lang">
-                @include('partials.locale-switcher')
-            </div>
-        </div>
+    <a class="corner-logo" href="{{ url('/') }}">{!! view('filament.logo', ['theme' => 'light'])->render() !!}</a>
+    <div class="corner-lang">
+        @include('partials.locale-dropdown')
+    </div>
 
+    <div class="wrap">
         <h1>{{ __('legal.'.$page.'.title') }}</h1>
         <div class="updated">{{ __('legal.updated', ['date' => __('legal.updated_date')]) }}</div>
 

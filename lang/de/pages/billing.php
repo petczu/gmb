@@ -22,6 +22,7 @@ return [
     'resumed' => 'Abo fortgesetzt',
 
     // Kredite kaufen
+    'credits_history_link' => 'Credit-Verbrauch & Verlauf',
     'credits_section' => 'Kredite kaufen',
     'credits_section_desc' => 'Kredite werden verbraucht, sobald dein monatliches Tarif-Kontingent aufgebraucht ist: 1 Antwort = 1 Kredit, 1 Bericht = :report Kredite.',
     'extra_credits' => 'Extra-Kredite',

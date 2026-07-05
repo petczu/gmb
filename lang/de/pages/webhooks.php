@@ -9,6 +9,7 @@ return [
 
     'intro' => 'Wir senden bei jedem abonnierten Ereignis einen signierten JSON-POST an deinen Endpunkt, mit Wiederholungen. Prüfe den X-Webhook-Signature Header gegen dein Endpunkt-Secret.',
 
+    'docs_link' => 'Webhook-Dokumentation',
     'empty' => 'Noch keine Webhook-Endpunkte.',
     'col_url' => 'URL',
     'col_events' => 'Ereignisse',

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Mail\InviteMail;
+use App\Models\Invitation;
+use App\Models\Location;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
 use BackedEnum;
@@ -18,6 +22,9 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
 
 class Team extends Page implements HasTable
@@ -37,11 +44,11 @@ class Team extends Page implements HasTable
     /** Roles defined in the current workspace (name => Title). */
     protected function roleOptions(): array
     {
-        return \App\Models\Role::query()
+        return Role::query()
             ->where('team_id', $this->workspace()->id)
             ->orderBy('name')
             ->pluck('name', 'name')
-            ->map(fn (string $name): string => \Illuminate\Support\Str::headline($name))
+            ->map(fn (string $name): string => Str::headline($name))
             ->all();
     }
 
@@ -103,7 +110,7 @@ class Team extends Page implements HasTable
                         Select::make('allowed_locations')
                             ->label(__('pages/team.location_access'))
                             ->multiple()
-                            ->options(fn (): array => \App\Models\Location::query()->orderBy('name')->pluck('name', 'id')->all())
+                            ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
                             ->placeholder(__('common.all_locations'))
                             ->helperText(__('pages/team.location_access_helper')),
                     ])
@@ -159,10 +166,10 @@ class Team extends Page implements HasTable
                         $workspace = $this->workspace();
                         $email = mb_strtolower(trim($data['email']));
 
-                        $invitation = \App\Models\Invitation::updateOrCreate(
+                        $invitation = Invitation::updateOrCreate(
                             ['workspace_id' => $workspace->id, 'email' => $email],
                             [
-                                'token' => \App\Models\Invitation::makeToken(),
+                                'token' => Invitation::makeToken(),
                                 'role' => $data['role'],
                                 'invited_by' => auth()->id(),
                                 'expires_at' => now()->addDays(14),
@@ -170,7 +177,7 @@ class Team extends Page implements HasTable
                             ],
                         );
 
-                        \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\InviteMail(
+                        Mail::to($email)->send(new InviteMail(
                             inviterName: (string) auth()->user()?->name,
                             workspaceName: $workspace->name,
                             acceptUrl: route('invite.show', $invitation->token),
@@ -190,19 +197,33 @@ class Team extends Page implements HasTable
                         TextInput::make('name')->label(__('pages/team.name'))->required()->maxLength(120),
                         TextInput::make('email')->email()->required()
                             ->helperText(__('pages/team.add_guest_helper')),
+                        Select::make('locale')
+                            ->label(__('pages/team.guest_language'))
+                            ->options(['en' => 'English', 'de' => 'Deutsch'])
+                            ->default(fn (): string => app()->getLocale())
+                            ->selectablePlaceholder(false)
+                            ->helperText(__('pages/team.guest_language_helper')),
                     ])
                     ->action(function (array $data): void {
                         $workspace = $this->workspace();
                         $email = mb_strtolower(trim($data['email']));
 
+                        $locale = in_array($data['locale'] ?? null, ['en', 'de'], true) ? $data['locale'] : app()->getLocale();
+
                         $user = User::firstOrCreate(
                             ['email' => $email],
                             [
                                 'name' => $data['name'],
-                                'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(40)),
-                                'locale' => app()->getLocale(),
+                                'password' => Hash::make(Str::random(40)),
+                                'locale' => $locale,
                             ],
                         );
+
+                        // Guests have no login to change the language themselves —
+                        // apply the picked one to an existing guest account too.
+                        if (! $user->wasRecentlyCreated && $user->getAttribute('locale') !== $locale) {
+                            $user->forceFill(['locale' => $locale])->save();
+                        }
 
                         if (! $user->wasRecentlyCreated && filled($data['name'])) {
                             $user->forceFill(['name' => $data['name']])->save();

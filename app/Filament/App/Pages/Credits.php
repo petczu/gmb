@@ -57,7 +57,8 @@ class Credits extends Page implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        return tenancy()->initialized && (auth()->user()?->can('manage_billing') ?? false);
+        // Not in the sidebar — reached from the Billing page ("Credits history").
+        return false;
     }
 
     public static function canAccess(): bool

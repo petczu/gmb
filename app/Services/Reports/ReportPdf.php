@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Reports;
 
+use App\Services\Ai\AiCreditService;
+use App\Services\Billing\AiUsageService;
 use App\Support\DashboardPeriod;
+use App\Support\ReportBlocks;
 use Carbon\CarbonImmutable;
 use Spatie\LaravelPdf\Facades\Pdf;
 
@@ -19,14 +22,14 @@ class ReportPdf
     public function __construct(
         private readonly ReportData $data,
         private readonly ReportInsights $insights,
-        private readonly \App\Services\Billing\AiUsageService $usage,
-        private readonly \App\Services\Ai\AiCreditService $credits,
+        private readonly AiUsageService $usage,
+        private readonly AiCreditService $credits,
     ) {}
 
     /**
      * @return array{path: string, filename: string, businessName: string, summary: string}
      */
-    public function generate(DashboardPeriod $period): array
+    public function generate(DashboardPeriod $period, string $language = 'en'): array
     {
         $report = $this->data->build($period);
 
@@ -34,7 +37,7 @@ class ReportPdf
         // too); over the cap, fall back to a basic non-AI summary.
         $workspace = tenant();
         if ($workspace && $this->usage->canGenerateReport($workspace)) {
-            $insights = $this->insights->generate($report);
+            $insights = $this->insights->generate($report, $language);
             $this->credits->credit($workspace, 0, 'report', 'report', substr(md5(uniqid('rpt', true)), 0, 32));
         } else {
             $insights = $this->insights->fallbackFor($report);
@@ -44,6 +47,11 @@ class ReportPdf
             'data' => $report,
             'insights' => $insights,
             'generatedAt' => CarbonImmutable::now()->format('M j, Y'),
+            // Same extras as the on-screen paths (ReportController::payload):
+            // without them the blade falls back to a text-only header (no logo)
+            // and renders every block regardless of the workspace's selection.
+            'blocks' => ReportBlocks::normalize($workspace?->report_blocks),
+            'brand' => ReportBranding::for($workspace),
         ];
 
         $slug = str($report['businessName'])->slug()->value();
@@ -52,6 +60,9 @@ class ReportPdf
 
         Pdf::view('reports.monthly', $payload)
             ->format('a4')
+            // Page margins so nothing is clipped when printed (same as the
+            // on-screen download paths in ReportController).
+            ->margins(10, 10, 10, 10)
             ->withBrowsershot(function ($browsershot): void {
                 if ($chrome = config('services.pdf.chrome_path')) {
                     $browsershot->setChromePath($chrome);

@@ -1,9 +1,16 @@
 <?php
 
+use App\Http\Controllers\BillingController;
+use App\Http\Controllers\DocsController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\PostmarkWebhookController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\WorkspaceController;
+use App\Http\Controllers\WorkspaceSwitchController;
 use App\Http\Controllers\ZernioConnectController;
+use App\Http\Controllers\ZernioWebhookController;
 use App\Http\Middleware\SetCurrentWorkspace;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Support\Facades\Route;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
 
@@ -16,12 +23,12 @@ Route::post('stripe/webhook', [CashierWebhookController::class, 'handleWebhook']
 
 // Postmark webhook (bounces + spam complaints → suppression list). The {secret}
 // path segment authenticates it. No CSRF (see bootstrap/app.php).
-Route::post('postmark/webhook/{secret}', [\App\Http\Controllers\PostmarkWebhookController::class, 'handle'])
+Route::post('postmark/webhook/{secret}', [PostmarkWebhookController::class, 'handle'])
     ->name('postmark.webhook');
 
 // Zernio webhook (new reviews + reply reconciliation + account status). The raw
 // body is HMAC-SHA256 verified in the controller. No CSRF (see bootstrap/app.php).
-Route::post('zernio/webhook', [\App\Http\Controllers\ZernioWebhookController::class, 'handle'])
+Route::post('zernio/webhook', [ZernioWebhookController::class, 'handle'])
     ->name('zernio.webhook');
 
 // Performance report preview (iframe) + PDF download. Tenant-scoped.
@@ -36,7 +43,7 @@ Route::middleware(['web', 'auth', SetCurrentWorkspace::class])
 
 // Download a Stripe invoice PDF for the current workspace (Billing → Invoices).
 Route::middleware(['web', 'auth', SetCurrentWorkspace::class])
-    ->get('billing/invoice/{invoiceId}', [\App\Http\Controllers\BillingController::class, 'invoice'])
+    ->get('billing/invoice/{invoiceId}', [BillingController::class, 'invoice'])
     ->name('billing.invoice');
 
 // PUBLIC shared report links (no login). The HTML is stored on the share row,
@@ -58,13 +65,13 @@ Route::middleware('web')->group(function () {
 // Switch the active workspace (multi-workspace members). Writes the session
 // pointer; SetCurrentWorkspace initializes the new tenant on the next request.
 Route::middleware(['web', 'auth'])
-    ->post('workspace/switch', \App\Http\Controllers\WorkspaceSwitchController::class)
+    ->post('workspace/switch', WorkspaceSwitchController::class)
     ->name('workspace.switch');
 
 // Create an additional workspace from the switcher.
 Route::middleware(['web', 'auth'])->group(function (): void {
-    Route::get('workspace/new', [\App\Http\Controllers\WorkspaceController::class, 'create'])->name('workspace.create');
-    Route::post('workspace/new', [\App\Http\Controllers\WorkspaceController::class, 'store'])->name('workspace.store');
+    Route::get('workspace/new', [WorkspaceController::class, 'create'])->name('workspace.create');
+    Route::post('workspace/new', [WorkspaceController::class, 'store'])->name('workspace.store');
 });
 
 // Zernio Google Business OAuth connect flow (browser redirect + callback).
@@ -75,8 +82,18 @@ Route::middleware(['web', 'auth', SetCurrentWorkspace::class])
         Route::get('/callback', [ZernioConnectController::class, 'callback'])->name('zernio.google.callback');
     });
 
+// Public developer documentation (markdown pages + Scalar API reference).
+Route::prefix('docs')->group(function (): void {
+    Route::get('/', [DocsController::class, 'show'])->name('docs.index');
+    Route::get('/api-reference', [DocsController::class, 'apiReference'])->name('docs.api-reference');
+    Route::get('/changelog', [DocsController::class, 'changelog'])->name('docs.changelog');
+    Route::get('/{slug}', [DocsController::class, 'show'])
+        ->where('slug', '[a-z0-9/-]+')
+        ->name('docs.show');
+});
+
 // Language switcher (persists the visitor's choice) + public legal pages.
-Route::middleware(['web', \App\Http\Middleware\SetLocale::class])->group(function (): void {
+Route::middleware(['web', SetLocale::class])->group(function (): void {
     Route::get('locale/{locale}', function (string $locale) {
         if (in_array($locale, ['en', 'de'], true)) {
             session(['locale' => $locale]);

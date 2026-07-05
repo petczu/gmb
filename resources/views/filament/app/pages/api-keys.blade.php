@@ -19,7 +19,11 @@
 
         <div style="border:1px solid #e5e7eb; border-radius:.9rem; padding:1rem 1.25rem; margin-bottom:1.25rem; font-size:.85rem; color:#6b7280;">
             {{ __('pages/api_keys.base_url') }} <code style="font-size:.85rem;">{{ rtrim(config('app.url'), '/') }}/api/v1</code><br>
-            {{ __('pages/api_keys.auth_hint') }}
+            {{ __('pages/api_keys.auth_hint') }}<br>
+            <a href="{{ route('docs.index') }}" target="_blank" rel="noopener"
+               style="display:inline-block; margin-top:.45rem; color:#2d19ec; font-weight:600; text-decoration:none;">
+                {{ __('pages/api_keys.docs_link') }} &rarr;
+            </a>
         </div>
 
         {{ $this->table }}

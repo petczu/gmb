@@ -44,6 +44,7 @@ class SendReportEmail implements ShouldQueue
         }
 
         $previous = tenant();
+        $previousLocale = app()->getLocale();
         tenancy()->initialize($workspace);
 
         try {
@@ -67,7 +68,13 @@ class SendReportEmail implements ShouldQueue
                 'compare' => $schedule->compare,
             ]);
 
-            $result = $pdf->generate($period);
+            // One PDF for all recipients → language is the SCHEDULE's, not each
+            // recipient's. Set the app locale so the report blade labels AND the
+            // email itself render in that language, then restore.
+            $language = in_array($schedule->language, ['en', 'de'], true) ? $schedule->language : 'en';
+            app()->setLocale($language);
+
+            $result = $pdf->generate($period, $language);
 
             Mail::to($recipients)->send(new ScheduledReportMail(
                 businessName: $result['businessName'],
@@ -83,6 +90,8 @@ class SendReportEmail implements ShouldQueue
 
             Log::info('SendReportEmail sent', ['schedule' => $schedule->id, 'recipients' => count($recipients)]);
         } finally {
+            app()->setLocale($previousLocale);
+
             if ($previous !== null) {
                 tenancy()->initialize($previous);
             } else {

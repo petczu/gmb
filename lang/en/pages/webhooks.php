@@ -9,6 +9,7 @@ return [
 
     'intro' => 'We POST a signed JSON payload to your endpoint on each subscribed event, with retries. Verify the X-Webhook-Signature header against your endpoint secret.',
 
+    'docs_link' => 'Webhook documentation',
     'empty' => 'No webhook endpoints yet.',
     'col_url' => 'URL',
     'col_events' => 'Events',

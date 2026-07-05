@@ -178,6 +178,10 @@
                         <div style="margin-top:0.6rem; padding-top:0.6rem; border-top:1px solid rgb(243 244 246); color:rgb(75 85 99); font-size:0.85rem;">
                             {{ __('pages/billing.credits_spent_month', ['count' => number_format($d['creditsSpentThisMonth'])]) }}
                         </div>
+                        <a href="{{ \App\Filament\App\Pages\Credits::getUrl() }}"
+                           style="display:inline-block; margin-top:0.7rem; font-size:0.85rem; color:#2d19ec; font-weight:600; text-decoration:none;">
+                            {{ __('pages/billing.credits_history_link') }} &rarr;
+                        </a>
                     </div>
                     </div>{{-- /credits-and-balance flex row --}}
 

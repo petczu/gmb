@@ -5,8 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Create workspace · Repunio</title>
     @include('partials.favicons')
+    {{-- Alpine powers the workspace-switcher dropdown (same partial as the panel top bar). --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#f3f4f6; color:#1f2937; display:flex; min-height:100vh; align-items:center; justify-content:center; margin:0; }
+        [x-cloak] { display: none !important; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#f3f4f6; color:#1f2937; display:flex; min-height:100vh; align-items:center; justify-content:center; margin:0; padding-top:64px; box-sizing:border-box; }
+        .topbar { position:fixed; top:0; left:0; right:0; height:64px; background:#fff; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; padding:0 1.25rem; z-index:40; }
+        .topbar .brand { display:inline-flex; align-items:center; height:2rem; }
+        .topbar .brand img, .topbar .brand svg { height:2rem !important; width:auto !important; }
+        .topbar .end { display:flex; align-items:center; }
+        .topbar .avatar { width:2rem; height:2rem; border-radius:9999px; object-fit:cover; display:block; }
         .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.08); padding:32px; width:420px; max-width:92vw; }
         .card h1 { font-size:1.25rem; margin:.4rem 0 .3rem; text-align:center; }
         .card p { color:#6b7280; font-size:.9rem; margin:0 0 1.4rem; text-align:center; }
@@ -20,6 +28,20 @@
     </style>
 </head>
 <body>
+    <header class="topbar">
+        <a href="{{ url('/') }}" class="brand">{!! view('filament.logo', ['theme' => 'light'])->render() !!}</a>
+        <div class="end">
+            @include('filament.app.workspace-switcher')
+            @php
+                $avatarUrl = auth()->user()?->getFilamentAvatarUrl()
+                    ?? 'https://ui-avatars.com/api/?name='.urlencode(auth()->user()?->name ?? 'U').'&color=FFFFFF&background=2d19ec';
+            @endphp
+            <a href="{{ url('/profile') }}" title="{{ auth()->user()?->name }}">
+                <img class="avatar" src="{{ $avatarUrl }}" alt="{{ auth()->user()?->name }}">
+            </a>
+        </div>
+    </header>
+
     <div class="card">
         <div style="font-size:1.8rem; text-align:center;">🏢</div>
         <h1>Create a workspace</h1>

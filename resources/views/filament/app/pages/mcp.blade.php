@@ -15,7 +15,11 @@
                 <code style="font-size:.9rem; word-break:break-all;">{{ $this->endpoint() }}</code>
             </div>
             <div style="font-size:.85rem; color:#6b7280;">
-                {{ __('pages/mcp.connect_help') }}
+                {{ __('pages/mcp.connect_help') }}<br>
+                <a href="{{ route('docs.show', 'mcp') }}" target="_blank" rel="noopener"
+                   style="display:inline-block; margin-top:.45rem; color:#2d19ec; font-weight:600; text-decoration:none;">
+                    {{ __('pages/mcp.docs_link') }} &rarr;
+                </a>
             </div>
         </div>
 

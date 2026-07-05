@@ -37,6 +37,15 @@
             </x-filament::button>
         @endif
 
+        <x-filament::button
+            wire:click="mountAction('schedule')"
+            color="gray"
+            outlined
+            icon="heroicon-o-clock"
+        >
+            {{ __('pages/reports.schedule_report') }}
+        </x-filament::button>
+
         @if ($label = $this->reportsLeftLabel())
             <span style="font-size:0.78rem; color:rgb(107 114 128); margin-left:0.25rem;">{{ $label }}</span>
         @endif

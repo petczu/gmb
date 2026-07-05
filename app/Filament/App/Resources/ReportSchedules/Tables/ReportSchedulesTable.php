@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Resources\ReportSchedules\Tables;
 
-use App\Filament\App\Resources\ReportSchedules\ReportScheduleResource;
+use App\Filament\App\Pages\Reports;
 use App\Jobs\SendReportEmail;
 use App\Models\ReportSchedule;
-use App\Models\Workspace;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -31,7 +30,7 @@ class ReportSchedulesTable
                 Action::make('create')
                     ->label(__('resources/report_schedules.empty_cta'))
                     ->icon(Heroicon::OutlinedPlus)
-                    ->url(fn (): string => ReportScheduleResource::getUrl('create')),
+                    ->url(fn (): string => Reports::getUrl()),
             ])
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
@@ -65,24 +64,24 @@ class ReportSchedulesTable
             ])
             ->recordActions([
                 ActionGroup::make([
-                Action::make('sendNow')
-                    ->label(__('resources/report_schedules.send_now'))
-                    ->icon(Heroicon::OutlinedPaperAirplane)
-                    ->requiresConfirmation()
-                    ->modalDescription(__('resources/report_schedules.send_now_desc'))
-                    ->action(function (ReportSchedule $record): void {
-                        $workspaceId = (string) session('current_workspace_id');
-                        SendReportEmail::dispatch($workspaceId, $record->id);
+                    Action::make('sendNow')
+                        ->label(__('resources/report_schedules.send_now'))
+                        ->icon(Heroicon::OutlinedPaperAirplane)
+                        ->requiresConfirmation()
+                        ->modalDescription(__('resources/report_schedules.send_now_desc'))
+                        ->action(function (ReportSchedule $record): void {
+                            $workspaceId = (string) session('current_workspace_id');
+                            SendReportEmail::dispatch($workspaceId, $record->id);
 
-                        Notification::make()
-                            ->title(__('resources/report_schedules.report_queued'))
-                            ->body(__('resources/report_schedules.report_queued_body'))
-                            ->success()
-                            ->send();
-                    }),
+                            Notification::make()
+                                ->title(__('resources/report_schedules.report_queued'))
+                                ->body(__('resources/report_schedules.report_queued_body'))
+                                ->success()
+                                ->send();
+                        }),
 
-                EditAction::make(),
-                DeleteAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
                 ]),
             ]);
     }

@@ -51,6 +51,7 @@ return [
 
     'contents_section' => 'Berichtsinhalt',
     'period' => 'Zeitraum',
+    'language' => 'Berichtssprache',
     'location' => 'Standort',
     'compare' => 'Mit Vorzeitraum vergleichen',
     'recipients' => 'Empfänger (E-Mails)',

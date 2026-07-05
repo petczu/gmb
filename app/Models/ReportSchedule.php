@@ -18,6 +18,7 @@ class ReportSchedule extends Model
         'frequency',
         'send_day',
         'period',
+        'language',
         'location_id',
         'compare',
         'recipients',

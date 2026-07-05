@@ -46,6 +46,7 @@ class EmailTemplateRenderer
         $body = $this->substitute($body, $data);
 
         $html = Str::markdown($body);
+        $html = $this->injectImages($html);
         $html = $this->injectButtons($html, (string) ($data['url'] ?? '#'));
         $html = $this->injectBlocks($html, $blocks);
 
@@ -80,6 +81,39 @@ class EmailTemplateRenderer
 
         // strtr replaces longer tokens first, so :workspace beats :work.
         return strtr($text, $map);
+    }
+
+    /** Illustration keys shipped in public/images/email (decorative heroes). */
+    public const IMAGES = [
+        'welcome', 'reviews', 'celebration', 'attention',
+        'team', 'time', 'payment-ok', 'payment-issue', 'robot', 'pause',
+        'disconnected', 'connected', 'inbox', 'send-failed', 'progress',
+        'recap', 'tips',
+    ];
+
+    /**
+     * {{ image:key }} → centered hero illustration. Only whitelisted keys are
+     * replaced (anything else is left visible so a typo is caught in preview).
+     */
+    private function injectImages(string $html): string
+    {
+        return (string) preg_replace_callback(
+            '/\{\{\s*image:([a-z-]+)\s*\}\}/u',
+            function (array $m): string {
+                $key = trim($m[1]);
+
+                if (! in_array($key, self::IMAGES, true)) {
+                    return $m[0];
+                }
+
+                $src = e(rtrim((string) config('app.url'), '/')."/images/email/{$key}.jpg");
+
+                return '<table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr><td align="center" style="padding:4px 0 16px;">'
+                    .'<img src="'.$src.'" alt="" width="440" style="display:block;width:100%;max-width:440px;height:auto;border-radius:8px;">'
+                    .'</td></tr></table>';
+            },
+            $html,
+        );
     }
 
     private function injectButtons(string $html, string $url): string

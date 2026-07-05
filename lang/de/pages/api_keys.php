@@ -9,6 +9,7 @@ return [
 
     'base_url' => 'Basis-URL:',
     'auth_hint' => 'Authentifiziere dich mit einem Authorization: Bearer <api-key> Header.',
+    'docs_link' => 'API-Dokumentation',
 
     'empty' => 'Noch keine API-Schlüssel.',
     'col_name' => 'Name',

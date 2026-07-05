@@ -22,6 +22,7 @@ return [
     'resumed' => 'Subscription resumed',
 
     // Buy credits
+    'credits_history_link' => 'Credits usage & history',
     'credits_section' => 'Buy credits',
     'credits_section_desc' => 'Credits are spent once your monthly plan allowance runs out: 1 reply = 1 credit, 1 report = :report credits.',
     'extra_credits' => 'Extra credits',

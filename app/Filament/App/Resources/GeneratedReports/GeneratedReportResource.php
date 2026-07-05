@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Resources\GeneratedReports;
 
+use App\Filament\App\Clusters\ReportsCluster;
 use App\Filament\App\Resources\GeneratedReports\Pages\ListGeneratedReports;
 use App\Filament\App\Resources\GeneratedReports\Tables\GeneratedReportsTable;
 use App\Models\GeneratedReport;
@@ -18,7 +19,7 @@ class GeneratedReportResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Reports';
+    protected static ?string $cluster = ReportsCluster::class;
 
     protected static ?int $navigationSort = 3;
 

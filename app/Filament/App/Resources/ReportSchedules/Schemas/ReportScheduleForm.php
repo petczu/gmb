@@ -70,6 +70,13 @@ class ReportScheduleForm
                         ->label(__('resources/report_schedules.location'))
                         ->placeholder(__('common.all_locations'))
                         ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all()),
+
+                    Select::make('language')
+                        ->label(__('resources/report_schedules.language'))
+                        ->options(['en' => 'English', 'de' => 'Deutsch'])
+                        ->default('en')
+                        ->selectablePlaceholder(false)
+                        ->required(),
                 ]),
 
                 Toggle::make('compare')->label(__('resources/report_schedules.compare'))->default(true),

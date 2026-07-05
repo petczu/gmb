@@ -51,6 +51,7 @@ return [
 
     'contents_section' => 'Report contents',
     'period' => 'Period',
+    'language' => 'Report language',
     'location' => 'Location',
     'compare' => 'Compare to previous period',
     'recipients' => 'Recipients (emails)',
