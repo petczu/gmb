@@ -10,6 +10,7 @@ use App\Models\Location;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ActivityLog\ActivityLogger;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -136,6 +137,7 @@ class Team extends Page implements HasTable
                         $record->syncRoles([$data['role']]);
                         // Keep the pivot role in sync so notification role-groups stay accurate.
                         $this->workspace()->users()->updateExistingPivot($record->id, ['role' => $data['role']]);
+                        ActivityLogger::log('team.role_changed', ['member' => $record->name, 'role' => $data['role']]);
                         Notification::make()->title(__('pages/team.role_updated', ['role' => $data['role']]))->success()->send();
                     }),
 
@@ -149,6 +151,7 @@ class Team extends Page implements HasTable
                         $this->applyTeamScope();
                         $record->syncRoles([]);
                         $this->workspace()->users()->detach($record->id);
+                        ActivityLogger::log('team.member_removed', ['member' => $record->name]);
                         Notification::make()->title(__('pages/team.member_removed'))->success()->send();
                     }),
             ])
@@ -184,6 +187,7 @@ class Team extends Page implements HasTable
                             role: $data['role'],
                         ));
 
+                        ActivityLogger::log('team.member_invited', ['email' => $email, 'role' => $data['role']]);
                         Notification::make()->title(__('pages/team.invitation_sent'))->success()->send();
                     }),
 
@@ -237,6 +241,7 @@ class Team extends Page implements HasTable
                         $user->unsetRelation('roles');
                         $user->syncRoles(['guest']);
 
+                        ActivityLogger::log('team.guest_added', ['member' => $data['name'], 'email' => $email]);
                         Notification::make()->title(__('pages/team.guest_added'))->success()->send();
                     }),
             ]);

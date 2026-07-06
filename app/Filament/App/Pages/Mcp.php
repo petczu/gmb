@@ -48,12 +48,12 @@ class Mcp extends Page implements HasForms
 
     public static function shouldRegisterNavigation(): bool
     {
-        return tenancy()->initialized && (auth()->user()?->can('manage_team') ?? false);
+        return tenancy()->initialized && (auth()->user()?->can('manage_integrations') ?? false);
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('manage_team') ?? false;
+        return auth()->user()?->can('manage_integrations') ?? false;
     }
 
     protected function workspace(): Workspace

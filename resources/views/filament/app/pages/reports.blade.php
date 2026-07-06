@@ -4,6 +4,7 @@
     {{-- Generate / Download sit AFTER the Report content section. Download stays
          disabled until a report has actually been generated for this selection. --}}
     <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; margin-top:1rem;">
+        @can('generate_reports')
         <x-filament::button
             wire:click="mountAction('generate')"
             wire:target="generate"
@@ -13,29 +14,20 @@
             <span wire:loading.remove wire:target="generate">{{ __('pages/reports.generate_report') }}</span>
             <span wire:loading wire:target="generate">{{ __('pages/reports.generating') }}</span>
         </x-filament::button>
+        @endcan
 
-        @if ($this->reportReady())
-            <x-filament::button
-                tag="a"
-                :href="$this->downloadUrl()"
-                target="_blank"
-                color="gray"
-                outlined
-                icon="heroicon-o-arrow-down-tray"
-            >
-                {{ __('pages/reports.download_pdf') }}
-            </x-filament::button>
-        @else
-            <x-filament::button
-                color="gray"
-                outlined
-                disabled
-                icon="heroicon-o-arrow-down-tray"
-                :title="__('pages/reports.download_first_tooltip')"
-            >
-                {{ __('pages/reports.download_pdf') }}
-            </x-filament::button>
-        @endif
+        {{-- Always active: downloading renders the same content as the preview
+             (cached AI summary or the deterministic fallback) — no AI spend. --}}
+        <x-filament::button
+            tag="a"
+            :href="$this->downloadUrl()"
+            target="_blank"
+            color="gray"
+            outlined
+            icon="heroicon-o-arrow-down-tray"
+        >
+            {{ __('pages/reports.download_pdf') }}
+        </x-filament::button>
 
         <x-filament::button
             wire:click="mountAction('schedule')"

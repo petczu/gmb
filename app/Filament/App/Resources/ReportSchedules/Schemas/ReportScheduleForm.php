@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Filament\App\Resources\ReportSchedules\Schemas;
 
 use App\Models\Location;
+use App\Support\ReportBlocks;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
@@ -80,6 +82,15 @@ class ReportScheduleForm
                 ]),
 
                 Toggle::make('compare')->label(__('resources/report_schedules.compare'))->default(true),
+
+                // Same content blocks as the builder's "Report content" section.
+                // Empty selection falls back to the workspace default.
+                CheckboxList::make('blocks')
+                    ->label(__('pages/reports.blocks'))
+                    ->options(ReportBlocks::labels())
+                    ->default(ReportBlocks::default())
+                    ->columns(2)
+                    ->bulkToggleable(),
 
                 TagsInput::make('recipients')
                     ->label(__('resources/report_schedules.recipients'))

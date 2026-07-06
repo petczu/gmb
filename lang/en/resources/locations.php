@@ -21,4 +21,5 @@ return [
     'add_location' => 'Add location',
     'add_demo_data' => 'Add demo data',
     'demo_added' => 'Demo data added',
+    'edit_info' => 'Edit info',
 ];

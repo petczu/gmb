@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Reports;
 
+use App\Models\Competitor;
 use App\Models\Location;
 use App\Models\Review;
+use App\Services\Competitors\CompetitorTrends;
 use App\Support\DashboardPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -78,6 +80,7 @@ class ReportData
             'responses' => $this->responsePerformanceAnalyzer->analyze($period),
             'busiestDay' => $busiest->keys()->first(),
             'busiestCount' => (int) ($busiest->first() ?? 0),
+            'competitors' => $this->competitors($period),
             'highlightsPositive' => $this->highlights($period, [5, 4], 3),
             'highlightsCritical' => $this->highlights($period, [1, 2], 3),
             'reviewSnippets' => $this->snippets($period, 40),
@@ -85,6 +88,50 @@ class ReportData
     }
 
     /** Base query for a window, scoped to the period's location. */
+    /**
+     * Competitor standing for the report period: current rating/reviews plus
+     * the review growth inside the window (from the daily snapshots; null
+     * while history is still being collected). Empty array = no competitors
+     * tracked → the block is skipped.
+     *
+     * @return array{own: array{name: string, rating: ?float, reviews: int, new_reviews: int}, rows: list<array{name: string, rating: ?float, reviews: int, new_reviews: ?int}>}|array{}
+     */
+    protected function competitors(DashboardPeriod $period): array
+    {
+        $competitors = Competitor::query()
+            ->when($period->locationId !== null, fn ($q) => $q->where('location_id', $period->locationId))
+            ->orderByDesc('rating')
+            ->get();
+
+        if ($competitors->isEmpty()) {
+            return [];
+        }
+
+        $trends = app(CompetitorTrends::class);
+        $start = $period->start;
+
+        $locations = Location::query()
+            ->when($period->locationId !== null, fn ($q) => $q->whereKey($period->locationId))
+            ->get();
+
+        $ownRatings = $locations->pluck('rating')->filter();
+
+        return [
+            'own' => [
+                'name' => $this->businessName($period),
+                'rating' => $ownRatings->isNotEmpty() ? round((float) $ownRatings->avg(), 1) : null,
+                'reviews' => (int) $locations->sum('reviews_count'),
+                'new_reviews' => (int) $locations->sum(fn (Location $l): int => $trends->ownNewReviews((int) $l->id, $start)),
+            ],
+            'rows' => $competitors->map(fn (Competitor $c): array => [
+                'name' => $c->name,
+                'rating' => $c->rating !== null ? (float) $c->rating : null,
+                'reviews' => (int) $c->reviews_count,
+                'new_reviews' => $trends->summary($c, $start)['reviews_delta'],
+            ])->all(),
+        ];
+    }
+
     protected function window(DashboardPeriod $period, $from, $to): Builder
     {
         return Review::query()

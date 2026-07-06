@@ -49,6 +49,13 @@ class EmailTemplateCatalog
             'review_goal_recap' => ['title' => 'Goal recap (month end)', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'month' => 'May 2026', 'intro' => 'Here is how May 2026 finished: 28 new reviews against a goal of 30.', 'url' => self::url('reviews')]],
             'review_coaching' => ['title' => 'Goal coaching (weekly)', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'intro' => 'You are at 18 of 100 this month. A steady push this week gets you back on pace. Here are a few ideas.', 'url' => self::url('reviews')]],
             'review_goal_reached' => ['title' => 'Goal reached 🎉', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'goal' => '100', 'url' => self::url('reviews')]],
+
+            'drip_inbox' => ['title' => 'Series 1 · Reviews inbox', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('reviews'), 'unsubscribe_url' => self::url('unsubscribe')]],
+            'drip_automation' => ['title' => 'Series 2 · Automations', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('automations'), 'unsubscribe_url' => self::url('unsubscribe')]],
+            'drip_growth' => ['title' => 'Series 3 · Collect reviews', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('review-pages'), 'unsubscribe_url' => self::url('unsubscribe')]],
+            'drip_reports' => ['title' => 'Series 4 · Reports', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('reports/builder'), 'unsubscribe_url' => self::url('unsubscribe')]],
+            'drip_team' => ['title' => 'Series 5 · Team', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('team'), 'unsubscribe_url' => self::url('unsubscribe')]],
+            'drip_member' => ['title' => 'Series · Invited member', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url(), 'unsubscribe_url' => self::url('unsubscribe')]],
         ];
     }
 
@@ -234,10 +241,30 @@ class EmailTemplateCatalog
                 __('emails.goal_reached.note', [], $locale),
             ], __('emails.goal_reached.cta', [], $locale)),
 
-            default => '',
+            default => self::dripBody($key, $locale),
         };
 
         return $body === '' ? '' : self::heroImage($key).$body;
+    }
+
+    /**
+     * Shared shape for the onboarding-series steps: greeting, intro, tip, CTA,
+     * plus a small unsubscribe line (the :unsubscribe_url placeholder).
+     */
+    private static function dripBody(string $key, string $locale): string
+    {
+        if (! str_starts_with($key, 'drip_') || ! self::has($key)) {
+            return '';
+        }
+
+        $unsubscribe = __('emails.drip_unsubscribe', [
+            'link' => '['.__('emails.drip_unsubscribe_link', [], $locale).'](:unsubscribe_url)',
+        ], $locale);
+
+        return self::shell($locale, self::greeting($locale), [
+            __('emails.'.$key.'.intro', [], $locale),
+            __('emails.'.$key.'.tip', [], $locale),
+        ], __('emails.'.$key.'.cta', [], $locale))."\n\n<small>{$unsubscribe}</small>";
     }
 
     /**
@@ -268,6 +295,12 @@ class EmailTemplateCatalog
             'review_goal_recap' => 'recap',
             'review_coaching' => 'tips',
             'review_goal_reached' => 'celebration',
+            'drip_inbox' => 'reviews',
+            'drip_automation' => 'robot',
+            'drip_growth' => 'progress',
+            'drip_reports' => 'recap',
+            'drip_team' => 'team',
+            'drip_member' => 'welcome',
         ];
 
         return isset($map[$key]) ? '{{ image:'.$map[$key]." }}\n\n" : '';

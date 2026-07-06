@@ -9,7 +9,7 @@
 </style>
 
 {{-- Logo, pinned top-left (Cloudflare-style). --}}
-<a href="{{ url('/') }}" style="position:fixed; top:1.25rem; left:1.5rem; z-index:20; display:inline-flex; align-items:center; height:2rem;">
+<a href="{{ url('/') }}" class="auth-corner-logo" style="position:fixed; top:1.25rem; left:1.5rem; z-index:20; display:inline-flex; align-items:center; height:2rem;">
     {!! view('filament.logo', ['theme' => 'light'])->render() !!}
 </a>
 

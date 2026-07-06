@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Workspace;
+use App\Support\PermissionCatalog;
 use Illuminate\Console\Command;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -16,37 +17,29 @@ class RolesSyncCommand extends Command
 
     protected $description = 'Seed permissions + default Owner/Admin/Member roles for EVERY workspace (team-scoped) and align member roles with the membership pivot';
 
-    /** Permissions gating the app's features. */
-    public const PERMISSIONS = [
-        'manage_locations',   // connect / disconnect locations
-        'manage_reviews',     // reply / edit / delete replies
-        'manage_automations', // create/run automations + AI agents
-        'manage_reports',     // create report schedules
-        'view_reports',       // open Reports / dashboard
-        'manage_team',        // invite users, assign roles
-        'manage_billing',     // subscription + credits
-    ];
-
     /**
-     * Role → permissions. Owner = all; Admin = all but billing; Member =
-     * operational. Guest has NO permissions: it is a notification-only contact
-     * (selectable as an email recipient) with no app access.
+     * Role → permissions (the granular catalog lives in PermissionCatalog).
+     * Owner = all; Admin = all but billing; Member = operational. Guest has NO
+     * permissions: it is a notification-only contact (selectable as an email
+     * recipient) with no app access.
      */
-    public const ROLES = [
-        'owner' => self::PERMISSIONS,
-        'admin' => [
-            'manage_locations', 'manage_reviews', 'manage_automations',
-            'manage_reports', 'view_reports', 'manage_team',
-        ],
-        'member' => ['manage_reviews', 'view_reports'],
-        'guest' => [],
-    ];
+    public static function roles(): array
+    {
+        $all = PermissionCatalog::all();
+
+        return [
+            'owner' => $all,
+            'admin' => array_values(array_diff($all, ['manage_billing'])),
+            'member' => ['view_reviews', 'manage_reviews', 'view_reports', 'view_competitors'],
+            'guest' => [],
+        ];
+    }
 
     public function handle(PermissionRegistrar $registrar): int
     {
         // Permissions are global capability names (the table has no team_id).
         $registrar->setPermissionsTeamId(null);
-        foreach (self::PERMISSIONS as $name) {
+        foreach (PermissionCatalog::all() as $name) {
             Permission::findOrCreate($name, 'web');
         }
 
@@ -69,14 +62,14 @@ class RolesSyncCommand extends Command
     {
         $registrar->setPermissionsTeamId($workspace->id);
 
-        foreach (self::ROLES as $roleName => $permissions) {
+        foreach (self::roles() as $roleName => $permissions) {
             $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web', 'team_id' => $workspace->id]);
             $role->syncPermissions($permissions);
         }
 
         foreach ($workspace->users()->get() as $user) {
             $pivotRole = $user->pivot->role ?: 'member';
-            if (! array_key_exists($pivotRole, self::ROLES)) {
+            if (! array_key_exists($pivotRole, self::roles())) {
                 $pivotRole = 'member';
             }
             $user->unsetRelation('roles');

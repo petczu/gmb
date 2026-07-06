@@ -26,6 +26,7 @@ return [
     'desc_agent_description' => 'AI agent description',
     'desc_report' => 'AI report insights',
     'desc_instruction_improve' => 'Report AI instructions polish',
+    'desc_ask_ai' => 'Ask AI question',
     'desc_pack' => 'Credits purchase',
     'desc_topup' => 'Credits top-up',
     'desc_adjustment' => 'Adjustment',

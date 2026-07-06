@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Middleware\ServeReviewPageDomain;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Serve review-collection pages on their connected custom domains
+        // (host-based short-circuit; must run before session/routing concerns).
+        $middleware->web(prepend: [
+            ServeReviewPageDomain::class,
+        ]);
+
         // Behind a TLS-terminating proxy (Cloudflare tunnel / load balancer):
         // honor X-Forwarded-Proto so Laravel + Livewire generate https URLs
         // (otherwise the app sees plain http and the browser blocks mixed content).
@@ -34,6 +42,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('filament.app.auth.login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Report unhandled exceptions to Sentry (no-op while SENTRY_LARAVEL_DSN
+        // is empty, so local dev stays silent).
+        Integration::handles($exceptions);
+
         // Render API + MCP failures as JSON. For MCP this is essential: an
         // unauthenticated request must return 401 (not a 302 to login) so the
         // package can attach the WWW-Authenticate header that bootstraps OAuth.

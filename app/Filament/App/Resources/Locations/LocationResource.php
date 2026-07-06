@@ -9,12 +9,13 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class LocationResource extends Resource
 {
     protected static ?string $model = Location::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Listings';
 
@@ -48,7 +49,7 @@ class LocationResource extends Resource
     }
 
     /** Restrict to the user's allowed locations (null = all). */
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
         $ids = auth()->user()?->allowedLocationIds((string) session('current_workspace_id'));

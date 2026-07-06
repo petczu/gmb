@@ -231,6 +231,40 @@
         </div>
     @endif
 
+    @if($has('competitors') && ! empty($data['competitors']))
+        <h2>{{ __('report.competitors_title') }}</h2>
+        <div class="card">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead>
+                    <tr style="text-align:left; color:#6b7280;">
+                        <th style="padding:6px 8px;">{{ __('report.competitors_col_business') }}</th>
+                        <th style="padding:6px 8px; text-align:right;">{{ __('report.competitors_col_rating') }}</th>
+                        <th style="padding:6px 8px; text-align:right;">{{ __('report.competitors_col_reviews') }}</th>
+                        <th style="padding:6px 8px; text-align:right;">{{ __('report.competitors_col_new') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $own = $data['competitors']['own']; @endphp
+                    <tr style="border-top:1px solid #eef0f4; background:#f6f5ff; font-weight:700;">
+                        <td style="padding:6px 8px;">{{ $own['name'] }} · {{ __('report.competitors_you') }}</td>
+                        <td style="padding:6px 8px; text-align:right;">{{ $own['rating'] !== null ? number_format($own['rating'], 1).' ★' : '—' }}</td>
+                        <td style="padding:6px 8px; text-align:right;">{{ number_format($own['reviews']) }}</td>
+                        <td style="padding:6px 8px; text-align:right;">+{{ number_format($own['new_reviews']) }}</td>
+                    </tr>
+                    @foreach($data['competitors']['rows'] as $row)
+                        <tr style="border-top:1px solid #eef0f4;">
+                            <td style="padding:6px 8px;">{{ $row['name'] }}</td>
+                            <td style="padding:6px 8px; text-align:right;">{{ $row['rating'] !== null ? number_format($row['rating'], 1).' ★' : '—' }}</td>
+                            <td style="padding:6px 8px; text-align:right;">{{ number_format($row['reviews']) }}</td>
+                            <td style="padding:6px 8px; text-align:right;">{{ $row['new_reviews'] !== null ? ($row['new_reviews'] > 0 ? '+' : '').number_format($row['new_reviews']) : '—' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <p style="font-size:10px; color:#9ca3af; margin:8px 8px 2px;">{{ __('report.competitors_note') }}</p>
+        </div>
+    @endif
+
     @if($has('highlights'))
         <div class="grid2">
             <div>

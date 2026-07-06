@@ -1,0 +1,1 @@
+@livewire('ask-ai-chat')

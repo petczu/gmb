@@ -13,6 +13,8 @@ return [
     'preferences_section' => 'Preferences',
     'interface_language' => 'Interface language',
     'first_day_of_week' => 'First day of week',
+    'product_emails' => 'Product tips & onboarding emails',
+    'product_emails_help' => 'A short series that shows what Repunio can do. Account and billing emails are not affected.',
     'monday' => 'Monday',
     'sunday' => 'Sunday',
 

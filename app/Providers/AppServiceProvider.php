@@ -3,6 +3,12 @@
 namespace App\Providers;
 
 use App\Http\Middleware\SetCurrentWorkspace;
+use App\Listeners\GrantCreditPack;
+use App\Listeners\SendBillingEmails;
+use App\Models\CashierSubscription;
+use App\Models\CashierSubscriptionItem;
+use App\Models\EmailSuppression;
+use App\Models\Workspace;
 use App\Services\Ai\ClaudeReplyGenerator;
 use App\Services\Ai\FakeReplyGenerator;
 use App\Services\Ai\ReplyGenerator;
@@ -10,14 +16,18 @@ use App\Services\Reviews\FakeReviewProvider;
 use App\Services\Reviews\ReviewProvider;
 use App\Services\Reviews\ReviewProviderFactory;
 use App\Services\Reviews\ZernioProvider;
-use App\Models\CashierSubscription;
-use App\Models\CashierSubscriptionItem;
-use App\Models\Workspace;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
+use Laravel\Cashier\Events\WebhookReceived;
 use Laravel\Passport\Passport;
 use Livewire\Livewire;
+use SocialiteProviders\Manager\SocialiteWasCalled;
+use SocialiteProviders\Microsoft\MicrosoftExtendSocialite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -33,14 +43,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ReviewProvider::class, function () {
             return config('services.reviews.driver') === 'zernio'
                 ? new ZernioProvider(null)
-                : new FakeReviewProvider();
+                : new FakeReviewProvider;
         });
 
         $this->app->bind(ReplyGenerator::class, function () {
             // Anything other than 'fake' uses the real Anthropic generator.
             return config('services.ai.driver') === 'fake'
-                ? new FakeReplyGenerator()
-                : new ClaudeReplyGenerator();
+                ? new FakeReplyGenerator
+                : new ClaudeReplyGenerator;
         });
     }
 
@@ -59,8 +69,8 @@ class AppServiceProvider extends ServiceProvider
         config(['livewire.temporary_file_upload.disk' => 'livewire-tmp']);
 
         // Hide the pagination footer when everything fits on one page (≤10 rows).
-        \Filament\Tables\Table::configureUsing(function (\Filament\Tables\Table $table): void {
-            $table->paginated(fn (\Filament\Tables\Contracts\HasTable $livewire): bool => $livewire->getFilteredTableQuery()->count() > 10);
+        Table::configureUsing(function (Table $table): void {
+            $table->paginated(fn (HasTable $livewire): bool => $livewire->getFilteredTableQuery()->count() > 10);
         });
 
         // Cashier: the Workspace (stancl tenant) is the billable; subscription
@@ -69,25 +79,31 @@ class AppServiceProvider extends ServiceProvider
         Cashier::useSubscriptionModel(CashierSubscription::class);
         Cashier::useSubscriptionItemModel(CashierSubscriptionItem::class);
 
+        // Microsoft OAuth login (socialiteproviders/microsoft driver).
+        Event::listen(
+            SocialiteWasCalled::class,
+            MicrosoftExtendSocialite::class,
+        );
+
         // Billing emails (receipt / payment-failed) from Stripe webhooks.
-        \Illuminate\Support\Facades\Event::listen(
-            \Laravel\Cashier\Events\WebhookReceived::class,
-            \App\Listeners\SendBillingEmails::class,
+        Event::listen(
+            WebhookReceived::class,
+            SendBillingEmails::class,
         );
 
         // Grant purchased AI-reply top-up packs from the checkout webhook.
-        \Illuminate\Support\Facades\Event::listen(
-            \Laravel\Cashier\Events\WebhookReceived::class,
-            \App\Listeners\GrantCreditPack::class,
+        Event::listen(
+            WebhookReceived::class,
+            GrantCreditPack::class,
         );
 
         // Never email an address on the suppression list (bounced / complained).
         // Returning false from a MessageSending listener cancels the send.
-        \Illuminate\Support\Facades\Event::listen(
-            \Illuminate\Mail\Events\MessageSending::class,
-            function (\Illuminate\Mail\Events\MessageSending $event): ?bool {
+        Event::listen(
+            MessageSending::class,
+            function (MessageSending $event): ?bool {
                 foreach ($event->message->getTo() as $address) {
-                    if (\App\Models\EmailSuppression::isSuppressed($address->getAddress())) {
+                    if (EmailSuppression::isSuppressed($address->getAddress())) {
                         return false;
                     }
                 }

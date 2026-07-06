@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Billing\Plans;
 use App\Jobs\SendWebhookJob;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
+use App\Models\Workspace;
+use App\Services\ActivityLog\ActivityLogger;
+use App\Services\Billing\LocationBilling;
 use App\Webhooks\WebhookEvents;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -50,20 +55,20 @@ class Webhooks extends Page implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        return tenancy()->initialized && (auth()->user()?->can('manage_team') ?? false);
+        return tenancy()->initialized && (auth()->user()?->can('manage_integrations') ?? false);
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('manage_team') ?? false;
+        return auth()->user()?->can('manage_integrations') ?? false;
     }
 
     public function isPro(): bool
     {
-        $workspace = \App\Models\Workspace::find(session('current_workspace_id'));
+        $workspace = Workspace::find(session('current_workspace_id'));
 
         return $workspace !== null
-            && app(\App\Services\Billing\LocationBilling::class)->allows($workspace, \App\Billing\Plans::API);
+            && app(LocationBilling::class)->allows($workspace, Plans::API);
     }
 
     /**
@@ -142,6 +147,7 @@ class Webhooks extends Page implements HasTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(function (WebhookEndpoint $record): void {
+                        ActivityLogger::log('webhook.deleted', ['url' => $record->url]);
                         $record->delete();
                         Notification::make()->title(__('pages/webhooks.deleted'))->success()->send();
                     }),
@@ -154,14 +160,15 @@ class Webhooks extends Page implements HasTable
                     ->modalHeading(__('pages/webhooks.create_heading'))
                     ->schema($this->formSchema())
                     ->action(function (array $data): void {
-                        WebhookEndpoint::create($this->sanitize($data));
+                        $endpoint = WebhookEndpoint::create($this->sanitize($data));
+                        ActivityLogger::log('webhook.created', ['url' => $endpoint->url], $endpoint);
                         Notification::make()->title(__('pages/webhooks.created'))->success()->send();
                     }),
             ]);
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Field>
+     * @return array<int, Field>
      */
     protected function formSchema(): array
     {

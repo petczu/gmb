@@ -16,6 +16,7 @@ use DutchCodingCompany\FilamentSocialite\FilamentSocialitePlugin;
 use DutchCodingCompany\FilamentSocialite\Provider;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
+use Filament\Auth\Pages\Login;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -32,6 +33,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
@@ -61,14 +63,27 @@ class AppPanelProvider extends PanelProvider
             // matched by email (account linking). See SocialiteUserProvisioner.
             ->plugin(
                 FilamentSocialitePlugin::make()
-                    ->providers([
+                    ->providers(array_filter([
                         Provider::make('google')
                             // Translation KEY — localized per-request in the published
                             // vendor/filament-socialite/components/buttons.blade.php.
                             ->label('auth.continue_google')
                             ->icon('heroicon-o-globe-alt')
                             ->scopes(['openid', 'profile', 'email']),
-                    ])
+                        // LinkedIn/Microsoft buttons appear once their app
+                        // credentials are configured (no dead buttons before).
+                        filled(config('services.linkedin-openid.client_id'))
+                            ? Provider::make('linkedin-openid')
+                                ->label('auth.continue_linkedin')
+                                ->icon('heroicon-o-briefcase')
+                                ->scopes(['openid', 'profile', 'email'])
+                            : null,
+                        filled(config('services.microsoft.client_id'))
+                            ? Provider::make('microsoft')
+                                ->label('auth.continue_microsoft')
+                                ->icon('heroicon-o-window')
+                            : null,
+                    ]))
                     ->registration(true)
                     ->userModelClass(User::class)
                     ->socialiteUserModelClass(SocialiteUser::class)
@@ -136,6 +151,13 @@ class AppPanelProvider extends PanelProvider
                 PanelsRenderHook::BODY_END,
                 fn (): string => view('filament.billing-gate')->render(),
             )
+            // Floating "Ask AI" chat launcher (bottom-right, Intercom style).
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => tenancy()->initialized && (auth()->user()?->can('view_reviews') ?? false)
+                    ? view('filament.app.ask-ai-launcher')->render()
+                    : '',
+            )
             // Global search is disabled; the workspace switcher takes its place
             // on the right of the top bar, left of the user avatar menu.
             ->globalSearch(false)
@@ -147,6 +169,26 @@ class AppPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::SIMPLE_PAGE_END,
                 fn (): string => view('partials.auth-footer')->render(),
+            )
+            // filament-socialite only hooks its buttons into the LOGIN form —
+            // mirror them on the registration form (same divider + providers).
+            ->renderHook(
+                PanelsRenderHook::AUTH_REGISTER_FORM_AFTER,
+                fn (): string => Blade::render(
+                    '<x-filament-socialite::buttons :show-divider="true" />',
+                ),
+            )
+            // Split-screen auth hero (left half, desktop): latest-update promo
+            // on the login page, product pitch on the registration page.
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn (): string => view('partials.auth-hero', ['mode' => 'login'])->render(),
+                scopes: Login::class,
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn (): string => view('partials.auth-hero', ['mode' => 'register'])->render(),
+                scopes: Register::class,
             )
             ->middleware([
                 EncryptCookies::class,

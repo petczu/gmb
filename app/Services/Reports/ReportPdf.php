@@ -29,7 +29,7 @@ class ReportPdf
     /**
      * @return array{path: string, filename: string, businessName: string, summary: string}
      */
-    public function generate(DashboardPeriod $period, string $language = 'en'): array
+    public function generate(DashboardPeriod $period, string $language = 'en', ?array $blocks = null): array
     {
         $report = $this->data->build($period);
 
@@ -50,7 +50,7 @@ class ReportPdf
             // Same extras as the on-screen paths (ReportController::payload):
             // without them the blade falls back to a text-only header (no logo)
             // and renders every block regardless of the workspace's selection.
-            'blocks' => ReportBlocks::normalize($workspace?->report_blocks),
+            'blocks' => ReportBlocks::normalize($blocks ?? $workspace?->report_blocks),
             'brand' => ReportBranding::for($workspace),
         ];
 

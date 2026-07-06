@@ -16,6 +16,8 @@ class Location extends Model
 {
     protected $fillable = [
         'external_id',
+        'source_id',
+        'listing_data',
         'zernio_account_id',
         'place_id',
         'name',
@@ -31,6 +33,7 @@ class Location extends Model
     ];
 
     protected $casts = [
+        'listing_data' => 'array',
         'is_verified' => 'boolean',
         'rating' => 'decimal:1',
         'reviews_count' => 'integer',

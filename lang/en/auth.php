@@ -13,4 +13,20 @@ return [
     'terms' => 'Terms of Service',
     'privacy' => 'Privacy Policy',
     'cookie' => 'Cookie Policy',
+    'continue_linkedin' => 'Continue with LinkedIn',
+    'continue_microsoft' => 'Continue with Microsoft',
+
+    'hero_badge' => 'New!',
+    'hero_update_title' => 'Competitor benchmark & trends',
+    'hero_update_text' => 'See how the businesses around you are really doing: their ratings, how fast their reviews grow, and how you stack up against them. Google posts and profile editing made it in too.',
+    'hero_register_title' => 'Your Google reviews on autopilot',
+    'hero_register_subtitle' => 'More reviews coming in, every one of them answered, and a report at the end of the month that proves it.',
+    'hero_register_points' => [
+        'Replies written in your voice. Let them go out on their own or look each one over first',
+        'Monthly PDF reports your clients actually read',
+        'A QR page that brings reviews in, Google posts, and a quiet eye on your competitors',
+    ],
+    'hero_register_footnote' => 'Takes about 10 minutes: connect your Google Business Profile and you\'re off.',
+    'continue_with_email' => 'Continue with email',
+    'change_email' => 'Change',
 ];

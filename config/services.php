@@ -28,6 +28,24 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+        // Places API (New) key for competitor benchmarking; empty = disabled.
+        'places_key' => env('GOOGLE_PLACES_API_KEY'),
+    ],
+
+    // Social logins (filament-socialite). Buttons appear only for providers
+    // whose credentials are configured.
+    'linkedin-openid' => [
+        'client_id' => env('LINKEDIN_CLIENT_ID'),
+        'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
+        'redirect' => env('LINKEDIN_REDIRECT_URI', '/oauth/callback/linkedin-openid'),
+    ],
+
+    'microsoft' => [
+        'client_id' => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'redirect' => env('MICROSOFT_REDIRECT_URI', '/oauth/callback/microsoft'),
+        // 'common' = both personal and work/school Microsoft accounts.
+        'tenant' => env('MICROSOFT_TENANT', 'common'),
     ],
 
     'ses' => [
@@ -57,6 +75,9 @@ return [
         // Zernio webhooks (X-Zernio-Signature). Both keys read the same env var.
         'webhook_secret' => env('ZERNIO_WEBHOOK_SECRET'),
         'zernio_webhook_secret' => env('ZERNIO_WEBHOOK_SECRET'),
+        // Google posts + listing editing use Zernio's NATIVE REST API
+        // (see https://zernio.com/openapi.yaml) — same base URL and API key
+        // as the review sync, Bearer auth. No extra credentials.
     ],
 
     'ai' => [
@@ -72,6 +93,9 @@ return [
         // Credits charged per AI generation: 1 per reply, 5 per report.
         'reply_credits' => (int) env('AI_REPLY_CREDITS', 1),
         'report_credits' => (int) env('AI_REPORT_CREDITS', 5),
+        // Global monthly USD ceiling for system-wide AI spend. Alert-only:
+        // super-admins get an email at 80% and 100%. Empty = no alerts.
+        'monthly_budget_usd' => env('AI_MONTHLY_BUDGET_USD'),
 
         // List prices (USD per 1,000,000 tokens) used to compute the real cost
         // of each AI call for the usage ledger. VERIFY against current Anthropic
@@ -80,7 +104,7 @@ return [
         'pricing' => [
             'claude-opus-4-8' => ['input' => 15.0, 'output' => 75.0],
             'claude-sonnet-4-6' => ['input' => 3.0, 'output' => 15.0],
-            'claude-haiku-4-5' => ['input' => 0.80, 'output' => 4.0],
+            'claude-haiku-4-5' => ['input' => 1.0, 'output' => 5.0],
             'default' => ['input' => 3.0, 'output' => 15.0],
         ],
     ],

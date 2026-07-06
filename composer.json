@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "bacon/bacon-qr-code": "^3.1",
         "dutchcodingcompany/filament-socialite": "^3.1",
         "filament/filament": "^5.7@beta",
         "laravel/ai": "^0.8.1",
@@ -15,6 +16,8 @@
         "laravel/horizon": "^5.47",
         "laravel/passport": "^13.0",
         "laravel/tinker": "^3.0",
+        "sentry/sentry-laravel": "^4.26",
+        "socialiteproviders/microsoft": "^4.9",
         "spatie/browsershot": "^5.4",
         "spatie/laravel-pdf": "^2.12",
         "spatie/laravel-permission": "^8.0",

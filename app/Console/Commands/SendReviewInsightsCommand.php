@@ -9,8 +9,13 @@ use App\Mail\ReviewCoachingMail;
 use App\Mail\ReviewGoalProgressMail;
 use App\Mail\ReviewGoalReachedMail;
 use App\Models\Workspace;
+use App\Services\Notifications\ChatChannels;
+use App\Services\Notifications\NotificationCategory;
+use App\Services\Notifications\NotificationDispatcher;
 use App\Services\Reviews\ReviewInsightsService;
+use App\Services\Webhooks\WebhookDispatcher;
 use App\Support\ReviewTips;
+use App\Webhooks\WebhookEvents;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -91,7 +96,7 @@ class SendReviewInsightsCommand extends Command
         CarbonImmutable $now,
         bool $force,
     ): void {
-        $dispatcher = app(\App\Services\Webhooks\WebhookDispatcher::class);
+        $dispatcher = app(WebhookDispatcher::class);
 
         if ($insights->hasAnyGoal()) {
             $data = $insights->goalProgress();
@@ -99,11 +104,18 @@ class SendReviewInsightsCommand extends Command
             $actual = (int) $data['total_actual'];
 
             if ($goal > 0 && $actual >= $goal && $this->claim($workspace, 'webhook_goal_'.$now->format('Y_m'), $force)) {
-                $dispatcher->dispatch(\App\Webhooks\WebhookEvents::GOAL_REACHED, [
+                $dispatcher->dispatch(WebhookEvents::GOAL_REACHED, [
                     'goal' => $goal,
                     'actual' => $actual,
                     'month' => $now->format('Y-m'),
                 ]);
+
+                ChatChannels::send(
+                    $workspace,
+                    NotificationCategory::REVIEW_GROWTH,
+                    'goal_reached',
+                    ['goal' => $goal, 'actual' => $actual],
+                );
             }
         }
 
@@ -117,7 +129,14 @@ class SendReviewInsightsCommand extends Command
             $workspace->setAttribute($key, $now->toDateString());
             $workspace->save();
 
-            $dispatcher->dispatch(\App\Webhooks\WebhookEvents::ANOMALY_DETECTED, $anomaly);
+            $dispatcher->dispatch(WebhookEvents::ANOMALY_DETECTED, $anomaly);
+
+            ChatChannels::send(
+                $workspace,
+                NotificationCategory::REVIEW_GROWTH,
+                'anomaly',
+                ['location' => (string) $anomaly['location'], 'description' => (string) ($anomaly['detail'] ?? $anomaly['type'])],
+            );
         }
     }
 
@@ -288,9 +307,9 @@ class SendReviewInsightsCommand extends Command
 
     private function deliver(Workspace $workspace, \Closure $build, string $label): void
     {
-        app(\App\Services\Notifications\NotificationDispatcher::class)->dispatch(
+        app(NotificationDispatcher::class)->dispatch(
             $workspace,
-            \App\Services\Notifications\NotificationCategory::REVIEW_GROWTH,
+            NotificationCategory::REVIEW_GROWTH,
             $build,
         );
 

@@ -26,6 +26,7 @@ return [
     'desc_agent_description' => 'KI-Agent-Beschreibung',
     'desc_report' => 'KI-Bericht-Insights',
     'desc_instruction_improve' => 'KI-Anweisungen für Bericht verbessert',
+    'desc_ask_ai' => 'KI-Frage',
     'desc_pack' => 'Kreditkauf',
     'desc_topup' => 'Kredit-Aufladung',
     'desc_adjustment' => 'Anpassung',

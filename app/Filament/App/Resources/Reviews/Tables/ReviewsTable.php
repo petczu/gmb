@@ -8,8 +8,10 @@ use App\Models\AiAgent;
 use App\Models\AutoReplyQueueItem;
 use App\Models\Review;
 use App\Models\Workspace;
+use App\Services\Ai\AiCreditService;
 use App\Services\Ai\ReplyGenerator;
 use App\Services\Billing\AiUsageService;
+use App\Services\Reviews\ReviewProvider;
 use App\Services\Reviews\ReviewProviderFactory;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -21,6 +23,8 @@ use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Support\Enums\Width;
+use Filament\Support\Facades\FilamentTimezone;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -28,6 +32,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
+use Livewire\Component;
 use Throwable;
 
 class ReviewsTable
@@ -149,91 +155,92 @@ class ReviewsTable
             ])
             ->recordActions([
                 ActionGroup::make([
-                Action::make('reply')
-                    ->label(fn (Review $record): string => $record->reply_text ? __('resources/reviews.edit_reply') : __('resources/reviews.reply'))
-                    ->icon(Heroicon::OutlinedChatBubbleLeftRight)
-                    ->color('primary')
-                    ->slideOver()
-                    ->modalWidth(\Filament\Support\Enums\Width::Large)
-                    ->modalHeading(fn (Review $record): string => $record->reply_text ? __('resources/reviews.edit_reply') : __('resources/reviews.reply_to_review'))
-                    ->fillForm(fn (Review $record): array => ['reply_text' => $record->reply_text])
-                    // Tag the Submit button so the client-side guard can find it.
-                    ->modalSubmitAction(fn (Action $action) => $action->extraAttributes(['data-reply-submit' => '1']))
-                    ->schema([
-                        Placeholder::make('review_preview')
-                            ->label(fn (Review $record): string => ($record->author_name ?: __('common.anonymous')).' · '.str_repeat('★', (int) $record->rating))
-                            ->content(function (Review $record): \Illuminate\Support\HtmlString {
-                                $original = trim((string) ($record->originalText() ?? $record->text ?? ''));
-                                $translated = $record->translatedText();
+                    Action::make('reply')
+                        ->label(fn (Review $record): string => $record->reply_text ? __('resources/reviews.edit_reply') : __('resources/reviews.reply'))
+                        ->visible(fn (): bool => auth()->user()?->can('manage_reviews') ?? false)
+                        ->icon(Heroicon::OutlinedChatBubbleLeftRight)
+                        ->color('primary')
+                        ->slideOver()
+                        ->modalWidth(Width::Large)
+                        ->modalHeading(fn (Review $record): string => $record->reply_text ? __('resources/reviews.edit_reply') : __('resources/reviews.reply_to_review'))
+                        ->fillForm(fn (Review $record): array => ['reply_text' => $record->reply_text])
+                        // Tag the Submit button so the client-side guard can find it.
+                        ->modalSubmitAction(fn (Action $action) => $action->extraAttributes(['data-reply-submit' => '1']))
+                        ->schema([
+                            Placeholder::make('review_preview')
+                                ->label(fn (Review $record): string => ($record->author_name ?: __('common.anonymous')).' · '.str_repeat('★', (int) $record->rating))
+                                ->content(function (Review $record): HtmlString {
+                                    $original = trim((string) ($record->originalText() ?? $record->text ?? ''));
+                                    $translated = $record->translatedText();
 
-                                // Location + date/time line.
-                                $meta = [];
-                                if ($record->location?->name) {
-                                    $meta[] = e($record->location->name);
-                                }
-                                if ($record->created_at_external) {
-                                    $meta[] = e($record->created_at_external
-                                        ->timezone(\Filament\Support\Facades\FilamentTimezone::get())
-                                        ->format('D, M j, Y · H:i'));
-                                }
-                                $html = $meta
-                                    ? '<div style="font-size:11px; color:#6b7280; margin-bottom:6px;">'.implode(' · ', $meta).'</div>'
-                                    : '';
-
-                                $html .= '<div style="white-space:pre-wrap; padding:10px 12px; background:#f9fafb; border:1px solid #eef2f7; border-radius:8px; color:#374151;">';
-                                if ($original === '') {
-                                    $html .= '<span style="color:#9ca3af; font-style:italic;">'.e(__('resources/reviews.no_written_review')).'</span>';
-                                } else {
-                                    $html .= e($original);
-                                    if ($translated && $translated !== $original) {
-                                        $html .= '<div style="margin-top:8px; padding-top:8px; border-top:1px dashed #e5e7eb; color:#6b7280; font-size:12px;">'
-                                            .'<span style="display:block; text-transform:uppercase; letter-spacing:.04em; font-size:10px; color:#9ca3af; margin-bottom:2px;">'.e(__('resources/reviews.translated_by_google')).'</span>'
-                                            .e($translated).'</div>';
+                                    // Location + date/time line.
+                                    $meta = [];
+                                    if ($record->location?->name) {
+                                        $meta[] = e($record->location->name);
                                     }
-                                }
+                                    if ($record->created_at_external) {
+                                        $meta[] = e($record->created_at_external
+                                            ->timezone(FilamentTimezone::get())
+                                            ->format('D, M j, Y · H:i'));
+                                    }
+                                    $html = $meta
+                                        ? '<div style="font-size:11px; color:#6b7280; margin-bottom:6px;">'.implode(' · ', $meta).'</div>'
+                                        : '';
 
-                                return new \Illuminate\Support\HtmlString($html.'</div>');
-                            }),
-
-                        Select::make('ai_agent_id')
-                            ->label(__('resources/reviews.ai_agent'))
-                            ->options(fn (): array => AiAgent::query()->orderBy('name')->pluck('name', 'id')->all())
-                            ->placeholder(__('resources/reviews.default_agent')),
-
-                        Textarea::make('reply_text')
-                            ->label(__('resources/reviews.your_reply'))
-                            ->required()
-                            ->rows(5)
-                            ->maxLength(4096)
-                            // Visible mini-button + INLINE confirm (no second modal,
-                            // so the slide-over is never closed). The hidden Filament
-                            // action below does the actual server-side generation.
-                            ->hint(fn (): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(self::generateHintHtml()))
-                            ->hintAction(
-                                Action::make('generate')
-                                    ->label(__('resources/reviews.generate_with_ai'))
-                                    ->extraAttributes(['data-gen' => 'reply', 'class' => 'gen-hidden'])
-                                    ->action(function (Set $set, Get $get, Review $record, \Livewire\Component $livewire): void {
-                                        $text = self::generateReply($record, $get('ai_agent_id') ? (int) $get('ai_agent_id') : null);
-                                        if ($text !== null) {
-                                            $set('reply_text', $text);
+                                    $html .= '<div style="white-space:pre-wrap; padding:10px 12px; background:#f9fafb; border:1px solid #eef2f7; border-radius:8px; color:#374151;">';
+                                    if ($original === '') {
+                                        $html .= '<span style="color:#9ca3af; font-style:italic;">'.e(__('resources/reviews.no_written_review')).'</span>';
+                                    } else {
+                                        $html .= e($original);
+                                        if ($translated && $translated !== $original) {
+                                            $html .= '<div style="margin-top:8px; padding-top:8px; border-top:1px dashed #e5e7eb; color:#6b7280; font-size:12px;">'
+                                                .'<span style="display:block; text-transform:uppercase; letter-spacing:.04em; font-size:10px; color:#9ca3af; margin-bottom:2px;">'.e(__('resources/reviews.translated_by_google')).'</span>'
+                                                .e($translated).'</div>';
                                         }
-                                        // Tell the confirm popup the generation finished so it
-                                        // can drop the spinner and close (success or no-op).
-                                        $livewire->dispatch('reply-generated');
-                                    }),
-                            )
-                            ->extraInputAttributes(['data-emoji' => 'reply']),
+                                    }
 
-                        Placeholder::make('emoji_picker')
-                            ->hiddenLabel()
-                            ->content(new \Illuminate\Support\HtmlString(self::emojiPickerHtml())),
+                                    return new HtmlString($html.'</div>');
+                                }),
 
-                        // Client-side guard: keep Submit disabled until the reply
-                        // text differs from the original (handles typing AND AI fills).
-                        Placeholder::make('submit_guard')
-                            ->hiddenLabel()
-                            ->content(new \Illuminate\Support\HtmlString(<<<'HTML'
+                            Select::make('ai_agent_id')
+                                ->label(__('resources/reviews.ai_agent'))
+                                ->options(fn (): array => AiAgent::query()->orderBy('name')->pluck('name', 'id')->all())
+                                ->placeholder(__('resources/reviews.default_agent')),
+
+                            Textarea::make('reply_text')
+                                ->label(__('resources/reviews.your_reply'))
+                                ->required()
+                                ->rows(5)
+                                ->maxLength(4096)
+                                // Visible mini-button + INLINE confirm (no second modal,
+                                // so the slide-over is never closed). The hidden Filament
+                                // action below does the actual server-side generation.
+                                ->hint(fn (): HtmlString => new HtmlString(self::generateHintHtml()))
+                                ->hintAction(
+                                    Action::make('generate')
+                                        ->label(__('resources/reviews.generate_with_ai'))
+                                        ->extraAttributes(['data-gen' => 'reply', 'class' => 'gen-hidden'])
+                                        ->action(function (Set $set, Get $get, Review $record, Component $livewire): void {
+                                            $text = self::generateReply($record, $get('ai_agent_id') ? (int) $get('ai_agent_id') : null);
+                                            if ($text !== null) {
+                                                $set('reply_text', $text);
+                                            }
+                                            // Tell the confirm popup the generation finished so it
+                                            // can drop the spinner and close (success or no-op).
+                                            $livewire->dispatch('reply-generated');
+                                        }),
+                                )
+                                ->extraInputAttributes(['data-emoji' => 'reply']),
+
+                            Placeholder::make('emoji_picker')
+                                ->hiddenLabel()
+                                ->content(new HtmlString(self::emojiPickerHtml())),
+
+                            // Client-side guard: keep Submit disabled until the reply
+                            // text differs from the original (handles typing AND AI fills).
+                            Placeholder::make('submit_guard')
+                                ->hiddenLabel()
+                                ->content(new HtmlString(<<<'HTML'
                                 <span x-data x-init="
                                     const ta = document.querySelector('[data-emoji=reply]');
                                     if (ta && ta.dataset.orig === undefined) { ta.dataset.orig = (ta.value || '').trim(); }
@@ -250,76 +257,78 @@ class ReviewsTable
                                 "></span>
                                 HTML)),
 
-                        // Custom centered confirm overlays for Submit and Delete
-                        // (native Filament modals would close the slide-over).
-                        Placeholder::make('reply_confirms')
-                            ->hiddenLabel()
-                            ->content(new \Illuminate\Support\HtmlString(self::replyConfirmsHtml())),
-                    ])
-                    // Delete-reply button inside the slide-over (only when a reply
-                    // exists). Closes the slide-over after deleting.
-                    ->extraModalFooterActions([
-                        Action::make('deleteReplyInline')
-                            ->label(__('resources/reviews.delete_reply'))
-                            ->icon(Heroicon::OutlinedTrash)
-                            ->color('danger')
-                            ->visible(fn (Review $record): bool => filled($record->reply_text))
-                            // No native requiresConfirmation: a modal-over-slide-over
-                            // closes the parent. A custom centered overlay (rendered in
-                            // the reply_confirms placeholder) gates this click instead.
-                            ->extraAttributes(['data-del-reply' => '1'])
-                            ->cancelParentActions()
-                            ->action(function (Review $record): void {
-                                self::provider()->deleteReply(self::accountId($record), $record->external_review_id);
+                            // Custom centered confirm overlays for Submit and Delete
+                            // (native Filament modals would close the slide-over).
+                            Placeholder::make('reply_confirms')
+                                ->hiddenLabel()
+                                ->content(new HtmlString(self::replyConfirmsHtml())),
+                        ])
+                        // Delete-reply button inside the slide-over (only when a reply
+                        // exists). Closes the slide-over after deleting.
+                        ->extraModalFooterActions([
+                            Action::make('deleteReplyInline')
+                                ->label(__('resources/reviews.delete_reply'))
+                                ->icon(Heroicon::OutlinedTrash)
+                                ->color('danger')
+                                ->visible(fn (Review $record): bool => filled($record->reply_text)
+                                    && (auth()->user()?->can('delete_replies') ?? false))
+                                // No native requiresConfirmation: a modal-over-slide-over
+                                // closes the parent. A custom centered overlay (rendered in
+                                // the reply_confirms placeholder) gates this click instead.
+                                ->extraAttributes(['data-del-reply' => '1'])
+                                ->cancelParentActions()
+                                ->action(function (Review $record): void {
+                                    self::provider()->deleteReply(self::accountId($record), $record->external_review_id);
 
-                                $record->forceFill([
-                                    'reply_text' => null,
-                                    'replied_at' => null,
-                                    'reply_status' => null,
-                                    'reply_source' => null,
-                                ])->save();
+                                    $record->forceFill([
+                                        'reply_text' => null,
+                                        'replied_at' => null,
+                                        'reply_status' => null,
+                                        'reply_source' => null,
+                                    ])->save();
 
-                                Notification::make()->title(__('resources/reviews.reply_deleted'))->success()->send();
-                            }),
-                    ])
-                    ->action(function (array $data, Review $record, \Filament\Actions\Action $action): void {
-                        // Nothing to publish if the reply is unchanged.
-                        if (trim((string) $data['reply_text']) === trim((string) ($record->reply_text ?? ''))) {
-                            Notification::make()->title(__('resources/reviews.no_changes'))->warning()->send();
-                            $action->halt();
-                        }
+                                    Notification::make()->title(__('resources/reviews.reply_deleted'))->success()->send();
+                                }),
+                        ])
+                        ->action(function (array $data, Review $record, Action $action): void {
+                            // Nothing to publish if the reply is unchanged.
+                            if (trim((string) $data['reply_text']) === trim((string) ($record->reply_text ?? ''))) {
+                                Notification::make()->title(__('resources/reviews.no_changes'))->warning()->send();
+                                $action->halt();
+                            }
 
-                        self::provider()->reply(self::accountId($record), $record->external_review_id, $data['reply_text']);
+                            self::provider()->reply(self::accountId($record), $record->external_review_id, $data['reply_text']);
 
-                        $record->forceFill([
-                            'reply_text' => $data['reply_text'],
-                            'replied_at' => now(),
-                            'reply_status' => 'published',
-                            'reply_source' => 'manual',
-                        ])->save();
+                            $record->forceFill([
+                                'reply_text' => $data['reply_text'],
+                                'replied_at' => now(),
+                                'reply_status' => 'published',
+                                'reply_source' => 'manual',
+                            ])->save();
 
-                        Notification::make()->title(__('resources/reviews.reply_published'))->success()->send();
-                    }),
+                            Notification::make()->title(__('resources/reviews.reply_published'))->success()->send();
+                        }),
 
-                Action::make('deleteReply')
-                    ->label(__('resources/reviews.delete_reply'))
-                    ->icon(Heroicon::OutlinedTrash)
-                    ->color('danger')
-                    ->visible(fn (Review $record): bool => filled($record->reply_text))
-                    ->requiresConfirmation()
-                    ->modalDescription(__('resources/reviews.delete_reply_desc'))
-                    ->action(function (Review $record): void {
-                        self::provider()->deleteReply(self::accountId($record), $record->external_review_id);
+                    Action::make('deleteReply')
+                        ->label(__('resources/reviews.delete_reply'))
+                        ->icon(Heroicon::OutlinedTrash)
+                        ->color('danger')
+                        ->visible(fn (Review $record): bool => filled($record->reply_text)
+                            && (auth()->user()?->can('delete_replies') ?? false))
+                        ->requiresConfirmation()
+                        ->modalDescription(__('resources/reviews.delete_reply_desc'))
+                        ->action(function (Review $record): void {
+                            self::provider()->deleteReply(self::accountId($record), $record->external_review_id);
 
-                        $record->forceFill([
-                            'reply_text' => null,
-                            'replied_at' => null,
-                            'reply_status' => null,
-                            'reply_source' => null,
-                        ])->save();
+                            $record->forceFill([
+                                'reply_text' => null,
+                                'replied_at' => null,
+                                'reply_status' => null,
+                                'reply_source' => null,
+                            ])->save();
 
-                        Notification::make()->title(__('resources/reviews.reply_deleted'))->success()->send();
-                    }),
+                            Notification::make()->title(__('resources/reviews.reply_deleted'))->success()->send();
+                        }),
                 ]),
             ]);
     }
@@ -339,7 +348,7 @@ class ReviewsTable
 
         // Plan allowance exhausted but purchased credits cover it.
         if ($usage->isServedFromCredits($workspace)) {
-            $credits = app(\App\Services\Ai\AiCreditService::class)->balance($workspace);
+            $credits = app(AiCreditService::class)->balance($workspace);
 
             return __('resources/reviews.cost_credit', ['count' => $credits]);
         }
@@ -579,7 +588,7 @@ class ReviewsTable
         $creditDelta = app(AiUsageService::class)->isServedFromCredits($workspace)
             ? -(int) config('services.ai.reply_credits', 1)
             : 0;
-        app(\App\Services\Ai\AiCreditService::class)->logUsage(
+        app(AiCreditService::class)->logUsage(
             $workspace,
             'manual_reply',
             $generated->model,
@@ -595,7 +604,7 @@ class ReviewsTable
         return $generated->text;
     }
 
-    private static function provider(): \App\Services\Reviews\ReviewProvider
+    private static function provider(): ReviewProvider
     {
         return app(ReviewProviderFactory::class)->make();
     }

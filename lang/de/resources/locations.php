@@ -21,4 +21,5 @@ return [
     'add_location' => 'Standort hinzufügen',
     'add_demo_data' => 'Demodaten hinzufügen',
     'demo_added' => 'Demodaten hinzugefügt',
+    'edit_info' => 'Info bearbeiten',
 ];

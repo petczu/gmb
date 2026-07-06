@@ -8,6 +8,9 @@ use App\Models\Location;
 use App\Models\Workspace;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Component;
+use Filament\Forms\Components\Field;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -52,12 +55,12 @@ class Alerts extends Page implements HasForms
 
     public static function shouldRegisterNavigation(): bool
     {
-        return tenancy()->initialized && (auth()->user()?->can('manage_team') ?? false);
+        return tenancy()->initialized && (auth()->user()?->can('manage_notifications') ?? false);
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('manage_team') ?? false;
+        return auth()->user()?->can('manage_notifications') ?? false;
     }
 
     protected function workspace(): Workspace
@@ -121,7 +124,7 @@ class Alerts extends Page implements HasForms
      * One numeric "monthly goal" input per location. Locations are read-only
      * synced records, so the goal is the only editable field we surface here.
      *
-     * @return list<\Filament\Forms\Components\Field|\Filament\Forms\Components\Component>
+     * @return list<Field|Component>
      */
     protected function goalFields(): array
     {
@@ -139,7 +142,7 @@ class Alerts extends Page implements HasForms
 
         if ($fields === []) {
             return [
-                \Filament\Forms\Components\Placeholder::make('no_locations')
+                Placeholder::make('no_locations')
                     ->hiddenLabel()
                     ->content(__('pages/alerts.no_locations')),
             ];

@@ -13,6 +13,8 @@ return [
     'preferences_section' => 'Einstellungen',
     'interface_language' => 'Sprache der Oberfläche',
     'first_day_of_week' => 'Erster Tag der Woche',
+    'product_emails' => 'Produkt-Tipps & Onboarding-E-Mails',
+    'product_emails_help' => 'Eine kurze Serie, die zeigt, was Repunio kann. Konto- und Rechnungs-E-Mails sind nicht betroffen.',
     'monday' => 'Montag',
     'sunday' => 'Sonntag',
 

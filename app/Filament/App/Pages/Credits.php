@@ -27,7 +27,7 @@ class Credits extends Page implements HasTable
     /** Ledger reasons per feature bucket (the Feature filter + badge). */
     private const FEATURES = [
         'reviews' => ['auto_reply', 'manual_reply'],
-        'reports' => ['report', 'instruction_improve'],
+        'reports' => ['report', 'instruction_improve', 'ask_ai'],
         'agents' => ['agent_description'],
         'billing' => ['pack', 'topup', 'adjustment'],
     ];

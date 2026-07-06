@@ -7,6 +7,8 @@ namespace App\Filament\App\Pages;
 use App\Api\ApiAbilities;
 use App\Billing\Plans;
 use App\Models\ApiKey;
+use App\Models\Workspace;
+use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Billing\LocationBilling;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -51,12 +53,12 @@ class ApiKeys extends Page implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        return tenancy()->initialized && (auth()->user()?->can('manage_team') ?? false);
+        return tenancy()->initialized && (auth()->user()?->can('manage_integrations') ?? false);
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('manage_team') ?? false;
+        return auth()->user()?->can('manage_integrations') ?? false;
     }
 
     protected function workspaceId(): string
@@ -66,7 +68,7 @@ class ApiKeys extends Page implements HasTable
 
     public function isPro(): bool
     {
-        $workspace = \App\Models\Workspace::find($this->workspaceId());
+        $workspace = Workspace::find($this->workspaceId());
 
         return $workspace !== null && app(LocationBilling::class)->allows($workspace, Plans::API);
     }
@@ -134,6 +136,7 @@ class ApiKeys extends Page implements HasTable
                     ->modalHeading(__('pages/api_keys.revoke_heading'))
                     ->modalDescription(__('pages/api_keys.revoke_desc'))
                     ->action(function (ApiKey $record): void {
+                        ActivityLogger::log('apikey.revoked', ['name' => $record->name]);
                         $record->delete();
                         Notification::make()->title(__('pages/api_keys.revoked'))->success()->send();
                     }),
@@ -178,6 +181,8 @@ class ApiKeys extends Page implements HasTable
                             : null;
 
                         [, $raw] = ApiKey::generate($this->workspaceId(), $data['name'], $abilities, $expiresAt);
+
+                        ActivityLogger::log('apikey.created', ['name' => $data['name'], 'scopes' => $abilities]);
 
                         $this->plainKey = $raw;
                         Notification::make()->title(__('pages/api_keys.created'))->success()->send();

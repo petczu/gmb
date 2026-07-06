@@ -38,3 +38,15 @@ Schedule::command('ai:auto-recharge')->everyFifteenMinutes();
 // (stalled / negative streak / spike / rating drop). The command's own date
 // gates and per-location cooldowns decide what actually sends.
 Schedule::command('reviews:insights')->dailyAt('10:00');
+
+// Onboarding email series: one due step per user per day (see DripSeries).
+Schedule::command('emails:drip')->dailyAt('10:00');
+
+// Daily competitor rating/review snapshot via the Google Places API (no-op
+// while GOOGLE_PLACES_API_KEY is unset). Daily granularity feeds the trends
+// on the Competitors page; cost is ~1 details call per competitor per day.
+Schedule::command('competitors:refresh')->dailyAt('06:00');
+
+// Global AI budget guard: emails super-admins at 80%/100% of
+// AI_MONTHLY_BUDGET_USD (no-op while unset).
+Schedule::command('ai:budget-check')->dailyAt('09:30');

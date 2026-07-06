@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\ActivityLog\ActivityLogger;
+use App\Services\Webhooks\WebhookDispatcher;
+use App\Webhooks\WebhookEvents;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,8 +46,15 @@ class Review extends Model
         // and they all flip reply_status to 'published' via a save().
         static::updated(function (Review $review): void {
             if ($review->wasChanged('reply_status') && $review->reply_status === 'published') {
-                app(\App\Services\Webhooks\WebhookDispatcher::class)
-                    ->dispatch(\App\Webhooks\WebhookEvents::REPLY_PUBLISHED, $review->toWebhookPayload());
+                app(WebhookDispatcher::class)
+                    ->dispatch(WebhookEvents::REPLY_PUBLISHED, $review->toWebhookPayload());
+
+                ActivityLogger::log('reply.published', [
+                    'author' => $review->author_name,
+                    'rating' => $review->rating,
+                    'location' => $review->location?->name,
+                    'source' => $review->reply_source,
+                ], $review);
             }
         });
     }

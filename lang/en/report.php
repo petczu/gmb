@@ -84,4 +84,12 @@ return [
     'method_ratings' => 'Ratings: 5★ × :five, 4★ × :four, 3★ × :three, 2★ × :two, 1★ × :one.',
     'method_cadence' => 'Cadence is based on the review creation timestamp, which is the signal Google evaluates.',
     'method_source' => 'Source: Google Business Profile.',
+
+    'competitors_title' => 'Competitor benchmark',
+    'competitors_col_business' => 'Business',
+    'competitors_col_rating' => 'Rating',
+    'competitors_col_reviews' => 'Reviews',
+    'competitors_col_new' => 'New in period',
+    'competitors_you' => 'you',
+    'competitors_note' => 'Competitor data from Google. \"New in period\" is based on daily snapshots and appears once enough history is collected.',
 ];

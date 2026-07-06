@@ -5,12 +5,14 @@ use App\Http\Controllers\DocsController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PostmarkWebhookController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReviewPageController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceSwitchController;
 use App\Http\Controllers\ZernioConnectController;
 use App\Http\Controllers\ZernioWebhookController;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Http\Middleware\SetLocale;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
 
@@ -82,6 +84,13 @@ Route::middleware(['web', 'auth', SetCurrentWorkspace::class])
         Route::get('/callback', [ZernioConnectController::class, 'callback'])->name('zernio.google.callback');
     });
 
+// PUBLIC review-collection pages ("leave a review" funnels). Central data, no
+// tenancy. Custom domains are handled by ServeReviewPageDomain (bootstrap).
+Route::middleware('web')->group(function (): void {
+    Route::get('r/{slug}', [ReviewPageController::class, 'show'])->name('review-page.show');
+    Route::get('r/{slug}/go/{target}', [ReviewPageController::class, 'go'])->name('review-page.go');
+});
+
 // Public developer documentation (markdown pages + Scalar API reference).
 Route::prefix('docs')->group(function (): void {
     Route::get('/', [DocsController::class, 'show'])->name('docs.index');
@@ -91,6 +100,16 @@ Route::prefix('docs')->group(function (): void {
         ->where('slug', '[a-z0-9/-]+')
         ->name('docs.show');
 });
+
+// One-click unsubscribe from the onboarding/product email series. Signed URL
+// (from the emails), no login required; the profile toggle re-enables it.
+Route::middleware('web')->get('unsubscribe/product/{user}', function (User $user) {
+    abort_unless(request()->hasValidSignature(), 403);
+
+    $user->forceFill(['product_emails' => false])->save();
+
+    return view('unsubscribed');
+})->name('unsubscribe.product');
 
 // Language switcher (persists the visitor's choice) + public legal pages.
 Route::middleware(['web', SetLocale::class])->group(function (): void {

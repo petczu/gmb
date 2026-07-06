@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Resources\Roles;
 
+use App\Billing\Plans;
 use App\Filament\App\Resources\Roles\Pages\CreateRole;
 use App\Filament\App\Resources\Roles\Pages\EditRole;
 use App\Filament\App\Resources\Roles\Pages\ListRoles;
 use App\Filament\App\Resources\Roles\Schemas\RoleForm;
 use App\Filament\App\Resources\Roles\Tables\RolesTable;
 use App\Models\Role;
+use App\Models\Workspace;
+use App\Services\Billing\LocationBilling;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -41,20 +44,20 @@ class RoleResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('manage_team') ?? false;
+        return auth()->user()?->can('manage_roles') ?? false;
     }
 
     /** Creating custom roles is a Pro feature; default roles still manageable. */
     public static function canCreate(): bool
     {
-        if (! (auth()->user()?->can('manage_team') ?? false)) {
+        if (! (auth()->user()?->can('manage_roles') ?? false)) {
             return false;
         }
 
-        $workspace = \App\Models\Workspace::find(session('current_workspace_id'));
+        $workspace = Workspace::find(session('current_workspace_id'));
 
         return $workspace !== null
-            && app(\App\Services\Billing\LocationBilling::class)->allows($workspace, \App\Billing\Plans::CUSTOM_ROLES);
+            && app(LocationBilling::class)->allows($workspace, Plans::CUSTOM_ROLES);
     }
 
     /** Only the current workspace's roles. */

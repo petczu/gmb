@@ -84,4 +84,12 @@ return [
     'method_ratings' => 'Bewertungen: 5★ × :five, 4★ × :four, 3★ × :three, 2★ × :two, 1★ × :one.',
     'method_cadence' => 'Der Rhythmus basiert auf dem Erstellungszeitstempel der Bewertung, dem Signal, das Google auswertet.',
     'method_source' => 'Quelle: Google Business Profile.',
+
+    'competitors_title' => 'Wettbewerbs-Vergleich',
+    'competitors_col_business' => 'Unternehmen',
+    'competitors_col_rating' => 'Bewertung',
+    'competitors_col_reviews' => 'Rezensionen',
+    'competitors_col_new' => 'Neu im Zeitraum',
+    'competitors_you' => 'du',
+    'competitors_note' => 'Wettbewerber-Daten von Google. \"Neu im Zeitraum\" basiert auf täglichen Momentaufnahmen und erscheint, sobald genügend Verlauf gesammelt ist.',
 ];

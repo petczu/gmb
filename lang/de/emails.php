@@ -160,4 +160,48 @@ return [
         'note' => 'Diese Einladung läuft in 14 Tagen ab. Wenn du sie nicht erwartet hast, kannst du diese E-Mail ignorieren.',
         'cta' => 'Einladung annehmen',
     ],
+
+    // Onboarding-Serie (Produkt-Einführung)
+    'drip_inbox' => [
+        'subject' => 'Jede Bewertung, ein Posteingang',
+        'intro' => 'Alle Bewertungen deiner Standorte landen in einem Posteingang. Filtere nach Sternen, Standort oder unbeantwortet und antworte in zwei Klicks.',
+        'tip' => 'Probiere es gleich aus: öffne eine Bewertung und klicke auf Mit KI generieren. Du bekommst einen fertigen Entwurf in deinem Ton, den du vor dem Veröffentlichen anpassen kannst.',
+        'cta' => 'Bewertungen öffnen',
+    ],
+    'drip_automation' => [
+        'subject' => 'Antworten auf Autopilot',
+        'intro' => 'Erstelle einen KI-Agenten, der dein Unternehmen und deinen Ton kennt, und lass Auto-Antwort-Regeln Routine-Bewertungen für dich beantworten.',
+        'tip' => 'Noch nicht bereit für vollen Autopilot? Nutze die Freigabe-Warteschlange: die KI entwirft, du gibst mit einem Klick frei.',
+        'cta' => 'Automatisierungen einrichten',
+    ],
+    'drip_growth' => [
+        'subject' => 'Diesen Monat mehr Bewertungen sammeln',
+        'intro' => 'Setze ein monatliches Bewertungsziel pro Standort. Wir verfolgen das Tempo, feiern Meilensteine und warnen bei Anomalien.',
+        'tip' => 'Erstelle deine Bewertungsseite: ein kurzer Link und QR-Code, die zufriedene Kunden direkt zum Google- oder TripAdvisor-Formular führen.',
+        'cta' => 'Bewertungsseite erstellen',
+    ],
+    'drip_reports' => [
+        'subject' => 'Berichte, die deine Kunden wirklich lesen',
+        'intro' => 'Baue einen Performance-Bericht aus Blöcken: KPIs, KI-Zusammenfassung, Mitarbeiter-Erwähnungen, Themen. Als PDF oder per Link teilen.',
+        'tip' => 'Einmal einrichten, monatlich senden: plane den Bericht und er landet automatisch im Postfach, auf Deutsch oder Englisch.',
+        'cta' => 'Bericht erstellen',
+    ],
+    'drip_team' => [
+        'subject' => 'Hol dein Team an Bord',
+        'intro' => 'Lade Teammitglieder mit Rollen ein oder füge Gäste hinzu, die nur Benachrichtigungen und Berichte erhalten, ganz ohne Login.',
+        'tip' => 'Lege in den Einstellungen fest, wer welche E-Mail bekommt, und leite Bewertungs-Alerts an die richtigen Personen.',
+        'cta' => 'Team einladen',
+    ],
+    'drip_member' => [
+        'subject' => 'So findest du dich in Repunio zurecht',
+        'intro' => 'Du wurdest zu einem Workspace hinzugefügt. Der Bewertungs-Posteingang ist dein Arbeitsplatz: filtern, antworten, fertig.',
+        'tip' => 'Stelle Sprache für Oberfläche und E-Mails in deinem Profil ein, damit alles so ankommt, wie du es magst.',
+        'cta' => 'Repunio öffnen',
+    ],
+    'drip_unsubscribe' => 'Zu viele Tipps? :link',
+    'drip_unsubscribe_link' => 'Diese E-Mails abbestellen',
+
+    'unsubscribed_title' => 'Du bist abgemeldet',
+    'unsubscribed_body' => 'Du erhältst keine Produkt-Tipps und Onboarding-E-Mails mehr. Wichtige Konto- und Rechnungs-E-Mails kommen weiterhin an. Umentschieden? Aktiviere sie wieder in :link.',
+    'unsubscribed_profile' => 'deinem Profil',
 ];

@@ -9,6 +9,7 @@ use App\Models\GeneratedReport;
 use App\Models\Location;
 use App\Models\ReportSchedule;
 use App\Models\Workspace;
+use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Ai\InstructionImprover;
 use App\Services\Billing\AiUsageService;
 use App\Services\Reports\ReportBranding;
@@ -277,6 +278,7 @@ class Reports extends Page implements HasForms
         $left = $cap >= PHP_INT_MAX ? null : max(0, $cap - $used);
 
         return Action::make('generate')
+            ->visible(fn (): bool => auth()->user()?->can('generate_reports') ?? false)
             ->modalIcon('heroicon-o-sparkles')
             ->modalHeading(__('pages/reports.generate_heading'))
             ->modalDescription($left === null
@@ -355,8 +357,11 @@ class Reports extends Page implements HasForms
                     'language' => in_array($filters['language'] ?? 'en', ['en', 'de'], true) ? $filters['language'] : 'en',
                     'location_id' => $filters['location_id'],
                     'compare' => ($filters['compareMode'] ?? 'previous') !== 'none',
+                    'blocks' => ReportBlocks::normalize($this->data['blocks'] ?? null),
                     'recipients' => array_values($data['recipients'] ?? []),
                 ]);
+
+                ActivityLogger::log('schedule.created', ['name' => $data['name'], 'frequency' => $data['frequency']]);
 
                 Notification::make()
                     ->title(__('pages/reports.schedule_created'))
@@ -398,7 +403,7 @@ class Reports extends Page implements HasForms
         ])->render();
         app()->setLocale($previousLocale);
 
-        GeneratedReport::create([
+        $saved = GeneratedReport::create([
             'title' => $report['businessName'],
             'period_label' => $report['periodLabel'],
             'language' => $language,
@@ -406,6 +411,8 @@ class Reports extends Page implements HasForms
             'generated_by' => auth()->id(),
             'generated_by_name' => auth()->user()?->name,
         ]);
+
+        ActivityLogger::log('report.generated', ['period' => $report['periodLabel']], $saved);
 
         $this->generation++; // reloads the iframe → preview now shows the cached AI summary
 
@@ -426,14 +433,5 @@ class Reports extends Page implements HasForms
     public function downloadUrl(): string
     {
         return route('reports.download', $this->queryParams());
-    }
-
-    /** True once an AI report has been generated for the current selection. */
-    public function reportReady(): bool
-    {
-        $period = DashboardPeriod::fromFilters($this->filterArray());
-        $language = $this->data['language'] ?? 'en';
-
-        return app(ReportGenerator::class)->hasCached($period, $language);
     }
 }

@@ -53,7 +53,7 @@ class AiAgentResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('manage_automations') ?? false;
+        return auth()->user()?->can('manage_ai_agents') ?? false;
     }
 
     public static function getPages(): array

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\ActivityLog\ActivityLogger;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 
@@ -21,6 +22,7 @@ class ReportSchedule extends Model
         'language',
         'location_id',
         'compare',
+        'blocks',
         'recipients',
         'last_sent_at',
     ];
@@ -28,10 +30,20 @@ class ReportSchedule extends Model
     protected $casts = [
         'enabled' => 'boolean',
         'compare' => 'boolean',
+        'blocks' => 'array',
         'send_day' => 'integer',
         'recipients' => 'array',
         'last_sent_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        // Deletion happens through Filament's stock DeleteAction (table + edit
+        // page), so the activity feed hook lives on the model.
+        static::deleted(function (ReportSchedule $schedule): void {
+            ActivityLogger::log('schedule.deleted', ['name' => $schedule->name]);
+        });
+    }
 
     /**
      * Is this schedule due to send on the given day? Daily-runner semantics:

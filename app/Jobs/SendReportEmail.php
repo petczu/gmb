@@ -74,7 +74,7 @@ class SendReportEmail implements ShouldQueue
             $language = in_array($schedule->language, ['en', 'de'], true) ? $schedule->language : 'en';
             app()->setLocale($language);
 
-            $result = $pdf->generate($period, $language);
+            $result = $pdf->generate($period, $language, $schedule->blocks);
 
             Mail::to($recipients)->send(new ScheduledReportMail(
                 businessName: $result['businessName'],

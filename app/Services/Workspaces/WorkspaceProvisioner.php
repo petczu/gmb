@@ -9,6 +9,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\PermissionCatalog;
 use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -49,13 +50,13 @@ class WorkspaceProvisioner
 
         // Permissions are global capability names (team_id = null).
         $registrar->setPermissionsTeamId(null);
-        foreach (RolesSyncCommand::PERMISSIONS as $name) {
+        foreach (PermissionCatalog::all() as $name) {
             Permission::findOrCreate($name, 'web');
         }
 
         // Roles are scoped to this workspace (team_id = workspace id).
         $registrar->setPermissionsTeamId($workspace->id);
-        foreach (RolesSyncCommand::ROLES as $roleName => $permissions) {
+        foreach (RolesSyncCommand::roles() as $roleName => $permissions) {
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web', 'team_id' => $workspace->id])
                 ->syncPermissions($permissions);
         }

@@ -8,6 +8,11 @@ use App\Mail\NewReviewsMail;
 use App\Models\Location;
 use App\Models\Review;
 use App\Models\Workspace;
+use App\Services\Notifications\ChatChannels;
+use App\Services\Notifications\NotificationCategory;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Webhooks\WebhookDispatcher;
+use App\Webhooks\WebhookEvents;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -117,8 +122,8 @@ class ReviewSync
                         $firstReviewId ??= $review->id;
 
                         $review->setRelation('location', $location);
-                        app(\App\Services\Webhooks\WebhookDispatcher::class)
-                            ->dispatch(\App\Webhooks\WebhookEvents::REVIEW_CREATED, $review->toWebhookPayload());
+                        app(WebhookDispatcher::class)
+                            ->dispatch(WebhookEvents::REVIEW_CREATED, $review->toWebhookPayload());
 
                         if (count($samples) < 5) {
                             $samples[] = [
@@ -155,14 +160,14 @@ class ReviewSync
         // Best-effort digest email AFTER tenant context is restored — never let
         // a mail failure fail the whole sync.
         if ($newCount > 0) {
-            try {
-                $locationLabel = $newLocations !== [] ? implode(', ', array_keys($newLocations)) : $workspace->name;
-                $reviewsUrl = rtrim((string) config('app.url'), '/').'/reviews'
-                    .($newCount === 1 && $firstReviewId !== null ? '?review='.$firstReviewId : '');
+            $locationLabel = $newLocations !== [] ? implode(', ', array_keys($newLocations)) : $workspace->name;
+            $reviewsUrl = rtrim((string) config('app.url'), '/').'/reviews'
+                .($newCount === 1 && $firstReviewId !== null ? '?review='.$firstReviewId : '');
 
-                app(\App\Services\Notifications\NotificationDispatcher::class)->dispatch(
+            try {
+                app(NotificationDispatcher::class)->dispatch(
                     $workspace,
-                    \App\Services\Notifications\NotificationCategory::REPUTATION,
+                    NotificationCategory::REPUTATION,
                     fn (string $name, string $lang) => new NewReviewsMail(
                         name: $name,
                         count: $newCount,
@@ -178,6 +183,14 @@ class ReviewSync
                     'error' => $e->getMessage(),
                 ]);
             }
+
+            // Slack / Telegram (each channel is best-effort internally).
+            ChatChannels::send(
+                $workspace,
+                NotificationCategory::REPUTATION,
+                'new_reviews',
+                ['count' => $newCount, 'location' => $locationLabel, 'url' => $reviewsUrl],
+            );
         }
 
         return $stats;

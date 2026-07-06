@@ -160,4 +160,48 @@ return [
         'note' => 'This invitation expires in 14 days. If you did not expect it, you can ignore this email.',
         'cta' => 'Accept invitation',
     ],
+
+    // Onboarding drip series (product education)
+    'drip_inbox' => [
+        'subject' => 'Every review, one inbox',
+        'intro' => 'All reviews from your locations land in one inbox. Filter by rating, location or unanswered, and reply in two clicks.',
+        'tip' => 'Try it now: open a review and press Generate with AI. You get a ready draft in your tone that you can edit before publishing.',
+        'cta' => 'Open your reviews',
+    ],
+    'drip_automation' => [
+        'subject' => 'Put replies on autopilot',
+        'intro' => 'Create an AI agent that knows your business and tone, then let auto-reply rules answer routine reviews for you.',
+        'tip' => 'Not ready for full autopilot? Use the approval queue: the AI drafts, you approve with one click.',
+        'cta' => 'Set up automations',
+    ],
+    'drip_growth' => [
+        'subject' => 'Collect more reviews this month',
+        'intro' => 'Set a monthly review goal per location and we track the pace, cheer milestones and warn you about anomalies.',
+        'tip' => 'Create your review collection page: a short link and QR code that send happy customers straight to your Google or TripAdvisor review form.',
+        'cta' => 'Create your review page',
+    ],
+    'drip_reports' => [
+        'subject' => 'Reports your clients will actually read',
+        'intro' => 'Build a performance report from blocks: KPIs, AI summary, staff mentions, themes. Download as PDF or share a link.',
+        'tip' => 'Set it once, send it monthly: schedule the report and it lands in inboxes automatically, in English or German.',
+        'cta' => 'Build a report',
+    ],
+    'drip_team' => [
+        'subject' => 'Bring your team on board',
+        'intro' => 'Invite teammates with roles, or add guests who only receive notifications and reports, no login needed.',
+        'tip' => 'Decide who gets which email under Settings, then route new-review alerts to the people who handle them.',
+        'cta' => 'Invite your team',
+    ],
+    'drip_member' => [
+        'subject' => 'Getting around Repunio',
+        'intro' => 'You have been added to a workspace. The Reviews inbox is where the work happens: filter, reply, done.',
+        'tip' => 'Set your interface and email language in your profile so everything arrives the way you like it.',
+        'cta' => 'Open Repunio',
+    ],
+    'drip_unsubscribe' => 'Too many tips? :link',
+    'drip_unsubscribe_link' => 'Unsubscribe from these emails',
+
+    'unsubscribed_title' => 'You are unsubscribed',
+    'unsubscribed_body' => 'You will no longer receive product tips and onboarding emails. Important account and billing emails still arrive. Changed your mind? Turn them back on in :link.',
+    'unsubscribed_profile' => 'your profile',
 ];

@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use App\Models\Workspace;
 use Closure;
 use Illuminate\Http\Request;
+use Sentry\State\Scope;
 use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -48,6 +49,15 @@ class SetCurrentWorkspace
 
                 // Scope spatie roles/permissions to this workspace (teams).
                 app(PermissionRegistrar::class)->setPermissionsTeamId($workspace->id);
+
+                // Tag Sentry events with the workspace so multi-tenant errors
+                // are attributable. No-op while the DSN is unset.
+                \Sentry\configureScope(function (Scope $scope) use ($workspace, $request): void {
+                    $scope->setTag('workspace', $workspace->slug ?? $workspace->id);
+                    if ($user = $request->user()) {
+                        $scope->setUser(['id' => (string) $user->id]);
+                    }
+                });
             } else {
                 // Stale id (workspace deleted) — drop it and stay central.
                 session()->forget('current_workspace_id');

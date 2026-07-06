@@ -6,11 +6,12 @@ namespace App\Filament\App\Pages;
 
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Auth\MultiFactor\Contracts\MultiFactorAuthenticationProvider;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Auth\MultiFactor\Contracts\MultiFactorAuthenticationProvider;
-use Filament\Facades\Filament;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -67,6 +68,7 @@ class Profile extends Page implements HasForms
             'timezone' => $u->timezone ?? config('app.timezone'),
             'week_start' => $u->week_start ?? 'monday',
             'locale' => $u->locale ?? 'en',
+            'product_emails' => (bool) $u->getAttribute('product_emails'),
         ]);
     }
 
@@ -115,6 +117,10 @@ class Profile extends Page implements HasForms
                             ->options(['monday' => __('pages/profile.monday'), 'sunday' => __('pages/profile.sunday')])
                             ->default('monday')
                             ->selectablePlaceholder(false),
+                        Toggle::make('product_emails')
+                            ->label(__('pages/profile.product_emails'))
+                            ->helperText(__('pages/profile.product_emails_help'))
+                            ->inline(false),
                     ])->columns(2),
 
                 Section::make(__('pages/profile.two_factor_section'))
@@ -186,6 +192,8 @@ class Profile extends Page implements HasForms
             'week_start' => $state['week_start'] ?? 'monday',
             'locale' => $state['locale'] ?? 'en',
         ]);
+
+        $u->forceFill(['product_emails' => (bool) ($state['product_emails'] ?? true)]);
 
         if (filled($state['password'] ?? null)) {
             $u->password = Hash::make($state['password']);

@@ -6,6 +6,7 @@ use App\Jobs\SyncWorkspaceReviews;
 use App\Models\GoogleAccount;
 use App\Models\Location;
 use App\Models\Workspace;
+use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Billing\LocationBilling;
 use App\Services\Reviews\ZernioConnectionManager;
 use Filament\Notifications\Notification;
@@ -101,7 +102,7 @@ class ConnectSelectLocation extends Page
 
             $accountId = GoogleAccount::query()->where('workspace_id', $workspace->id)->value('zernio_account_id');
 
-            Location::updateOrCreate(
+            $location = Location::updateOrCreate(
                 ['external_id' => $locationId],
                 [
                     'zernio_account_id' => $accountId,
@@ -110,6 +111,10 @@ class ConnectSelectLocation extends Page
                     'status' => 'active',
                 ],
             );
+
+            if ($location->wasRecentlyCreated) {
+                ActivityLogger::log('location.connected', ['location' => $location->name], $location);
+            }
 
             // Pulling reviews can be hundreds of records, do it off the request
             // so the picker stays responsive. The Locations page fills in once

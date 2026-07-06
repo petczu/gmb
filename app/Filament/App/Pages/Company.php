@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
-use App\Models\Workspace;
-use BackedEnum;
-use Filament\Actions\Action;
 use App\Billing\Plans;
+use App\Models\Workspace;
 use App\Services\Account\WorkspaceDeletionService;
 use App\Services\Billing\LocationBilling;
+use App\Support\BusinessCategories;
+use App\Support\Countries;
+use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -48,12 +49,12 @@ class Company extends Page implements HasForms
 
     public static function shouldRegisterNavigation(): bool
     {
-        return tenancy()->initialized && (auth()->user()?->can('manage_team') ?? false);
+        return tenancy()->initialized && (auth()->user()?->can('manage_company') ?? false);
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('manage_team') ?? false;
+        return auth()->user()?->can('manage_company') ?? false;
     }
 
     protected function workspace(): Workspace
@@ -109,7 +110,7 @@ class Company extends Page implements HasForms
                         TextInput::make('contact_phone')->label(__('pages/company.contact_phone'))->tel()->maxLength(60),
                         Select::make('business_category')
                             ->label(__('pages/company.business_category'))
-                            ->options(\App\Support\BusinessCategories::options())
+                            ->options(BusinessCategories::options())
                             ->searchable()
                             ->placeholder(__('pages/company.business_category_placeholder'))
                             ->helperText(__('pages/company.business_category_helper')),
@@ -121,7 +122,7 @@ class Company extends Page implements HasForms
                     ->schema([
                         Select::make('billing_country')
                             ->label(__('pages/company.country'))
-                            ->options(\App\Support\Countries::list())
+                            ->options(Countries::list())
                             ->searchable()
                             ->default('AT'),
                         TextInput::make('vat_number')->label(__('pages/company.vat_number'))->maxLength(40)

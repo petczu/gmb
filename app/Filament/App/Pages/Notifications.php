@@ -4,20 +4,30 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Notifications\ChatChannels;
 use App\Services\Notifications\NotificationCategory;
 use App\Services\Notifications\NotificationRecipients;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 
 class Notifications extends Page implements HasForms
 {
@@ -43,12 +53,12 @@ class Notifications extends Page implements HasForms
 
     public static function shouldRegisterNavigation(): bool
     {
-        return tenancy()->initialized && (auth()->user()?->can('manage_team') ?? false);
+        return tenancy()->initialized && (auth()->user()?->can('manage_notifications') ?? false);
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('manage_team') ?? false;
+        return auth()->user()?->can('manage_notifications') ?? false;
     }
 
     protected function workspace(): Workspace
@@ -65,6 +75,15 @@ class Notifications extends Page implements HasForms
             $state['route_'.$category] = $routes[$category] ?? [];
         }
 
+        $chat = ChatChannels::config($this->workspace());
+        $state['slack_enabled'] = $chat['slack_enabled'];
+        $state['slack_webhook_url'] = $chat['slack_webhook_url'];
+        $state['telegram_enabled'] = $chat['telegram_enabled'];
+        $state['telegram_bot_token'] = $chat['telegram_bot_token'];
+        $state['telegram_chat_id'] = $chat['telegram_chat_id'];
+        $state['chat_language'] = $chat['language'];
+        $state['chat_categories'] = $chat['categories'];
+
         $this->form->fill($state);
     }
 
@@ -72,21 +91,77 @@ class Notifications extends Page implements HasForms
     {
         $options = $this->recipientOptions();
 
+        $chatEnabled = fn (Get $get): bool => (bool) $get('slack_enabled') || (bool) $get('telegram_enabled');
+
+        // 1) Delivery channels — WHERE notifications go. One block per
+        //    channel, each with its own switch, independent of the routing.
         $sections = [
-            Section::make(__('pages/notifications.channels'))
-                ->description(__('pages/notifications.channels_desc'))
+            Section::make(__('pages/notifications.channel_email'))
+                ->compact()
                 ->schema([
-                    \Filament\Forms\Components\Placeholder::make('channels_note')
+                    Placeholder::make('channel_email_note')
                         ->hiddenLabel()
-                        ->content(new \Illuminate\Support\HtmlString(
-                            '<div style="display:flex;gap:.5rem;flex-wrap:wrap;font-size:.8rem;">'
-                            .'<span style="padding:.25rem .6rem;border-radius:9999px;background:#dcfce7;color:#166534;font-weight:600;">'.e(__('pages/notifications.channel_email')).'</span>'
-                            .'<span style="padding:.25rem .6rem;border-radius:9999px;background:#f3f4f6;color:#6b7280;">'.e(__('pages/notifications.channel_sms')).'</span>'
-                            .'<span style="padding:.25rem .6rem;border-radius:9999px;background:#f3f4f6;color:#6b7280;">'.e(__('pages/notifications.channel_whatsapp')).'</span>'
+                        ->content(new HtmlString(
+                            '<div style="display:flex;align-items:center;gap:.6rem;">'
+                            .'<span style="padding:.25rem .6rem;border-radius:9999px;background:#dcfce7;color:#166534;font-weight:600;font-size:.8rem;">'.e(__('pages/notifications.channel_on')).'</span>'
+                            .'<span style="font-size:.85rem;color:#6b7280;">'.e(__('pages/notifications.email_always_on')).'</span>'
                             .'</div>'
                         )),
                 ]),
+
+            Section::make('Slack')
+                ->compact()
+                ->schema([
+                    Toggle::make('slack_enabled')
+                        ->label(__('pages/notifications.channel_enable'))
+                        ->live(),
+                    TextInput::make('slack_webhook_url')
+                        ->label(__('pages/notifications.slack_webhook'))
+                        ->url()
+                        ->placeholder('https://hooks.slack.com/services/…')
+                        ->helperText(__('pages/notifications.slack_help'))
+                        ->visible(fn (Get $get): bool => (bool) $get('slack_enabled')),
+                ]),
+
+            Section::make('Telegram')
+                ->compact()
+                ->schema([
+                    Toggle::make('telegram_enabled')
+                        ->label(__('pages/notifications.channel_enable'))
+                        ->live(),
+                    Grid::make(2)->schema([
+                        TextInput::make('telegram_bot_token')
+                            ->label(__('pages/notifications.telegram_token'))
+                            ->password()
+                            ->revealable()
+                            ->helperText(__('pages/notifications.telegram_token_help')),
+                        TextInput::make('telegram_chat_id')
+                            ->label(__('pages/notifications.telegram_chat'))
+                            ->helperText(__('pages/notifications.telegram_chat_help')),
+                    ])->visible(fn (Get $get): bool => (bool) $get('telegram_enabled')),
+                ]),
+
+            // Shared settings for the chat channels above.
+            Section::make(__('pages/notifications.chat_title'))
+                ->compact()
+                ->visible($chatEnabled)
+                ->schema([
+                    Grid::make(2)->schema([
+                        Select::make('chat_language')
+                            ->label(__('pages/notifications.chat_language'))
+                            ->options(['en' => 'English', 'de' => 'Deutsch'])
+                            ->selectablePlaceholder(false),
+                        Select::make('chat_categories')
+                            ->label(__('pages/notifications.chat_categories'))
+                            ->multiple()
+                            ->options(collect(NotificationCategory::all())->mapWithKeys(
+                                fn (string $c): array => [$c => __('pages/notifications.cat_'.$c)],
+                            )->all()),
+                    ]),
+                ]),
         ];
+
+        // 2) Email routing — WHO receives which category.
         foreach (NotificationCategory::all() as $category) {
             $sections[] = Section::make(__('pages/notifications.cat_'.$category))
                 ->description(__('pages/notifications.cat_'.$category.'_desc'))
@@ -116,9 +191,9 @@ class Notifications extends Page implements HasForms
         $groups = [NotificationRecipients::EVERYONE => __('pages/notifications.everyone')];
         foreach ($this->roleNames() as $role) {
             $key = 'pages/notifications.group_'.$role;
-            $groups[NotificationRecipients::ROLE_PREFIX.$role] = \Illuminate\Support\Facades\Lang::has($key)
+            $groups[NotificationRecipients::ROLE_PREFIX.$role] = Lang::has($key)
                 ? __($key)
-                : __('pages/notifications.group_role', ['role' => \Illuminate\Support\Str::headline($role)]);
+                : __('pages/notifications.group_role', ['role' => Str::headline($role)]);
         }
 
         $people = $members->mapWithKeys(function (User $user): array {
@@ -144,7 +219,7 @@ class Notifications extends Page implements HasForms
      */
     protected function roleNames(): array
     {
-        $defined = \App\Models\Role::query()
+        $defined = Role::query()
             ->where('team_id', $this->workspace()->id)
             ->pluck('name')
             ->all();
@@ -158,6 +233,16 @@ class Notifications extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('testChat')
+                ->label(__('pages/notifications.chat_test'))
+                ->icon(Heroicon::OutlinedPaperAirplane)
+                ->color('gray')
+                ->visible(fn (): bool => ChatChannels::enabled($this->workspace()))
+                ->action(function (): void {
+                    ChatChannels::sendTest($this->workspace());
+                    Notification::make()->title(__('pages/notifications.chat_test_sent'))->success()->send();
+                }),
+
             Action::make('save')
                 ->label(__('common.save'))
                 ->icon(Heroicon::OutlinedCheck)
@@ -181,6 +266,15 @@ class Notifications extends Page implements HasForms
 
         $w = $this->workspace();
         $w->setAttribute(NotificationRecipients::ROUTES_KEY, $routes);
+        $w->setAttribute('chat_channels', [
+            'slack_enabled' => (bool) ($state['slack_enabled'] ?? false),
+            'slack_webhook_url' => $state['slack_webhook_url'] ?? null,
+            'telegram_enabled' => (bool) ($state['telegram_enabled'] ?? false),
+            'telegram_bot_token' => $state['telegram_bot_token'] ?? null,
+            'telegram_chat_id' => $state['telegram_chat_id'] ?? null,
+            'language' => $state['chat_language'] ?? 'en',
+            'categories' => array_values($state['chat_categories'] ?? []),
+        ]);
         $w->save();
 
         Notification::make()->title(__('pages/notifications.saved'))->success()->send();

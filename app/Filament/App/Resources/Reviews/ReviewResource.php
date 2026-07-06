@@ -11,6 +11,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ReviewResource extends Resource
 {
@@ -46,11 +47,11 @@ class ReviewResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('manage_reviews') ?? false;
+        return auth()->user()?->can('view_reviews') ?? false;
     }
 
     /** Restrict to the user's allowed locations (null = all). */
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
         $ids = auth()->user()?->allowedLocationIds((string) session('current_workspace_id'));

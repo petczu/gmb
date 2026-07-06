@@ -33,7 +33,7 @@
         {{-- ============================ PLAN TAB ============================ --}}
         <div x-show="tab === 'plan'" style="display:flex; flex-direction:column; gap:0.5rem;">
             {{-- Status row --}}
-            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:1.5rem; margin-bottom:1.25rem;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(12rem, 1fr)); gap:1.5rem; margin-bottom:1.25rem;">
                 <x-filament::section>
                     <x-slot name="heading">{{ __('pages/billing.current_plan') }}</x-slot>
                     <div style="font-size:1.25rem; font-weight:700;">{{ $d['currentPlan'] ? ucfirst($d['currentPlan']) : '—' }}</div>
@@ -122,7 +122,7 @@
                             get total() { return (this.qty * this.unit).toFixed(2); },
                             clampQty() { let q = Math.round(this.qty || this.min); this.qty = Math.max(this.min, Math.min(this.maxInput, q)); }
                         }"
-                        style="flex:1; min-width:20rem; max-width:34rem;">
+                        style="flex:1; min-width:16rem; max-width:34rem;">
                         <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.6rem;">
                             <div style="font-weight:700; font-size:1.05rem;"><span x-text="qty"></span> {{ __('pages/billing.credits_word') }}</div>
                             <input type="number" x-model.number="qty" @change="clampQty()" @blur="clampQty()"
@@ -231,7 +231,7 @@
             @endif
 
             {{-- Plan cards --}}
-            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1.5rem;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(16rem, 1fr)); gap:1.5rem;">
                 @foreach ($d['plans'] as $key => $plan)
                     @php($isCurrent = $d['currentPlan'] === $key)
                     @php($yearly = $d['interval'] === 'year')
@@ -301,7 +301,8 @@
                 @elseif (count($this->invoices) === 0)
                     <p style="color:rgb(107 114 128);">{{ __('pages/billing.invoices_empty') }}</p>
                 @else
-                    <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                    <div style="overflow-x:auto;">
+                    <table style="width:100%; min-width:34rem; border-collapse:collapse; font-size:0.9rem;">
                         <thead>
                             <tr style="text-align:left; color:rgb(107 114 128); border-bottom:1px solid rgb(229 231 235);">
                                 <th style="padding:0.5rem 0; font-weight:600;">{{ __('pages/billing.invoice_date') }}</th>
@@ -324,6 +325,7 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>
                 @endif
             </x-filament::section>
         </div>
