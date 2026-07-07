@@ -68,7 +68,7 @@
     @if (count($languages) > 1)
         <nav class="lang">
             @foreach ($languages as $i => $l)
-                @if ($l === $lang)<span class="active">{{ strtoupper($l) }}</span>@elseif ($preview ?? false)<a href="#" onclick="parent.postMessage({repunioPreviewLang: '{{ $l }}'}, '*'); return false;">{{ strtoupper($l) }}</a>@else<a href="?lang={{ $l }}">{{ strtoupper($l) }}</a>@endif
+                @if ($l === $lang)<span class="active">{{ strtoupper($l) }}</span>@elseif ($preview ?? false)<a href="#" onclick="parent.postMessage({previewLang: '{{ $l }}'}, '*'); return false;">{{ strtoupper($l) }}</a>@else<a href="?lang={{ $l }}">{{ strtoupper($l) }}</a>@endif
                 @if (! $loop->last) <span>|</span> @endif
             @endforeach
         </nav>

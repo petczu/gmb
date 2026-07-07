@@ -100,31 +100,6 @@
             @endif
         @endif
 
-        <script>
-            // Copy with a clipboard-API + execCommand fallback (http dev hosts
-            // have no navigator.clipboard). Feedback: swap the icon to a check.
-            window.repunioCopy = function (text, btn) {
-                var done = function () {
-                    if (btn.dataset.busy) return;
-                    btn.dataset.busy = '1';
-                    var old = btn.innerHTML;
-                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="#16a34a" style="width:1rem; height:1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>';
-                    setTimeout(function () { btn.innerHTML = old; delete btn.dataset.busy; }, 1400);
-                };
-                if (navigator.clipboard && window.isSecureContext) {
-                    navigator.clipboard.writeText(text).then(done);
-                } else {
-                    var t = document.createElement('textarea');
-                    t.value = text;
-                    t.style.position = 'fixed';
-                    t.style.opacity = '0';
-                    document.body.appendChild(t);
-                    t.select();
-                    try { document.execCommand('copy'); } finally { t.remove(); }
-                    done();
-                }
-            };
-        </script>
         <style>
             .rp-editor-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:1.25rem; align-items:start; }
             @media (min-width: 1024px) {
@@ -139,7 +114,7 @@
 
             <div class="rp-preview"
                  x-data
-                 x-init="window.addEventListener('message', (e) => { if (e.data && e.data.repunioPreviewLang) { $wire.set('previewLang', e.data.repunioPreviewLang) } })">
+                 x-init="window.addEventListener('message', (e) => { if (e.data && e.data.previewLang) { $wire.set('previewLang', e.data.previewLang) } })">
                 {{-- Language is switched via the EN|DE links INSIDE the preview
                      (they postMessage previewLang up to this component). --}}
                 <div style="font-size:.85rem; font-weight:600; color:#6b7280; margin-bottom:.5rem;">{{ __('pages/review_pages.live_preview') }}</div>
@@ -154,4 +129,31 @@
             </div>
         </div>
     @endif
+    @script
+    <script>
+        // Copy with a clipboard-API + execCommand fallback (http dev hosts
+        // have no navigator.clipboard). Feedback: swap the icon to a check.
+        window.copyTextToClipboard = function (text, btn) {
+            var done = function () {
+                if (btn.dataset.busy) return;
+                btn.dataset.busy = '1';
+                var old = btn.innerHTML;
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="#16a34a" style="width:1rem; height:1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>';
+                setTimeout(function () { btn.innerHTML = old; delete btn.dataset.busy; }, 1400);
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(done);
+            } else {
+                var t = document.createElement('textarea');
+                t.value = text;
+                t.style.position = 'fixed';
+                t.style.opacity = '0';
+                document.body.appendChild(t);
+                t.select();
+                try { document.execCommand('copy'); } finally { t.remove(); }
+                done();
+            }
+        };
+    </script>
+    @endscript
 </x-filament-panels::page>

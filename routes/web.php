@@ -125,3 +125,10 @@ Route::middleware(['web', SetLocale::class])->group(function (): void {
     Route::view('privacy', 'legal.page', ['page' => 'privacy'])->name('legal.privacy');
     Route::view('cookies', 'legal.page', ['page' => 'cookies'])->name('legal.cookies');
 });
+
+// Local-only previews of the error pages (in production they render on real errors).
+if (app()->environment('local')) {
+    Route::get('/dev/errors/{code}', fn (string $code) => in_array($code, ['404', '500'], true)
+        ? response()->view("errors.{$code}", [], (int) $code)
+        : abort(404));
+}
