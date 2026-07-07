@@ -165,6 +165,15 @@ class AppPanelProvider extends PanelProvider
                 PanelsRenderHook::USER_MENU_BEFORE,
                 fn (): string => view('filament.app.workspace-switcher')->render(),
             )
+            // Auth pages (login/register/password reset) always render in the
+            // light theme; the user's dark-mode preference applies only inside
+            // the app. Runs after Filament's own theme bootstrap in <head>.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => request()->routeIs('filament.app.auth.*')
+                    ? '<script>(function(){var el=document.documentElement;var strip=function(){if(el.classList.contains("dark")){el.classList.remove("dark");}};strip();el.style.colorScheme="light";new MutationObserver(strip).observe(el,{attributes:true,attributeFilter:["class"]});})();</script>'
+                    : '',
+            )
             // Language switcher + legal links under the auth (login/register) card.
             ->renderHook(
                 PanelsRenderHook::SIMPLE_PAGE_END,
