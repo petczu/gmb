@@ -35,7 +35,9 @@ class Dashboard extends BaseDashboard
                         Select::make('location_id')
                             ->label(__('common.location'))
                             ->placeholder(__('common.all_locations'))
-                            ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all()),
+                            ->options(fn (): array => tenancy()->initialized
+                                ? Location::query()->orderBy('name')->pluck('name', 'id')->all()
+                                : []),
 
                         DatePicker::make('startDate')
                             ->label(__('common.from'))

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\Workspace;
+use App\Services\Workspaces\WorkspaceProvisioner;
 use Closure;
 use Illuminate\Http\Request;
 use Sentry\State\Scope;
@@ -26,20 +27,30 @@ class SetCurrentWorkspace
     public function handle(Request $request, Closure $next): Response
     {
         $workspaceId = session('current_workspace_id');
+        $workspace = null;
 
         // Auto-select the user's first workspace when none is chosen yet, so the
         // app panel is immediately usable after login. A proper switcher can
         // override this by writing `current_workspace_id` to the session.
         if (! $workspaceId && $request->user()) {
             $first = $request->user()->workspaces()->first();
-            if ($first) {
-                $workspaceId = $first->id;
-                session(['current_workspace_id' => $workspaceId]);
+
+            // Self-heal: a signed-in user with no workspace at all means a
+            // registration whose provisioning crashed mid-way (e.g. tenant DB
+            // creation failed). Provision a fresh workspace instead of running
+            // the panel without a tenant, where tenant-model queries would hit
+            // the central DB and 500.
+            if ($first === null) {
+                $first = app(WorkspaceProvisioner::class)->create($request->user(), '');
             }
+
+            $workspaceId = $first->id;
+            $workspace = $first;
+            session(['current_workspace_id' => $workspaceId]);
         }
 
         if ($workspaceId) {
-            $workspace = Workspace::find($workspaceId);
+            $workspace ??= Workspace::find($workspaceId);
 
             if ($workspace) {
                 // Re-initialize only if not already on this tenant.
