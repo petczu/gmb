@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Widgets;
 
+use App\Models\Location;
 use App\Models\Review;
 use App\Support\DashboardPeriod;
+use App\Support\DemoDashboard;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
@@ -28,6 +30,34 @@ class RatingTrendChart extends ChartWidget
 
     protected function getData(): array
     {
+        // No location yet → demo data behind the connect-first overlay.
+        if (DemoDashboard::active()) {
+            $demo = DemoDashboard::trend();
+
+            return [
+                'datasets' => [
+                    [
+                        'label' => 'Avg rating',
+                        'data' => $demo['ratings'],
+                        'borderColor' => '#2563eb',
+                        'backgroundColor' => 'rgba(37, 99, 235, 0.1)',
+                        'spanGaps' => true,
+                        'tension' => 0.3,
+                        'yAxisID' => 'y',
+                    ],
+                    [
+                        'label' => 'Reviews',
+                        'data' => $demo['volumes'],
+                        'type' => 'bar',
+                        'borderColor' => '#d1d5db',
+                        'backgroundColor' => 'rgba(156, 163, 175, 0.35)',
+                        'yAxisID' => 'y1',
+                    ],
+                ],
+                'labels' => $demo['labels'],
+            ];
+        }
+
         $period = DashboardPeriod::fromFilters($this->pageFilters);
 
         // Adaptive bucket width: daily for short windows, weekly otherwise.

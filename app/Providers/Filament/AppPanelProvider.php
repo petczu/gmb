@@ -9,9 +9,12 @@ use App\Http\Middleware\ApplyUserPreferences;
 use App\Http\Middleware\MarkOnboardingComplete;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Http\Middleware\SetLocale;
+use App\Models\Location;
 use App\Models\SocialiteUser;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\Auth\SocialiteUserProvisioner;
+use App\Support\DemoDashboard;
 use DutchCodingCompany\FilamentSocialite\FilamentSocialitePlugin;
 use DutchCodingCompany\FilamentSocialite\Provider;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
@@ -152,9 +155,12 @@ class AppPanelProvider extends PanelProvider
                 fn (): string => view('filament.billing-gate')->render(),
             )
             // Floating "Ask AI" chat launcher (bottom-right, Intercom style).
+            // Hidden during first-run onboarding: there's no data to ask about yet.
             ->renderHook(
                 PanelsRenderHook::BODY_END,
-                fn (): string => tenancy()->initialized && (auth()->user()?->can('view_reviews') ?? false)
+                fn (): string => tenancy()->initialized
+                    && ! (tenant() instanceof Workspace && tenant()->isOnboarding())
+                    && (auth()->user()?->can('view_reviews') ?? false)
                     ? view('filament.app.ask-ai-launcher')->render()
                     : '',
             )
@@ -173,6 +179,16 @@ class AppPanelProvider extends PanelProvider
                 fn (): string => request()->routeIs('filament.app.auth.*')
                     ? '<script>(function(){var el=document.documentElement;var strip=function(){if(el.classList.contains("dark")){el.classList.remove("dark");}};strip();el.style.colorScheme="light";new MutationObserver(strip).observe(el,{attributes:true,attributeFilter:["class"]});})();</script>'
                     : '',
+            )
+            // While the workspace has no locations, the dashboard widgets show
+            // DEMO data (see DemoDashboard) and this small connect-first invite
+            // floats on top. Filters stay hidden until the first location.
+            ->renderHook(
+                PanelsRenderHook::PAGE_START,
+                fn (): string => DemoDashboard::active()
+                    ? view('filament.app.dashboard-demo-overlay')->render()
+                    : '',
+                scopes: Dashboard::class,
             )
             // Language switcher + legal links under the auth (login/register) card.
             ->renderHook(

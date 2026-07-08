@@ -23,6 +23,9 @@ class Dashboard extends BaseDashboard
         return $schema->columns(1)->components([
             Section::make()
                 ->columnSpanFull()
+                // No filters while there's nothing to filter — the dashboard
+                // shows the connect-first empty state instead.
+                ->visible(fn (): bool => tenancy()->initialized && Location::query()->exists())
                 ->schema([
                     Grid::make(['default' => 1, 'sm' => 2, 'lg' => 4])->schema([
                         Select::make('period')

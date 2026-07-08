@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 return [
+    // Beispielbericht (noch keine Standorte verbunden)
+    'demo_business' => 'Demo-Restaurant',
+    'demo_period' => 'Leistungsbericht · letzte 30 Tage',
+    'demo_five_star' => '5-Sterne-Anteil',
+    'demo_summary_label' => 'Zusammenfassung',
+    'demo_summary' => 'Das Demo-Restaurant erhielt in den letzten 30 Tagen 38 Bewertungen (+9 zum Vorzeitraum) mit durchschnittlich 4,60★. 84% der Bewertungen waren positiv, die Antwortquote lag bei 92%. Gäste lobten wiederholt das freundliche Team und den schnellen Service.',
+
     'location' => 'Standort',
     'compare' => 'Vergleichen',
     'compare_options' => [

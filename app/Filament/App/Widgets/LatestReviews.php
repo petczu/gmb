@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Widgets;
 
+use App\Models\Location;
 use App\Models\Review;
 use App\Support\DashboardPeriod;
 use Filament\Tables\Columns\TextColumn;
@@ -24,7 +25,9 @@ class LatestReviews extends TableWidget
 
     public static function canView(): bool
     {
-        return tenancy()->initialized;
+        // Hidden until the first location is connected — the dashboard shows
+        // the connect-first empty state instead.
+        return tenancy()->initialized && Location::query()->exists();
     }
 
     public function table(Table $table): Table

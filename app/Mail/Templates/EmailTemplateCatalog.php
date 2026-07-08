@@ -28,6 +28,7 @@ class EmailTemplateCatalog
     public static function all(): array
     {
         return [
+            'signup_code' => ['title' => 'Sign-up code', 'category' => 'Onboarding', 'sample' => ['code' => '482913', 'minutes' => '10']],
             'welcome' => ['title' => 'Welcome', 'category' => 'Onboarding', 'sample' => ['name' => 'Peter', 'url' => self::url()]],
             'invite' => ['title' => 'Team invitation', 'category' => 'Team', 'sample' => ['inviter' => 'Peter', 'workspace' => 'Acme Agency', 'role' => 'admin', 'url' => self::url('invite/abc')]],
             'trial_ending' => ['title' => 'Trial ending', 'category' => 'Billing', 'sample' => ['name' => 'Peter', 'days' => '3', 'date' => 'July 11, 2026', 'url' => self::url('billing')]],
@@ -50,6 +51,7 @@ class EmailTemplateCatalog
             'review_coaching' => ['title' => 'Goal coaching (weekly)', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'intro' => 'You are at 18 of 100 this month. A steady push this week gets you back on pace. Here are a few ideas.', 'url' => self::url('reviews')]],
             'review_goal_reached' => ['title' => 'Goal reached 🎉', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'goal' => '100', 'url' => self::url('reviews')]],
 
+            'drip_connect' => ['title' => 'Series · Connect your location', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('locations'), 'unsubscribe_url' => self::url('unsubscribe')]],
             'drip_inbox' => ['title' => 'Series 1 · Reviews inbox', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('reviews'), 'unsubscribe_url' => self::url('unsubscribe')]],
             'drip_automation' => ['title' => 'Series 2 · Automations', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('automations'), 'unsubscribe_url' => self::url('unsubscribe')]],
             'drip_growth' => ['title' => 'Series 3 · Collect reviews', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('review-pages'), 'unsubscribe_url' => self::url('unsubscribe')]],
@@ -151,6 +153,15 @@ class EmailTemplateCatalog
     public static function defaultBody(string $key, string $locale): string
     {
         $body = match ($key) {
+            // No greeting (there's no account yet) and no CTA button: the person
+            // is already sitting on the sign-up page waiting for the code.
+            'signup_code' => implode("\n\n", [
+                __('emails.signup_code.intro', [], $locale),
+                '# :code',
+                __('emails.signup_code.note', ['minutes' => ':minutes'], $locale),
+                __('emails.signoff', [], $locale)."\n".__('emails.team', [], $locale),
+            ]),
+
             'welcome' => self::shell($locale, self::greeting($locale), [
                 __('emails.welcome.intro', [], $locale),
                 __('emails.welcome.next', [], $locale),
@@ -295,6 +306,7 @@ class EmailTemplateCatalog
             'review_goal_recap' => 'recap',
             'review_coaching' => 'tips',
             'review_goal_reached' => 'celebration',
+            'drip_connect' => 'connected',
             'drip_inbox' => 'reviews',
             'drip_automation' => 'robot',
             'drip_growth' => 'progress',

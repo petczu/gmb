@@ -7,6 +7,19 @@ return [
     'signoff' => 'Danke',
     'team' => 'Dein Repunio-Team',
 
+    'drip_connect' => [
+        'subject' => 'Dein Konto ist bereit. Ein Schritt fehlt noch',
+        'intro' => 'Dein Repunio-Workspace ist eingerichtet, aber noch leer: Bewertungen, Ratings und Berichte kommen aus deinem Google Business-Profil, und es ist noch keines verbunden.',
+        'tip' => 'Dauert etwa zwei Minuten: öffne Standorte, klicke auf Verbinden, melde dich bei Google an und wähle dein Unternehmen. Deine Bewertungen laufen sofort ein.',
+        'cta' => 'Standort verbinden',
+    ],
+
+    'signup_code' => [
+        'subject' => ':code ist dein Repunio-Anmeldecode',
+        'intro' => 'Gib diesen Code auf der Registrierungsseite ein, um deine E-Mail-Adresse zu bestätigen:',
+        'note' => 'Der Code ist :minutes Minuten gültig. Falls du ihn nicht angefordert hast, kannst du diese E-Mail einfach ignorieren.',
+    ],
+
     'welcome' => [
         'subject' => 'Willkommen bei Repunio',
         'intro' => 'Dein Konto ist bereit. Mit Repunio sammelst du Google-Bewertungen, beantwortest sie und erstellst Berichte, alles an einem Ort.',

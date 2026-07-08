@@ -29,4 +29,13 @@ return [
     'hero_register_footnote' => 'Dauert etwa 10 Minuten: Google-Unternehmensprofil verbinden und los geht\'s.',
     'continue_with_email' => 'Mit E-Mail fortfahren',
     'change_email' => 'Ändern',
+
+    // Anmeldecode (passwortlose E-Mail-Registrierung)
+    'code_label' => 'Bestätigungscode',
+    'code_help' => 'Wir haben einen 6-stelligen Code an :email geschickt. Gib ihn unten ein.',
+    'code_invalid' => 'Der Code stimmt nicht oder ist abgelaufen. Prüfe die E-Mail oder fordere einen neuen Code an.',
+    'code_throttled' => 'Zu viele Codes angefordert. Warte ein paar Minuten und versuch es erneut.',
+    'resend_code' => 'Neuen Code senden',
+    'code_resent' => 'Ein neuer Code ist unterwegs in dein Postfach.',
+    'create_account' => 'Konto erstellen',
 ];

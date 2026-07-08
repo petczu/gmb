@@ -45,6 +45,11 @@ class SubscriptionGate
             }
         }
 
+        // Card-less local trial (no Stripe objects yet).
+        if ($workspace->onGenericTrial()) {
+            return 'trial';
+        }
+
         // No subscription / canceled / incomplete / expired trial → must subscribe.
         return 'needs_plan';
     }

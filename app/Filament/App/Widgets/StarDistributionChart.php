@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Widgets;
 
+use App\Models\Location;
 use App\Models\Review;
 use App\Support\DashboardPeriod;
+use App\Support\DemoDashboard;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,6 +29,20 @@ class StarDistributionChart extends ChartWidget
 
     protected function getData(): array
     {
+        // No location yet → demo data behind the connect-first overlay.
+        if (DemoDashboard::active()) {
+            return [
+                'datasets' => [
+                    [
+                        'label' => 'Reviews',
+                        'data' => DemoDashboard::starCounts(),
+                        'backgroundColor' => ['#16a34a', '#65a30d', '#ca8a04', '#ea580c', '#dc2626'],
+                    ],
+                ],
+                'labels' => ['5★', '4★', '3★', '2★', '1★'],
+            ];
+        }
+
         $period = DashboardPeriod::fromFilters($this->pageFilters);
 
         $counts = Review::query()

@@ -1,11 +1,11 @@
 <x-filament-panels::page>
     @if (! $this->isConfigured())
-        <div style="border:1px solid #fde68a; background:#fffbeb; color:#92400e; border-radius:.9rem; padding:1.25rem 1.5rem;">
+        <div class="warn-box">
             <div style="font-weight:700; margin-bottom:.25rem;">{{ __('pages/competitors.not_configured_title') }}</div>
             <div style="font-size:.92rem;">{{ __('pages/competitors.not_configured_body') }}</div>
         </div>
     @else
-        <div style="border:1px solid #e5e7eb; border-radius:.9rem; padding:1rem 1.25rem; margin-bottom:1.25rem; font-size:.85rem; color:#6b7280; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+        <div class="hint-box" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
             <span>{{ __('pages/competitors.intro') }}</span>
             <span style="display:inline-flex; align-items:center; gap:.5rem; flex-shrink:0; flex-wrap:wrap;">
                 <select wire:model.live="trendPeriod"

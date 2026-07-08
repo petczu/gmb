@@ -8,6 +8,7 @@ use App\Billing\Plans;
 use App\Models\Workspace;
 use App\Services\Billing\LocationBilling;
 use App\Services\Onboarding\OnboardingStatus;
+use App\Support\Countries;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
@@ -18,6 +19,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Text;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
@@ -78,6 +80,8 @@ class Onboarding extends Page implements HasForms
 
         $this->form->fill([
             'name' => $workspace->name,
+            'entity_type' => $workspace->entity_type ?? 'company',
+            'legal_name' => $workspace->legal_name,
             'billing_country' => $workspace->billing_country ?? 'AT',
             'vat_number' => $workspace->vat_number,
             'address_line1' => $workspace->address_line1,
@@ -111,13 +115,25 @@ class Onboarding extends Page implements HasForms
             ->icon(Heroicon::OutlinedBuildingOffice2)
             ->description(__('onboarding.step_company_hint'))
             ->schema([
+                Radio::make('entity_type')
+                    ->label(__('pages/company.entity_type'))
+                    ->options([
+                        'company' => __('pages/company.entity_company'),
+                        'individual' => __('pages/company.entity_individual'),
+                    ])
+                    ->inline()
+                    ->live()
+                    ->columnSpanFull(),
                 TextInput::make('name')->label(__('pages/company.display_name'))->required()->maxLength(120),
+                TextInput::make('legal_name')->label(__('pages/company.legal_name'))->maxLength(160)
+                    ->visible(fn (Get $get): bool => $get('entity_type') !== 'individual'),
                 Select::make('billing_country')
                     ->label(__('pages/company.country'))
-                    ->options(\App\Support\Countries::list())
+                    ->options(Countries::list())
                     ->searchable()
                     ->required(),
-                TextInput::make('vat_number')->label(__('pages/company.vat_number'))->maxLength(40),
+                TextInput::make('vat_number')->label(__('pages/company.vat_number'))->maxLength(40)
+                    ->visible(fn (Get $get): bool => $get('entity_type') !== 'individual'),
                 TextInput::make('address_line1')->label(__('pages/company.address_line1'))->maxLength(200),
                 TextInput::make('postal_code')->label(__('pages/company.postal_code'))->maxLength(20),
                 TextInput::make('city')->label(__('pages/company.city'))->maxLength(120),
@@ -128,7 +144,7 @@ class Onboarding extends Page implements HasForms
                 $state = $this->form->getRawState();
 
                 $workspace->name = (string) $state['name'];
-                foreach (['billing_country', 'vat_number', 'address_line1', 'postal_code', 'city'] as $field) {
+                foreach (['entity_type', 'legal_name', 'billing_country', 'vat_number', 'address_line1', 'postal_code', 'city'] as $field) {
                     $workspace->setAttribute($field, $state[$field] ?? null);
                 }
                 $workspace->save();
@@ -138,7 +154,8 @@ class Onboarding extends Page implements HasForms
     protected function planStep(): Step
     {
         $planDone = fn (): bool => ! $this->billing()->enabled()
-            || $this->billing()->subscription($this->workspace()) !== null;
+            || $this->billing()->subscription($this->workspace()) !== null
+            || $this->workspace()->onGenericTrial();
 
         return Step::make(__('onboarding.step_plan_label'))
             ->icon(Heroicon::OutlinedCreditCard)
@@ -163,19 +180,45 @@ class Onboarding extends Page implements HasForms
                     ->inline()
                     ->visible(fn (): bool => Plans::hasYearly() && ! $planDone()),
 
+                Text::make(__('onboarding.wiz_trial_note'))
+                    ->hidden(fn (): bool => $planDone() || $this->billing()->hasUsedTrial($this->workspace())),
+
+                // Only for the rare "trial already used" case — the normal path
+                // starts the trial straight from the Next button.
                 Actions::make([
                     Action::make('startTrial')
-                        ->label(__('onboarding.wiz_start_trial'))
+                        ->label(__('onboarding.wiz_go_checkout'))
                         ->icon(Heroicon::OutlinedRocketLaunch)
                         ->action('startTrial'),
-                ])->hidden($planDone),
+                ])->visible(fn (): bool => ! $planDone() && $this->billing()->hasUsedTrial($this->workspace())),
             ])
             ->afterValidation(function () use ($planDone): void {
-                if (! $planDone()) {
-                    Notification::make()->title(__('onboarding.wiz_plan_required'))->warning()->send();
-
-                    throw new Halt;
+                if ($planDone()) {
+                    return;
                 }
+
+                $workspace = $this->workspace();
+
+                // Next = start the card-less trial for the picked plan.
+                if (! $this->billing()->hasUsedTrial($workspace)) {
+                    $state = $this->form->getRawState();
+                    $this->billing()->startLocalTrial($workspace, (string) ($state['plan'] ?? 'growth'));
+
+                    Notification::make()
+                        ->title(__('onboarding.trial_started_title'))
+                        ->body(__('onboarding.trial_started_body', [
+                            'date' => $this->billing()->trialEndsAt($workspace)?->translatedFormat('j. F Y'),
+                        ]))
+                        ->success()
+                        ->send();
+
+                    return;
+                }
+
+                // Trial used up: a subscription (via the checkout button) is required.
+                Notification::make()->title(__('onboarding.wiz_plan_required'))->warning()->send();
+
+                throw new Halt;
             });
     }
 
@@ -192,19 +235,62 @@ class Onboarding extends Page implements HasForms
                         ->label(__('onboarding.wiz_connect_google'))
                         ->icon(Heroicon::OutlinedLink)
                         ->url(route('zernio.google.connect')),
+
+                    Action::make('skipLocation')
+                        ->label(__('onboarding.wiz_skip_location'))
+                        ->color('gray')
+                        ->action('skipLocation'),
                 ]),
             ]);
     }
 
-    /** Redirect to Stripe Checkout for the picked plan (14-day trial, no card). */
+    /**
+     * Finish onboarding without a connected location — the user can link their
+     * Google Business Profile later from the Locations page.
+     */
+    public function skipLocation(): mixed
+    {
+        $workspace = $this->workspace();
+        $workspace->onboarding_completed_at = now();
+        $workspace->save();
+
+        Notification::make()
+            ->title(__('onboarding.skipped_title'))
+            ->body(__('onboarding.skipped_body'))
+            ->success()
+            ->send();
+
+        return redirect('/');
+    }
+
+    /**
+     * Start the 14-day trial. First-time workspaces get a card-less local trial
+     * (no Stripe redirect at all); if the trial was already used, fall back to
+     * Stripe Checkout, which then asks for a card right away.
+     */
     public function startTrial(): mixed
     {
         $state = $this->form->getRawState();
         $plan = (string) ($state['plan'] ?? 'growth');
         $interval = (string) ($state['interval'] ?? 'monthly');
+        $workspace = $this->workspace();
+
+        if (! $this->billing()->hasUsedTrial($workspace)) {
+            $this->billing()->startLocalTrial($workspace, $plan);
+
+            Notification::make()
+                ->title(__('onboarding.trial_started_title'))
+                ->body(__('onboarding.trial_started_body', [
+                    'date' => $this->billing()->trialEndsAt($workspace)?->translatedFormat('j. F Y'),
+                ]))
+                ->success()
+                ->send();
+
+            return redirect('/onboarding');
+        }
 
         $checkout = $this->billing()->checkout(
-            $this->workspace(),
+            $workspace,
             $plan,
             $interval,
             url('/onboarding'),
@@ -234,7 +320,7 @@ class Onboarding extends Page implements HasForms
         $options = [];
         foreach (Plans::all() as $key => $plan) {
             if ($plan->priceId !== null) {
-                $options[$key] = $plan->name.' — €'.$plan->priceUsd.' '.__('onboarding.wiz_per_location');
+                $options[$key] = $plan->name.': €'.$plan->priceUsd.' '.__('onboarding.wiz_per_location');
             }
         }
 

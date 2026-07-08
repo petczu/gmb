@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Mail\DripMail;
+use App\Models\Location;
 use App\Models\User;
 use App\Services\Onboarding\DripSeries;
 use Illuminate\Console\Command;
@@ -37,7 +38,13 @@ class SendDripEmailsCommand extends Command
                     ->pluck('email_key')
                     ->all();
 
-                $key = $series->dueStep($user, $already);
+                // The conditional connect-nudge needs the real location state,
+                // but only while it could still be sent — skip the tenant
+                // round-trip once it's consumed.
+                $hasLocations = in_array('drip_connect', $already, true)
+                    || $this->ownerWorkspaceHasLocations($user);
+
+                $key = $series->dueStep($user, $already, hasLocations: $hasLocations);
 
                 if ($key === null) {
                     return;
@@ -73,5 +80,32 @@ class SendDripEmailsCommand extends Command
         $this->info("Sent {$sent} drip email(s).");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Whether the user's owned workspace has any connected location. True for
+     * users who own no workspace (member track — the nudge never applies).
+     */
+    private function ownerWorkspaceHasLocations(User $user): bool
+    {
+        $workspace = $user->workspaces()->wherePivot('role', 'owner')->first();
+
+        if ($workspace === null) {
+            return true;
+        }
+
+        $previous = tenant();
+
+        try {
+            tenancy()->initialize($workspace);
+
+            return Location::query()->exists();
+        } catch (Throwable $e) {
+            Log::warning('Drip: location check failed', ['workspace' => $workspace->id, 'error' => $e->getMessage()]);
+
+            return true;
+        } finally {
+            $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();
+        }
     }
 }

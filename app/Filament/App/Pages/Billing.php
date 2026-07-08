@@ -6,7 +6,6 @@ namespace App\Filament\App\Pages;
 
 use App\Billing\Credits;
 use App\Billing\Plans;
-use App\Filament\App\Pages\Company;
 use App\Models\Workspace;
 use App\Services\Ai\AiCreditService;
 use App\Services\Billing\AiUsageService;
@@ -16,6 +15,9 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Log;
+use Laravel\Cashier\Subscription;
+use Stripe\Exception\InvalidRequestException;
 
 class Billing extends Page
 {
@@ -86,7 +88,7 @@ class Billing extends Page
             'interval' => $this->interval,
             'currentPlan' => $billing->plan($workspace)?->key,
             'subscribed' => $billing->subscribed($workspace),
-            'onTrial' => (bool) $subscription?->onTrial(),
+            'onTrial' => $billing->onTrial($workspace),
             'onGracePeriod' => (bool) $subscription?->onGracePeriod(),
             'locationCount' => $billing->locationCount(),
             'aiUsed' => $usage->autoRepliesThisMonth(),
@@ -111,11 +113,25 @@ class Billing extends Page
             'cancelAt' => $subscription?->ends_at,
             'hasInvoices' => $billing->enabled() && $workspace->stripe_id !== null,
             'hasCard' => (bool) $workspace->hasDefaultPaymentMethod(),
+            'billingProfile' => $this->billingProfileSummary($workspace),
+            // Complete = Stripe Checkout can skip the address + VAT forms.
+            'billingProfileComplete' => filled($workspace->legal_name)
+                && filled($workspace->billing_country)
+                && filled($workspace->address_line1)
+                && filled($workspace->postal_code)
+                && filled($workspace->city)
+                && ($workspace->entity_type === 'individual' || filled($workspace->vat_number)),
         ];
     }
 
+    /** One-line company summary for "invoices go to …" (shared with Checkout). */
+    protected function billingProfileSummary(Workspace $workspace): ?string
+    {
+        return $this->billing()->billingSummaryLine($workspace);
+    }
+
     /** The workspace's Cashier subscription, if any. */
-    protected function subscriptionModel(): ?\Laravel\Cashier\Subscription
+    protected function subscriptionModel(): ?Subscription
     {
         return $this->billing()->subscription($this->workspace());
     }
@@ -165,7 +181,7 @@ class Billing extends Page
                 ])
                 ->all();
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Loading invoices failed', ['error' => $e->getMessage()]);
+            Log::warning('Loading invoices failed', ['error' => $e->getMessage()]);
             $this->invoices = [];
         }
     }
@@ -209,7 +225,7 @@ class Billing extends Page
                         if (! $subscription->canceled()) {
                             $subscription->cancel();
                         }
-                    } catch (\Stripe\Exception\InvalidRequestException $e) {
+                    } catch (InvalidRequestException $e) {
                         // Already canceled on Stripe but our local record was stale —
                         // pull the real status so the UI matches, then report success.
                         $subscription->syncStripeStatus();
@@ -232,6 +248,9 @@ class Billing extends Page
         }
 
         $this->mountAction('subscribe', ['plan' => $planKey]);
+
+        // `mixed` does not include void — the modal path must return explicitly.
+        return null;
     }
 
     /** Modal asking whether to add billing details before checkout. */

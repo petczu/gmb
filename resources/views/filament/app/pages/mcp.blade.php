@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     @if (! $this->isPro())
-        <div style="border:1px solid #fde68a; background:#fffbeb; color:#92400e; border-radius:.9rem; padding:1.25rem 1.5rem;">
+        <div class="warn-box">
             <div style="font-weight:700; margin-bottom:.25rem;">{{ __('pages/mcp.pro_only_title') }}</div>
             <div style="font-size:.92rem;">{{ __('pages/mcp.pro_only_body') }}</div>
             <a href="{{ \App\Filament\App\Pages\Billing::getUrl() }}"
@@ -9,7 +9,7 @@
             </a>
         </div>
     @else
-        <div style="display:grid; gap:.6rem; border:1px solid #e5e7eb; border-radius:.9rem; padding:1.1rem 1.25rem; margin-bottom:1.25rem;">
+        <div class="hint-box" style="display:grid; gap:.6rem;">
             <div>
                 <div style="font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:#9ca3af;">{{ __('pages/mcp.endpoint') }}</div>
                 <code style="font-size:.9rem; word-break:break-all;">{{ $this->endpoint() }}</code>

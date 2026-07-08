@@ -7,6 +7,19 @@ return [
     'signoff' => 'Thanks,',
     'team' => 'The Repunio team',
 
+    'drip_connect' => [
+        'subject' => 'Your account is ready. One step left',
+        'intro' => 'Your Repunio workspace is set up, but it is still empty: reviews, ratings and reports all come from your Google Business Profile, and none is connected yet.',
+        'tip' => 'It takes about two minutes: open Locations, click Connect, sign in with Google and pick your business. Your reviews start flowing in right away.',
+        'cta' => 'Connect your location',
+    ],
+
+    'signup_code' => [
+        'subject' => ':code is your Repunio sign-up code',
+        'intro' => 'Enter this code on the sign-up page to confirm your email address:',
+        'note' => 'The code is valid for :minutes minutes. If you did not request it, you can safely ignore this email.',
+    ],
+
     'welcome' => [
         'subject' => 'Welcome to Repunio',
         'intro' => 'Your account is ready. Repunio helps you collect, reply to and report on your Google reviews, all in one place.',

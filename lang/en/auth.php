@@ -29,4 +29,13 @@ return [
     'hero_register_footnote' => 'Takes about 10 minutes: connect your Google Business Profile and you\'re off.',
     'continue_with_email' => 'Continue with email',
     'change_email' => 'Change',
+
+    // Sign-up code (passwordless email registration)
+    'code_label' => 'Verification code',
+    'code_help' => 'We emailed a 6-digit code to :email. Enter it below.',
+    'code_invalid' => 'That code is not right or has expired. Check the email or request a new code.',
+    'code_throttled' => 'Too many codes requested. Wait a few minutes and try again.',
+    'resend_code' => 'Send a new code',
+    'code_resent' => 'A new code is on its way to your inbox.',
+    'create_account' => 'Create account',
 ];

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Widgets;
 
+use App\Models\Location;
 use App\Models\Review;
 use App\Support\DashboardPeriod;
+use App\Support\DemoDashboard;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -26,6 +28,19 @@ class ReviewStatsOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
+        // No location yet → demo data behind the connect-first overlay.
+        if (DemoDashboard::active()) {
+            return [
+                $this->stat(__('widgets.average_rating'), '4.60', 0.2, __('widgets.average_rating_desc'), higherIsBetter: true),
+                $this->stat(__('widgets.reviews_received'), '38', 9, '', higherIsBetter: true, icon: 'heroicon-m-chat-bubble-left-right'),
+                $this->stat(__('widgets.response_rate'), '92%', 4, __('widgets.replied_of', ['replied' => 35, 'total' => 38]), higherIsBetter: true, unit: 'pp'),
+                Stat::make(__('widgets.unanswered_now'), '3')
+                    ->description(__('widgets.awaiting_reply'))
+                    ->descriptionIcon('heroicon-m-exclamation-triangle')
+                    ->color('warning'),
+            ];
+        }
+
         $period = DashboardPeriod::fromFilters($this->pageFilters);
 
         // Single query for current-window aggregates.

@@ -75,6 +75,8 @@ class OnboardingStatus
     private function planDone(Workspace $workspace): bool
     {
         // When billing isn't configured (local/dev) this step isn't applicable.
-        return ! $this->billing->enabled() || $this->billing->subscription($workspace) !== null;
+        return ! $this->billing->enabled()
+            || $this->billing->subscription($workspace) !== null
+            || $workspace->onGenericTrial();
     }
 }

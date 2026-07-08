@@ -15,6 +15,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -22,6 +23,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
@@ -68,6 +70,7 @@ class Company extends Page implements HasForms
 
         $this->form->fill([
             'name' => $w->name,
+            'entity_type' => $w->entity_type ?? 'company',
             'legal_name' => $w->legal_name,
             'website' => $w->website,
             'contact_email' => $w->contact_email,
@@ -103,9 +106,35 @@ class Company extends Page implements HasForms
                 Section::make(__('pages/company.profile_section'))
                     ->description(__('pages/company.profile_section_desc'))
                     ->schema([
+                        Radio::make('entity_type')
+                            ->label(__('pages/company.entity_type'))
+                            ->options([
+                                'company' => __('pages/company.entity_company'),
+                                'individual' => __('pages/company.entity_individual'),
+                            ])
+                            ->inline()
+                            ->live()
+                            ->columnSpanFull(),
                         TextInput::make('name')->label(__('pages/company.display_name'))->required()->maxLength(120),
-                        TextInput::make('legal_name')->label(__('pages/company.legal_name'))->maxLength(160),
-                        TextInput::make('website')->url()->prefix('https://')->maxLength(200),
+                        TextInput::make('legal_name')->label(__('pages/company.legal_name'))->maxLength(160)
+                            ->visible(fn (Get $get): bool => $get('entity_type') !== 'individual'),
+                        // The https:// prefix is visual — people type bare domains
+                        // ("google.com"), so the strict `url` rule would reject
+                        // them. Strip any typed scheme, validate the full URL.
+                        TextInput::make('website')
+                            ->prefix('https://')
+                            ->maxLength(200)
+                            ->dehydrateStateUsing(fn (?string $state): ?string => filled($state)
+                                ? preg_replace('~^https?://~i', '', trim($state))
+                                : null)
+                            ->rule(fn (): \Closure => function (string $attribute, mixed $value, \Closure $fail): void {
+                                $candidate = 'https://'.preg_replace('~^https?://~i', '', trim((string) $value));
+                                $host = parse_url($candidate, PHP_URL_HOST);
+
+                                if (! filter_var($candidate, FILTER_VALIDATE_URL) || ! is_string($host) || ! str_contains($host, '.')) {
+                                    $fail(__('validation.url', ['attribute' => 'website']));
+                                }
+                            }),
                         TextInput::make('contact_email')->label(__('pages/company.contact_email'))->email()->maxLength(160),
                         TextInput::make('contact_phone')->label(__('pages/company.contact_phone'))->tel()->maxLength(60),
                         Select::make('business_category')
@@ -126,7 +155,8 @@ class Company extends Page implements HasForms
                             ->searchable()
                             ->default('AT'),
                         TextInput::make('vat_number')->label(__('pages/company.vat_number'))->maxLength(40)
-                            ->helperText(__('pages/company.vat_helper')),
+                            ->helperText(__('pages/company.vat_helper'))
+                            ->visible(fn (Get $get): bool => $get('entity_type') !== 'individual'),
                         TextInput::make('address_line1')->label(__('pages/company.address_line1'))->maxLength(200),
                         TextInput::make('address_line2')->label(__('pages/company.address_line2'))->maxLength(200),
                         TextInput::make('postal_code')->label(__('pages/company.postal_code'))->maxLength(20),
@@ -231,7 +261,7 @@ class Company extends Page implements HasForms
 
         // `name` is a real column; the rest live in the tenant `data` JSON.
         $w->name = $state['name'];
-        foreach (['legal_name', 'website', 'contact_email', 'contact_phone', 'business_category', 'billing_country', 'address_line1', 'address_line2', 'postal_code', 'city', 'vat_number', 'brand_color', 'logo_path'] as $key) {
+        foreach (['entity_type', 'legal_name', 'website', 'contact_email', 'contact_phone', 'business_category', 'billing_country', 'address_line1', 'address_line2', 'postal_code', 'city', 'vat_number', 'brand_color', 'logo_path'] as $key) {
             $w->{$key} = $state[$key] ?? null;
         }
         $w->save();

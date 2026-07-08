@@ -127,7 +127,7 @@
                             <div style="font-weight:700; font-size:1.05rem;"><span x-text="qty"></span> {{ __('pages/billing.credits_word') }}</div>
                             <input type="number" x-model.number="qty" @change="clampQty()" @blur="clampQty()"
                                 :min="min" :max="maxInput" step="10"
-                                style="width:7rem; padding:0.35rem 0.6rem; border:1px solid rgb(209 213 219); border-radius:0.5rem; font-size:0.9rem;">
+                                class="qty-input">
                             <span x-show="discounted" x-cloak style="background:#dcfce7; color:#166534; font-size:0.75rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:999px;">−<span x-text="disc"></span>%</span>
                         </div>
 
@@ -139,14 +139,14 @@
                         <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin:0.75rem 0;">
                             @foreach ($d['creditPresets'] as $p)
                                 <button type="button" @click="qty = {{ $p }}"
-                                    style="padding:0.35rem 0.8rem; border:1px solid rgb(209 213 219); border-radius:0.5rem; background:#fff; cursor:pointer; font-size:0.85rem;">
+                                    class="preset-btn">
                                     {{ $p }}
                                 </button>
                             @endforeach
                         </div>
 
                         @if ($d['creditVolumeThreshold'] > 0)
-                            <div style="color:rgb(22 101 52); font-size:0.8rem; margin-bottom:0.25rem;">
+                            <div class="good-note" style="font-size:0.8rem; margin-bottom:0.25rem;">
                                 {{ __('pages/billing.volume_hint', ['percent' => $d['creditVolumeDiscount'], 'qty' => number_format($d['creditVolumeThreshold'])]) }}
                             </div>
                         @endif
@@ -171,7 +171,7 @@
                     </div>
 
                     {{-- Current credit balance --}}
-                    <div style="flex:0 0 16rem; min-width:14rem; border:1px solid rgb(229 231 235); border-radius:0.9rem; padding:1.1rem 1.2rem; background:#fff;">
+                    <div class="panel-card" style="flex:0 0 16rem; min-width:14rem; border:1px solid var(--card-border); border-radius:0.9rem; padding:1.1rem 1.2rem;">
                         <div style="font-weight:600; font-size:0.95rem; margin-bottom:0.6rem;">{{ __('pages/billing.extra_credits') }}</div>
                         <div style="font-size:1.6rem; font-weight:700;">{{ number_format($d['creditBalance']) }}</div>
                         <div style="color:rgb(107 114 128); font-size:0.85rem;">{{ __('pages/billing.never_expire_short') }}</div>
@@ -191,7 +191,7 @@
                         <div style="color:rgb(107 114 128); font-size:0.82rem; margin-bottom:0.75rem;">{{ __('pages/billing.auto_recharge_desc') }}</div>
 
                         @if (! $d['hasCard'])
-                            <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; border-radius:0.6rem; padding:0.7rem 0.9rem; font-size:0.85rem; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0.75rem;">
+                            <div class="warn-box" style="border-radius:0.6rem; padding:0.7rem 0.9rem; font-size:0.85rem; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0.75rem;">
                                 <span>{{ __('pages/billing.auto_recharge_needs_card') }}</span>
                                 <x-filament::button wire:click="addPaymentMethod" color="warning" size="sm">{{ __('pages/billing.add_payment_method') }}</x-filament::button>
                             </div>
@@ -222,6 +222,26 @@
                 </x-filament::section>
             @endif
 
+            {{-- Whose details go on the invoices (pushed to Stripe before Checkout). --}}
+            @if ($d['enabled'])
+                <div class="hint-box" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:.75rem;">
+                    <span>
+                        @if ($d['billingProfile'])
+                            {{ __('pages/billing.invoices_go_to', ['details' => $d['billingProfile']]) }}
+                            @unless ($d['billingProfileComplete'])
+                                {{ __('pages/billing.details_incomplete') }}
+                            @endunless
+                        @else
+                            {{ __('pages/billing.invoices_missing') }}
+                        @endif
+                    </span>
+                    <a href="{{ \App\Filament\App\Pages\Company::getUrl() }}"
+                       style="flex-shrink:0; color:#2d19ec; font-weight:600; text-decoration:none;" class="billing-edit-link">
+                        {{ $d['billingProfile'] ? __('pages/billing.edit_details') : __('pages/billing.add_billing_details') }} &rarr;
+                    </a>
+                </div>
+            @endif
+
             {{-- Interval toggle --}}
             @if ($d['hasYearly'])
                 <div style="display:flex; gap:0.4rem; align-items:center; margin:0.5rem 0;">
@@ -234,11 +254,20 @@
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(16rem, 1fr)); gap:1.5rem;">
                 @foreach ($d['plans'] as $key => $plan)
                     @php($isCurrent = $d['currentPlan'] === $key)
+                    {{-- Card-less local trial: the plan is active but there is no
+                         Stripe subscription yet — badge it and turn the button
+                         into the "keep it after the trial" conversion CTA. --}}
+                    @php($isTrialCurrent = $isCurrent && ! $d['subscribed'] && $d['onTrial'])
                     @php($yearly = $d['interval'] === 'year')
                     @php($priceAvailable = $yearly ? $plan->yearlyPriceId !== null : $plan->priceId !== null)
-                    <div style="border:2px solid {{ $isCurrent ? '#2d19ec' : 'rgb(229 231 235)' }}; border-radius:0.9rem; padding:1.1rem 1.2rem; background:#fff; display:flex; flex-direction:column; gap:0.5rem;">
-                        <div style="display:flex; align-items:baseline; justify-content:space-between;">
-                            <span style="font-weight:700; font-size:1.05rem;">{{ $plan->name }}</span>
+                    <div class="panel-card" style="border:2px solid {{ $isCurrent ? '#2d19ec' : 'var(--card-border)' }}; border-radius:0.9rem; padding:1.1rem 1.2rem; display:flex; flex-direction:column; gap:0.5rem;">
+                        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:.5rem; flex-wrap:wrap;">
+                            <span style="font-weight:700; font-size:1.05rem;">
+                                {{ $plan->name }}
+                                @if ($isTrialCurrent)
+                                    <span class="trial-pill">{{ trans_choice('pages/billing.trial_pill', (int) $d['trialDaysLeft'], ['days' => $d['trialDaysLeft']]) }}</span>
+                                @endif
+                            </span>
                             <span style="font-weight:700;">
                                 @if ($yearly)
                                     €{{ $plan->yearlyPriceUsd() }}<span style="color:rgb(107 114 128); font-weight:400; font-size:0.8rem;">{{ __('pages/billing.per_loc_yr') }}</span>
@@ -273,7 +302,6 @@
                                     <x-filament::button wire:click="switchPlan('{{ $key }}')" color="primary" outlined>{{ __('pages/billing.switch_to', ['plan' => $plan->name]) }}</x-filament::button>
                                 @endif
                             @else
-                                {{-- Stripe Checkout free-trial (no card required during the trial). --}}
                                 <x-filament::button wire:click="startCheckout('{{ $key }}')" color="primary">
                                     {{ $d['hasUsedTrial'] ? __('pages/billing.subscribe') : __('pages/billing.start_trial') }}
                                 </x-filament::button>

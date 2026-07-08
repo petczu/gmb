@@ -63,7 +63,8 @@ class Credits
 
     public static function volumeDiscountPercent(): int
     {
-        return (int) config('services.billing.credit_volume_discount', 10);
+        // Clamped: a mistyped env value must never render "save 104%".
+        return min(95, max(0, (int) config('services.billing.credit_volume_discount', 10)));
     }
 
     /** True when the quantity reaches the volume threshold AND a discount price exists. */

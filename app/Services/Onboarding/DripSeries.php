@@ -18,6 +18,10 @@ class DripSeries
     /** Step key => day offset since signup, per track. */
     public const TRACKS = [
         'owner' => [
+            // Activation nudge: only sent while the workspace still has NO
+            // locations (see dueStep's $hasLocations) — everything else in the
+            // product is pointless before the first connection.
+            'drip_connect' => 1,
             'drip_inbox' => 1,
             'drip_automation' => 3,
             'drip_growth' => 5,
@@ -61,9 +65,13 @@ class DripSeries
     /**
      * The single next step due for this user right now, or null.
      *
+     * $hasLocations controls the conditional 'drip_connect' nudge: it is only
+     * due while the owner's workspace has no locations (the command passes the
+     * real state; default true keeps the step out of the way).
+     *
      * @param  list<string>  $alreadySent
      */
-    public function dueStep(User $user, array $alreadySent, ?CarbonInterface $now = null): ?string
+    public function dueStep(User $user, array $alreadySent, ?CarbonInterface $now = null, bool $hasLocations = true): ?string
     {
         if (! $user->getAttribute('product_emails')) {
             return null;
@@ -78,6 +86,10 @@ class DripSeries
 
         foreach (self::TRACKS[$this->trackFor($user)] as $key => $day) {
             if (in_array($key, $alreadySent, true)) {
+                continue;
+            }
+
+            if ($key === 'drip_connect' && $hasLocations) {
                 continue;
             }
 

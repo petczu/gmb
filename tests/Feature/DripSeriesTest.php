@@ -46,6 +46,19 @@ class DripSeriesTest extends TestCase
         $this->assertSame('drip_inbox', $step);
     }
 
+    public function test_connect_nudge_comes_first_while_no_location(): void
+    {
+        $series = new DripSeries;
+        $user = $this->user('owner', 'internal', 1);
+
+        // No location yet → the activation nudge wins over the inbox step.
+        $this->assertSame('drip_connect', $series->dueStep($user, [], hasLocations: false));
+        // Location connected → the nudge is silently skipped.
+        $this->assertSame('drip_inbox', $series->dueStep($user, [], hasLocations: true));
+        // Nudge already sent, still no location → continue the normal series.
+        $this->assertSame('drip_inbox', $series->dueStep($user, ['drip_connect'], hasLocations: false));
+    }
+
     public function test_steps_progress_and_dedup(): void
     {
         $series = new DripSeries;

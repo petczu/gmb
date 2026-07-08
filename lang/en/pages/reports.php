@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 return [
+    // Sample report preview (no locations connected yet)
+    'demo_business' => 'Demo Restaurant',
+    'demo_period' => 'Performance report · last 30 days',
+    'demo_five_star' => '5-star share',
+    'demo_summary_label' => 'Executive summary',
+    'demo_summary' => 'Demo Restaurant received 38 reviews in the last 30 days (+9 vs the previous period), averaging 4.60★. 84% of reviews were positive and the response rate reached 92%. Guests repeatedly praised the friendly team and fast service.',
+
     'location' => 'Location',
     'compare' => 'Compare',
     'compare_options' => [

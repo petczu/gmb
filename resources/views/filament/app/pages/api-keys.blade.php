@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     @if (! $this->isPro())
-        <div style="border:1px solid #fde68a; background:#fffbeb; color:#92400e; border-radius:.9rem; padding:1.25rem 1.5rem;">
+        <div class="warn-box">
             <div style="font-weight:700; margin-bottom:.25rem;">{{ __('pages/api_keys.pro_only_title') }}</div>
             <div style="font-size:.92rem;">{{ __('pages/api_keys.pro_only_body') }}</div>
             <a href="{{ \App\Filament\App\Pages\Billing::getUrl() }}"
@@ -10,14 +10,14 @@
         </div>
     @else
         @if ($this->plainKey)
-            <div style="border:1px solid #bbf7d0; background:#f0fdf4; border-radius:.9rem; padding:1rem 1.25rem; margin-bottom:1.25rem;">
-                <div style="font-weight:700; color:#166534; margin-bottom:.35rem;">{{ __('pages/api_keys.once_title') }}</div>
-                <div style="font-size:.85rem; color:#15803d; margin-bottom:.6rem;">{{ __('pages/api_keys.once_body') }}</div>
-                <code style="display:block; word-break:break-all; background:#fff; border:1px solid #e5e7eb; border-radius:.5rem; padding:.6rem .75rem; font-size:.85rem;">{{ $this->plainKey }}</code>
+            <div class="ok-box">
+                <div class="ok-box-title">{{ __('pages/api_keys.once_title') }}</div>
+                <div class="ok-box-body">{{ __('pages/api_keys.once_body') }}</div>
+                <code class="code-box">{{ $this->plainKey }}</code>
             </div>
         @endif
 
-        <div style="border:1px solid #e5e7eb; border-radius:.9rem; padding:1rem 1.25rem; margin-bottom:1.25rem; font-size:.85rem; color:#6b7280;">
+        <div class="hint-box">
             {{ __('pages/api_keys.base_url') }} <code style="font-size:.85rem;">{{ rtrim(config('app.url'), '/') }}/api/v1</code><br>
             {{ __('pages/api_keys.auth_hint') }}<br>
             <a href="{{ route('docs.index') }}" target="_blank" rel="noopener"

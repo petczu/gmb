@@ -11,6 +11,9 @@ return [
     // Company profile section
     'profile_section' => 'Company profile',
     'profile_section_desc' => 'Used across the app and on your reports.',
+    'entity_type' => 'This account belongs to',
+    'entity_company' => 'A company',
+    'entity_individual' => 'An individual',
     'display_name' => 'Display name',
     'legal_name' => 'Legal company name',
     'contact_email' => 'Contact email',

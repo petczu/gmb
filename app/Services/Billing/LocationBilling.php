@@ -10,6 +10,8 @@ use App\Billing\Plan;
 use App\Billing\Plans;
 use App\Models\Location;
 use App\Models\Workspace;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Cashier;
 use Laravel\Cashier\Subscription;
@@ -45,7 +47,7 @@ class LocationBilling
         return $this->enabled() && $workspace->subscribed(self::SUBSCRIPTION);
     }
 
-    /** The active plan (from a real/trialing Stripe subscription), else null. */
+    /** The active plan (Stripe subscription, or the card-less local trial). */
     public function plan(Workspace $workspace): ?Plan
     {
         $subscription = $this->subscription($workspace);
@@ -54,24 +56,55 @@ class LocationBilling
             return Plans::fromPriceId($subscription->stripe_price);
         }
 
+        if ($workspace->onGenericTrial()) {
+            return Plans::find((string) ($workspace->trial_plan ?? 'growth'));
+        }
+
         return null;
     }
 
-    /** On a Stripe trial (the subscription is in its trial period). */
+    /**
+     * Start the free trial WITHOUT Stripe: no card, no redirect. Uses Cashier's
+     * generic trial (workspace.trial_ends_at) + the picked plan for feature
+     * gates. Checkout (with a card) happens when the trial ends.
+     */
+    public function startLocalTrial(Workspace $workspace, string $planKey): void
+    {
+        if ($this->hasUsedTrial($workspace)) {
+            return;
+        }
+
+        if (Plans::find($planKey) === null) {
+            throw new \InvalidArgumentException("Unknown plan: {$planKey}");
+        }
+
+        $workspace->trial_ends_at = now()->addDays((int) config('services.billing.trial_days', 14));
+        $workspace->trial_plan = $planKey;
+        $workspace->save();
+    }
+
+    /** On a trial: Stripe subscription trial or the card-less local trial. */
     public function onTrial(Workspace $workspace): bool
     {
-        return (bool) $this->subscription($workspace)?->onTrial();
+        return (bool) $this->subscription($workspace)?->onTrial()
+            || $workspace->onGenericTrial();
     }
 
-    public function trialEndsAt(Workspace $workspace): ?\Carbon\CarbonInterface
+    public function trialEndsAt(Workspace $workspace): ?CarbonInterface
     {
-        return $this->onTrial($workspace) ? $this->subscription($workspace)?->trial_ends_at : null;
+        $subscription = $this->subscription($workspace);
+
+        if ($subscription?->onTrial()) {
+            return $subscription->trial_ends_at;
+        }
+
+        return $workspace->onGenericTrial() ? $workspace->trial_ends_at : null;
     }
 
-    /** Has this workspace ever had a Stripe subscription (so no new trial)? */
+    /** Trial already used (Stripe subscription ever, or a local trial started)? */
     public function hasUsedTrial(Workspace $workspace): bool
     {
-        return $workspace->subscriptions()->exists();
+        return $workspace->trial_ends_at !== null || $workspace->subscriptions()->exists();
     }
 
     /** Minimum company billing details required before starting a plan/trial. */
@@ -85,7 +118,7 @@ class LocationBilling
      * trialing, else the current period end). Null when there's no upcoming
      * charge (no plan, or cancelling at period end).
      *
-     * @return array{amount: int, currency: string, date: ?\Carbon\CarbonInterface}|null
+     * @return array{amount: int, currency: string, date: ?CarbonInterface}|null
      */
     public function nextPayment(Workspace $workspace): ?array
     {
@@ -102,7 +135,7 @@ class LocationBilling
         $date = $subscription->trial_ends_at;
         if (! $subscription->onTrial()) {
             try {
-                $date = \Carbon\Carbon::createFromTimestamp($subscription->asStripeSubscription()->current_period_end);
+                $date = Carbon::createFromTimestamp($subscription->asStripeSubscription()->current_period_end);
             } catch (Throwable $e) {
                 $date = null;
             }
@@ -146,7 +179,7 @@ class LocationBilling
                         'stripe_price' => $stripeSubscription->items->data[0]->price->id ?? null,
                         'quantity' => $stripeSubscription->items->data[0]->quantity ?? 1,
                         'trial_ends_at' => $stripeSubscription->trial_end
-                            ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end)
+                            ? Carbon::createFromTimestamp($stripeSubscription->trial_end)
                             : null,
                         'ends_at' => null,
                     ]
@@ -232,7 +265,7 @@ class LocationBilling
         // "13 days free" (it floors the partial day); the integer shows "14".
         // Only first-time subscribers get the trial (no double trials).
         $subscriptionData = [];
-        if (! $workspace->subscriptions()->exists()) {
+        if (! $this->hasUsedTrial($workspace)) {
             $subscriptionData['trial_period_days'] = (int) config('services.billing.trial_days', 14);
         }
 
@@ -248,6 +281,7 @@ class LocationBilling
             'billing_address_collection' => 'required',
             'tax_id_collection' => ['enabled' => true],
             'customer_update' => ['address' => 'auto', 'name' => 'auto'],
+            'custom_text' => $this->checkoutInvoiceNote($workspace),
         ];
 
         // Optional Stripe Tax auto-calculation (needs Stripe Tax enabled +
@@ -297,6 +331,7 @@ class LocationBilling
             'billing_address_collection' => 'required',
             'tax_id_collection' => ['enabled' => true],
             'customer_update' => ['address' => 'auto', 'name' => 'auto'],
+            ...array_filter(['custom_text' => $this->checkoutInvoiceNote($workspace)]),
         ]);
     }
 
@@ -325,6 +360,7 @@ class LocationBilling
             'billing_address_collection' => 'required',
             'tax_id_collection' => ['enabled' => true],
             'customer_update' => ['address' => 'auto', 'name' => 'auto'],
+            ...array_filter(['custom_text' => $this->checkoutInvoiceNote($workspace)]),
         ]);
     }
 
@@ -333,6 +369,39 @@ class LocationBilling
      * shows name/address/VAT already filled in. Shared by plan checkout and the
      * one-time credit-pack checkout.
      */
+    /**
+     * One-line "invoice details" summary of the company billing data, or null
+     * when it hasn't been filled in. Shown on our Billing page AND inside
+     * Stripe Checkout via custom_text (Checkout itself never displays the
+     * prefilled customer address/VAT, which reads as "my company got lost").
+     */
+    public function billingSummaryLine(Workspace $workspace): ?string
+    {
+        if (blank($workspace->legal_name)) {
+            return null;
+        }
+
+        $parts = array_filter([
+            $workspace->legal_name,
+            $workspace->address_line1,
+            trim(($workspace->postal_code ?? '').' '.($workspace->city ?? '')) ?: null,
+            $workspace->billing_country,
+            filled($workspace->vat_number) ? 'VAT '.$workspace->vat_number : null,
+        ]);
+
+        return implode(', ', $parts);
+    }
+
+    /** Checkout custom_text block carrying the invoice details, or null. */
+    private function checkoutInvoiceNote(Workspace $workspace): ?array
+    {
+        $line = $this->billingSummaryLine($workspace);
+
+        return $line === null ? null : [
+            'submit' => ['message' => __('pages/billing.checkout_invoice_note', ['details' => $line])],
+        ];
+    }
+
     private function prefillStripeCustomer(Workspace $workspace): void
     {
         $workspace->createOrGetStripeCustomer();
