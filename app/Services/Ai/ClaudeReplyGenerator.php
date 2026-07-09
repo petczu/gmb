@@ -58,13 +58,9 @@ class ClaudeReplyGenerator implements ReplyGenerator
             'Write a concise, warm, professional reply (2-4 sentences).',
             'Address the reviewer naturally. Do not invent facts not present in the review.',
             'Output ONLY the reply text. No preamble, quotes, labels, or sign-off placeholders.',
-            // Humanizer rules: make replies read like a real person, not AI.
-            'Write like a real human, not a chatbot. Follow these rules strictly:',
-            '- No em dashes or en dashes. Use a comma, period, or parentheses instead.',
-            '- Avoid AI cliches and promotional words: delighted, thrilled, valued, vibrant, elevate, seamless, truly, testament, journey, we strive.',
-            '- No sycophantic or servile filler.',
-            '- Vary sentence length. Be specific to what the review actually says. Plain, genuine, human.',
-            '- Do not force three-item lists or repeat the same idea with synonyms.',
+            // Shared humanizer rules: replies must read like a real person, not AI.
+            ...Humanizer::rules(),
+            '- Be specific to what the review actually says.',
         ];
 
         if ($language) {

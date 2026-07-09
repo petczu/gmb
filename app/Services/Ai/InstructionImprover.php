@@ -64,6 +64,7 @@ class InstructionImprover
             '- List each staff member once with their canonical (full) name, followed by any nicknames, short forms or misspellings to merge into it (e.g. "Suleyman (also written Suly, Suli)").',
             '- Keep any other emphasis or context hints the owner wrote, each as its own short line.',
             'Rules: keep the SAME language the owner wrote in. Do not invent names, facts or hints that are not in the input. No preamble, no markdown, no quotes around the output — return only the improved guidance text, under 2000 characters.',
+            ...Humanizer::rules(),
         ]);
     }
 }

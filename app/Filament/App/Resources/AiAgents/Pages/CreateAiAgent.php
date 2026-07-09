@@ -10,6 +10,8 @@ class CreateAiAgent extends CreateRecord
 {
     protected static string $resource = AiAgentResource::class;
 
+    protected static bool $canCreateAnother = false;
+
     protected function afterCreate(): void
     {
         // First agent becomes default automatically; otherwise honor the toggle.

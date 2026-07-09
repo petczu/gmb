@@ -65,7 +65,11 @@ class AgentDescriptionGenerator
             'who the business is and what it offers, the voice and tone, what to emphasise, how to handle positive vs critical reviews, personalization rules, and concrete do\'s and don\'ts.',
             'Address the instructions directly to the agent (e.g. "You are replying on behalf of ...").',
             'Do not invent specific facts (addresses, names, offers) that are not supported by the provided information.',
+            'Include a short do\'s and don\'ts rule telling the agent to sound like a real person and never robotic or generic.',
             'Output ONLY the instruction text. No preamble, no markdown headings, no surrounding quotes. Keep it focused, roughly 150-250 words.',
+            // Shared humanizer rules: the persona text itself is customer-visible
+            // configuration and must not carry AI artifacts either.
+            ...Humanizer::rules(),
             "Write it in {$locale}.",
         ]);
     }
