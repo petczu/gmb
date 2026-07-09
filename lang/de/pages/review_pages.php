@@ -8,7 +8,8 @@ return [
 
     'section_page' => 'Seite',
     'slug' => 'Adresse',
-    'active' => 'Aktiv',
+    'active' => 'Seite ist live',
+    'active_help' => 'Wenn aktiv, kann jeder mit dem Link oder QR-Code die Seite öffnen. Zum Offline-Nehmen ausschalten: Besucher sehen eine Nicht-gefunden-Seite, deine Einstellungen bleiben erhalten.',
     'custom_domain' => 'Eigene Domain',
     'custom_domain_help' => 'Optional. Richte einen CNAME-Eintrag deiner Domain auf :host und trage die Domain hier ein.',
 

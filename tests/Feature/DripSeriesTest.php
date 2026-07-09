@@ -41,6 +41,7 @@ class DripSeriesTest extends TestCase
 
     public function test_owner_gets_first_step_on_day_one(): void
     {
+        // No state supplied → conditional nudges stay out of the way.
         $step = (new DripSeries)->dueStep($this->user('owner', 'internal', 1), []);
 
         $this->assertSame('drip_inbox', $step);
@@ -52,22 +53,43 @@ class DripSeriesTest extends TestCase
         $user = $this->user('owner', 'internal', 1);
 
         // No location yet → the activation nudge wins over the inbox step.
-        $this->assertSame('drip_connect', $series->dueStep($user, [], hasLocations: false));
+        $this->assertSame('drip_connect', $series->dueStep($user, [], state: ['has_locations' => false]));
         // Location connected → the nudge is silently skipped.
-        $this->assertSame('drip_inbox', $series->dueStep($user, [], hasLocations: true));
+        $this->assertSame('drip_inbox', $series->dueStep($user, [], state: ['has_locations' => true]));
         // Nudge already sent, still no location → continue the normal series.
-        $this->assertSame('drip_inbox', $series->dueStep($user, ['drip_connect'], hasLocations: false));
+        $this->assertSame('drip_inbox', $series->dueStep($user, ['drip_connect'], state: ['has_locations' => false]));
     }
 
     public function test_steps_progress_and_dedup(): void
     {
         $series = new DripSeries;
         $user = $this->user('owner', 'internal', 3);
+        $state = ['has_locations' => true, 'has_automations' => false];
 
         // Day 3: inbox not yet sent → it comes first (still inside its window).
-        $this->assertSame('drip_inbox', $series->dueStep($user, []));
-        // Inbox already sent → automation is due.
-        $this->assertSame('drip_automation', $series->dueStep($user, ['drip_inbox']));
+        $this->assertSame('drip_inbox', $series->dueStep($user, [], state: $state));
+        // Inbox already sent, no automations configured → the automation nudge.
+        $this->assertSame('drip_automation', $series->dueStep($user, ['drip_inbox'], state: $state));
+        // Automations already set up → the nudge is skipped entirely.
+        $this->assertNull($series->dueStep($user, ['drip_inbox'], state: ['has_locations' => true, 'has_automations' => true]));
+    }
+
+    public function test_feature_nudges_fire_only_while_unused(): void
+    {
+        $series = new DripSeries;
+        $user = $this->user('owner', 'internal', 5);
+        $sent = ['drip_connect', 'drip_inbox', 'drip_automation'];
+
+        // Day 5, no review page yet → the collection-page step.
+        $this->assertSame('drip_growth', $series->dueStep($user, $sent, state: ['has_active_review_page' => false]));
+        // Page live but no competitors → the competitors nudge.
+        $this->assertSame('drip_competitors', $series->dueStep($user, $sent, state: [
+            'has_active_review_page' => true, 'has_competitors' => false,
+        ]));
+        // Everything set up → nothing due on day 5.
+        $this->assertNull($series->dueStep($user, $sent, state: [
+            'has_active_review_page' => true, 'has_competitors' => true,
+        ]));
     }
 
     public function test_old_users_get_no_backlog(): void

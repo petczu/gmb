@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Mail\DripMail;
+use App\Models\Automation;
+use App\Models\Competitor;
 use App\Models\Location;
+use App\Models\ReviewPage;
 use App\Models\User;
 use App\Services\Onboarding\DripSeries;
 use Illuminate\Console\Command;
@@ -38,13 +41,13 @@ class SendDripEmailsCommand extends Command
                     ->pluck('email_key')
                     ->all();
 
-                // The conditional connect-nudge needs the real location state,
-                // but only while it could still be sent — skip the tenant
-                // round-trip once it's consumed.
-                $hasLocations = in_array('drip_connect', $already, true)
-                    || $this->ownerWorkspaceHasLocations($user);
+                // Conditional activation nudges need the real workspace state,
+                // but only while at least one of them could still be sent —
+                // skip the tenant round-trip once they're all consumed.
+                $pendingConditionals = array_diff(array_keys(DripSeries::CONDITIONS), $already) !== [];
+                $state = $pendingConditionals ? $this->ownerWorkspaceState($user) : [];
 
-                $key = $series->dueStep($user, $already, hasLocations: $hasLocations);
+                $key = $series->dueStep($user, $already, state: $state);
 
                 if ($key === null) {
                     return;
@@ -83,29 +86,45 @@ class SendDripEmailsCommand extends Command
     }
 
     /**
-     * Whether the user's owned workspace has any connected location. True for
-     * users who own no workspace (member track — the nudge never applies).
+     * State flags for the conditional activation nudges (see
+     * DripSeries::CONDITIONS). Empty for users who own no workspace (member
+     * track — the nudges never apply); on failure everything defaults to
+     * "already set up" so nobody gets a wrong nudge.
+     *
+     * @return array<string, bool>
      */
-    private function ownerWorkspaceHasLocations(User $user): bool
+    private function ownerWorkspaceState(User $user): array
     {
         $workspace = $user->workspaces()->wherePivot('role', 'owner')->first();
 
         if ($workspace === null) {
-            return true;
+            return [];
         }
+
+        // Review pages are CENTRAL — no tenancy needed for this one.
+        $state = [
+            'has_active_review_page' => ReviewPage::query()
+                ->where('workspace_id', $workspace->id)
+                ->where('active', true)
+                ->exists(),
+        ];
 
         $previous = tenant();
 
         try {
             tenancy()->initialize($workspace);
 
-            return Location::query()->exists();
+            $state['has_locations'] = Location::query()->exists();
+            $state['has_automations'] = Automation::query()->exists();
+            $state['has_competitors'] = Competitor::query()->exists();
         } catch (Throwable $e) {
-            Log::warning('Drip: location check failed', ['workspace' => $workspace->id, 'error' => $e->getMessage()]);
+            Log::warning('Drip: workspace state check failed', ['workspace' => $workspace->id, 'error' => $e->getMessage()]);
 
-            return true;
+            return [];
         } finally {
             $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();
         }
+
+        return $state;
     }
 }

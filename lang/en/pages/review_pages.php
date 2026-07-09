@@ -8,7 +8,8 @@ return [
 
     'section_page' => 'Page',
     'slug' => 'Address',
-    'active' => 'Active',
+    'active' => 'Page is live',
+    'active_help' => 'When on, anyone with the link or QR code can open the page. Switch off to take it down: visitors get a not-found page, your settings stay saved.',
     'custom_domain' => 'Custom domain',
     'custom_domain_help' => 'Optional. Point a CNAME record of your domain at :host, then enter the domain here.',
 

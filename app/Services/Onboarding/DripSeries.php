@@ -18,19 +18,29 @@ class DripSeries
     /** Step key => day offset since signup, per track. */
     public const TRACKS = [
         'owner' => [
-            // Activation nudge: only sent while the workspace still has NO
-            // locations (see dueStep's $hasLocations) — everything else in the
-            // product is pointless before the first connection.
             'drip_connect' => 1,
             'drip_inbox' => 1,
             'drip_automation' => 3,
             'drip_growth' => 5,
+            'drip_competitors' => 5,
             'drip_reports' => 7,
             'drip_team' => 10,
         ],
         'member' => [
             'drip_member' => 1,
         ],
+    ];
+
+    /**
+     * Conditional steps: each is an activation nudge that only makes sense
+     * while the matching feature is still unused. The step is skipped when the
+     * workspace-state flag (supplied by the emails:drip command) is true.
+     */
+    public const CONDITIONS = [
+        'drip_connect' => 'has_locations',
+        'drip_automation' => 'has_automations',
+        'drip_growth' => 'has_active_review_page',
+        'drip_competitors' => 'has_competitors',
     ];
 
     /**
@@ -65,13 +75,14 @@ class DripSeries
     /**
      * The single next step due for this user right now, or null.
      *
-     * $hasLocations controls the conditional 'drip_connect' nudge: it is only
-     * due while the owner's workspace has no locations (the command passes the
-     * real state; default true keeps the step out of the way).
+     * $state carries the workspace-state flags for the CONDITIONS map (the
+     * command passes the real values); a missing flag defaults to true, which
+     * keeps the conditional nudges out of the way.
      *
      * @param  list<string>  $alreadySent
+     * @param  array<string, bool>  $state
      */
-    public function dueStep(User $user, array $alreadySent, ?CarbonInterface $now = null, bool $hasLocations = true): ?string
+    public function dueStep(User $user, array $alreadySent, ?CarbonInterface $now = null, array $state = []): ?string
     {
         if (! $user->getAttribute('product_emails')) {
             return null;
@@ -89,7 +100,8 @@ class DripSeries
                 continue;
             }
 
-            if ($key === 'drip_connect' && $hasLocations) {
+            $condition = self::CONDITIONS[$key] ?? null;
+            if ($condition !== null && ($state[$condition] ?? true)) {
                 continue;
             }
 

@@ -212,7 +212,9 @@ class ReviewPages extends Page implements HasForms
 
         return [
             'slug' => ReviewPage::generateSlug($workspace->name ?? 'reviews'),
-            'active' => true,
+            // Off by default: the page goes public only when the owner is done
+            // configuring it and flips the switch deliberately.
+            'active' => false,
             'custom_domain' => null,
             'theme' => 'dark',
             'accent' => '#2d19ec',
@@ -293,7 +295,11 @@ class ReviewPages extends Page implements HasForms
                         // input only appears for new pages or after "edit".
                         ->visible(fn (): bool => $this->pageId === null || $this->editingSlug)
                         ->live(onBlur: true),
-                    Toggle::make('active')->label(__('pages/review_pages.active'))->inline(false)->live(),
+                    Toggle::make('active')
+                        ->label(__('pages/review_pages.active'))
+                        ->helperText(__('pages/review_pages.active_help'))
+                        ->inline(false)
+                        ->live(),
                 ]),
                 // Full public link with a copy button (the slug input above
                 // truncates the long prefix).
