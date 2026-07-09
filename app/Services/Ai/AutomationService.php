@@ -179,13 +179,17 @@ class AutomationService
     }
 
     /**
+     * Run automations across the workspace's eligible reviews. $from limits by
+     * REVIEW date — the scheduled safety-net run passes a recency window so a
+     * freshly connected location's multi-year backlog is never mass-replied.
+     *
      * @return array{generated:int, published:int, queued:int, skipped:int}
      */
-    public function processWorkspace(Workspace $workspace): array
+    public function processWorkspace(Workspace $workspace, ?CarbonInterface $from = null): array
     {
         $stats = ['generated' => 0, 'published' => 0, 'queued' => 0, 'skipped' => 0];
 
-        $this->eligibleReviews()
+        $this->eligibleReviews($from)
             ->each(function (Review $review) use ($workspace, &$stats): void {
                 $this->tally($this->processReview($workspace, $review), $stats);
             });

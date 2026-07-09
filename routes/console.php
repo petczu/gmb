@@ -25,9 +25,11 @@ Schedule::command('subscriptions:trial-reminders')->dailyAt('09:00');
 // location backfills its history and is intentionally not emailed).
 Schedule::command('reviews:sync')->hourly();
 
-// Draft AI replies for fresh unreplied reviews per the per-star rules
-// (idempotent: only reviews without a stored reply are considered).
-Schedule::command('auto-reply:run')->everyFifteenMinutes();
+// Safety net for the review-reply AUTOMATIONS: the webhook dispatches
+// RunReviewAutomation per new review; this pass catches sync-discovered
+// reviews and failed jobs. --since guards a freshly connected location's
+// backlog from being mass-replied (only reviews from the last 48h).
+Schedule::command('automations:run --since=48')->everyFifteenMinutes();
 
 // Post auto-replies whose "organic" scheduled time has arrived.
 Schedule::command('auto-reply:post-due')->everyFiveMinutes();

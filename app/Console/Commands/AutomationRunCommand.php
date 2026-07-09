@@ -10,7 +10,9 @@ use Illuminate\Console\Command;
 
 class AutomationRunCommand extends Command
 {
-    protected $signature = 'automations:run {workspace? : Workspace id or slug; omit for all}';
+    protected $signature = 'automations:run
+        {workspace? : Workspace id or slug; omit for all}
+        {--since= : Only reviews newer than this many hours (guards against replying to a whole backlog)}';
 
     protected $description = 'Run review-reply automations for unanswered reviews (generate + auto-publish/queue)';
 
@@ -20,12 +22,16 @@ class AutomationRunCommand extends Command
             ? Workspace::query()->get()
             : Workspace::query()->where('id', $this->argument('workspace'))->orWhere('slug', $this->argument('workspace'))->get();
 
+        $from = $this->option('since') !== null
+            ? now()->subHours(max(1, (int) $this->option('since')))->toImmutable()
+            : null;
+
         foreach ($workspaces as $workspace) {
             $previous = tenant();
             tenancy()->initialize($workspace);
 
             try {
-                $stats = $service->processWorkspace($workspace);
+                $stats = $service->processWorkspace($workspace, $from);
                 $this->info(sprintf(
                     '[%s] generated %d — published %d, queued %d, skipped %d',
                     $workspace->slug,

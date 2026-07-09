@@ -4,18 +4,27 @@ declare(strict_types=1);
 
 namespace App\Services\Reviews;
 
+use App\Jobs\RunReviewAutomation;
+use App\Mail\AccountDisconnectedMail;
+use App\Mail\NegativeReviewMail;
+use App\Mail\SyncRestoredMail;
 use App\Models\GoogleAccount;
 use App\Models\Location;
 use App\Models\Review;
+use App\Models\Workspace;
+use App\Services\Notifications\NotificationCategory;
+use App\Services\Notifications\NotificationDispatcher;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * Applies a decoded Zernio webhook payload. Ingest-only: it upserts reviews and
- * reconciles reply state (a published reply, or a reply deleted on the
- * platform), and flips connected-account status. It NEVER triggers automations
- * or auto-replies — that is a separate concern downstream.
+ * Applies a decoded Zernio webhook payload: upserts reviews, reconciles reply
+ * state (a published reply, or a reply deleted on the platform), and flips
+ * connected-account status. A genuinely new unanswered review also dispatches
+ * RunReviewAutomation (queued) so the matching automation replies within
+ * seconds instead of waiting for the scheduled pass.
  *
  * Review/Location rows live in the per-workspace TENANT DB, so review events
  * initialize tenancy for the owning workspace and tear it down afterwards.
@@ -124,10 +133,16 @@ class ZernioWebhookHandler
                 $attributes['reply_source'] = null;
             }
 
-            Review::query()->updateOrCreate(
+            $stored = Review::query()->updateOrCreate(
                 ['external_review_id' => $reviewExternalId],
                 $attributes,
             );
+
+            // A genuinely new, unanswered review → run the matching automation
+            // right away (queued; the scheduled pass is only the safety net).
+            if ($event === 'review.new' && $existing === null && $attributes['reply_text'] === null) {
+                RunReviewAutomation::dispatch($workspace->id, (int) $stored->id);
+            }
 
             // Alert the owner about a brand-new low-rating review. Strictly:
             // a genuinely new review (review.new + not previously stored) with
@@ -150,18 +165,18 @@ class ZernioWebhookHandler
      *
      * @param  array<string, mixed>  $review
      */
-    private function notifyNegativeReview(\App\Models\Workspace $workspace, Location $location, array $review, int $rating): void
+    private function notifyNegativeReview(Workspace $workspace, Location $location, array $review, int $rating): void
     {
         try {
             $businessName = $location->name ?? $workspace->name;
             $authorName = (string) ($review['reviewer']['name'] ?? 'A customer');
-            $snippet = \Illuminate\Support\Str::limit((string) ($review['text'] ?? ''), 160);
+            $snippet = Str::limit((string) ($review['text'] ?? ''), 160);
             $reviewsUrl = rtrim((string) config('app.url'), '/').'/reviews';
 
-            app(\App\Services\Notifications\NotificationDispatcher::class)->dispatch(
+            app(NotificationDispatcher::class)->dispatch(
                 $workspace,
-                \App\Services\Notifications\NotificationCategory::REPUTATION,
-                fn (string $name, string $lang) => new \App\Mail\NegativeReviewMail(
+                NotificationCategory::REPUTATION,
+                fn (string $name, string $lang) => new NegativeReviewMail(
                     name: $name,
                     businessName: $businessName,
                     authorName: $authorName,
@@ -232,10 +247,10 @@ class ZernioWebhookHandler
             $accountName = $account->name ?? 'your Google account';
             $locationsUrl = rtrim((string) config('app.url'), '/').'/locations';
 
-            app(\App\Services\Notifications\NotificationDispatcher::class)->dispatch(
+            app(NotificationDispatcher::class)->dispatch(
                 $workspace,
-                \App\Services\Notifications\NotificationCategory::OPERATIONS,
-                fn (string $name, string $lang) => new \App\Mail\AccountDisconnectedMail(
+                NotificationCategory::OPERATIONS,
+                fn (string $name, string $lang) => new AccountDisconnectedMail(
                     name: $name,
                     accountName: $accountName,
                     locationsUrl: $locationsUrl,
@@ -262,10 +277,10 @@ class ZernioWebhookHandler
             $accountName = $account->name ?? 'your Google account';
             $dashboardUrl = rtrim((string) config('app.url'), '/').'/locations';
 
-            app(\App\Services\Notifications\NotificationDispatcher::class)->dispatch(
+            app(NotificationDispatcher::class)->dispatch(
                 $workspace,
-                \App\Services\Notifications\NotificationCategory::OPERATIONS,
-                fn (string $name, string $lang) => new \App\Mail\SyncRestoredMail(
+                NotificationCategory::OPERATIONS,
+                fn (string $name, string $lang) => new SyncRestoredMail(
                     name: $name,
                     accountName: $accountName,
                     dashboardUrl: $dashboardUrl,
