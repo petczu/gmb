@@ -125,7 +125,41 @@ class BusinessProfile extends Page implements HasForms
             'website' => $live['website'] ?? $location->website_url,
             'opening_hours' => $live['opening_hours'] ?? $stored['opening_hours'] ?? [],
             'special_hours' => $live['special_hours'] ?? $stored['special_hours'] ?? [],
+            'socials' => $this->fetchSocialUrls($location),
         ]);
+    }
+
+    /**
+     * Current social-profile URLs from Google's url_* attributes, keyed by the
+     * ListingUpdater::SOCIAL_ATTRIBUTES suffix. All null on any failure
+     * (offline-safe).
+     *
+     * @return array<string, ?string>
+     */
+    protected function fetchSocialUrls(Location $location): array
+    {
+        $urls = array_fill_keys(array_keys(ListingUpdater::SOCIAL_ATTRIBUTES), null);
+
+        if (! $this->isConfigured() || blank($location->zernio_account_id) || blank($location->external_id)) {
+            return $urls;
+        }
+
+        try {
+            $attributes = app(ZernioRestClient::class)
+                ->attributes((string) $location->zernio_account_id, (string) $location->external_id);
+        } catch (Throwable) {
+            return $urls;
+        }
+
+        foreach ($attributes as $attribute) {
+            $key = str_replace('attributes/', '', (string) ($attribute['name'] ?? ''));
+
+            if (array_key_exists($key, $urls)) {
+                $urls[$key] = $attribute['values'][0] ?? null;
+            }
+        }
+
+        return $urls;
     }
 
     /**
@@ -239,6 +273,19 @@ class BusinessProfile extends Page implements HasForms
                             ->label(__('pages/business_profile.field_additional_phones'))
                             ->placeholder(__('pages/business_profile.field_additional_phones_placeholder'))
                             ->helperText(__('pages/business_profile.field_additional_phones_help')),
+                    ]),
+
+                Section::make(__('pages/business_profile.section_socials'))
+                    ->description(__('pages/business_profile.section_socials_desc'))
+                    ->schema([
+                        Grid::make(['default' => 1, 'md' => 2])->schema(
+                            collect(ListingUpdater::SOCIAL_ATTRIBUTES)->map(
+                                fn (string $label, string $key): TextInput => TextInput::make('socials.'.$key)
+                                    ->label($label)
+                                    ->placeholder('https://…')
+                                    ->maxLength(2048),
+                            )->values()->all(),
+                        ),
                     ]),
 
                 Section::make(__('pages/business_profile.section_hours'))

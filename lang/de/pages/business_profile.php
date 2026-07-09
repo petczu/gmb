@@ -37,7 +37,10 @@ return [
     'day_sunday' => 'Sonntag',
 
     'section_special' => 'Sonderöffnungszeiten',
-    'section_special_desc' => 'Feiertage und Ausnahmen — sie überschreiben die regulären Zeiten für die gewählten Tage.',
+    'section_special_desc' => 'Feiertage und Ausnahmen: sie überschreiben die regulären Zeiten für die gewählten Tage.',
+
+    'section_socials' => 'Social-Media-Profile',
+    'section_socials_desc' => 'Links zu deinen Social-Media-Profilen, angezeigt auf deinem Google-Eintrag. Nur ausgefüllte Felder werden veröffentlicht; leere Felder lassen den aktuellen Wert auf Google unverändert.',
     'add_special' => 'Sonderzeiten hinzufügen',
     'field_start_date' => 'Von',
     'field_end_date' => 'Bis',

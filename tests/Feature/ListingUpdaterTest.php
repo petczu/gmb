@@ -127,6 +127,49 @@ class ListingUpdaterTest extends TestCase
         $this->assertSame('https://cafe.example', $location->website_url);
     }
 
+    public function test_social_attributes_only_include_filled_urls_and_get_a_scheme(): void
+    {
+        $attributes = app(ListingUpdater::class)->buildSocialAttributes([
+            'url_facebook' => 'https://facebook.com/mybiz',
+            'url_instagram' => 'instagram.com/mybiz',
+            'url_youtube' => '',
+            'url_twitter' => '   ',
+            'url_unknown' => 'https://evil.example',
+        ]);
+
+        $this->assertSame([
+            ['name' => 'attributes/url_facebook', 'values' => ['https://facebook.com/mybiz']],
+            ['name' => 'attributes/url_instagram', 'values' => ['https://instagram.com/mybiz']],
+        ], $attributes);
+    }
+
+    public function test_push_sends_social_urls_via_attributes_put(): void
+    {
+        Http::fake(['zernio.test/*' => Http::response(['success' => true], 200)]);
+
+        $location = Location::create([
+            'name' => 'Downtown Cafe',
+            'external_id' => '1185302053868319269',
+            'zernio_account_id' => 'acc-1',
+        ]);
+
+        app(ListingUpdater::class)->push($location, [
+            'description' => null,
+            'opening_hours' => [],
+            'special_hours' => [],
+            'socials' => ['url_facebook' => 'https://facebook.com/cafe'],
+        ]);
+
+        // No profile changes → no PATCH; only the attributes PUT goes out.
+        Http::assertSentCount(1);
+        Http::assertSent(function ($request): bool {
+            return str_contains($request->url(), '/accounts/acc-1/gmb-attributes')
+                && str_contains($request->url(), 'locationId=1185302053868319269')
+                && $request->method() === 'PUT'
+                && $request['attributes'] === [['name' => 'attributes/url_facebook', 'values' => ['https://facebook.com/cafe']]];
+        });
+    }
+
     public function test_push_without_changes_skips_the_api_call(): void
     {
         Http::fake();

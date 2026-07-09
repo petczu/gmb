@@ -37,7 +37,10 @@ return [
     'day_sunday' => 'Sunday',
 
     'section_special' => 'Special hours',
-    'section_special_desc' => 'Holidays and exceptions — these override the regular hours for the given dates.',
+    'section_special_desc' => 'Holidays and exceptions: these override the regular hours for the given dates.',
+
+    'section_socials' => 'Social profiles',
+    'section_socials_desc' => 'Links to your social media profiles, shown on your Google listing. Only filled fields are published; leave a field empty to keep the current value on Google.',
     'add_special' => 'Add special hours',
     'field_start_date' => 'From',
     'field_end_date' => 'Until',

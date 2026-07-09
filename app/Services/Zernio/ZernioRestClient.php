@@ -60,6 +60,36 @@ class ZernioRestClient
     }
 
     /**
+     * Currently set Google Business attributes (e.g. the url_* social links).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function attributes(string $accountId, string $locationId): array
+    {
+        $response = (array) $this->request()
+            ->get(sprintf('/accounts/%s/gmb-attributes', $accountId), ['locationId' => $locationId])
+            ->throw()
+            ->json();
+
+        return (array) ($response['attributes'] ?? []);
+    }
+
+    /**
+     * PUT Google Business attributes (full values per attribute).
+     *
+     * @param  array<int, array{name: string, values: array<int, mixed>}>  $attributes
+     */
+    public function updateAttributes(string $accountId, string $locationId, array $attributes): void
+    {
+        $this->request()
+            ->put(
+                sprintf('/accounts/%s/gmb-attributes', $accountId).'?locationId='.urlencode($locationId),
+                ['attributes' => $attributes],
+            )
+            ->throw();
+    }
+
+    /**
      * PATCH GBP location details. $payload must contain updateMask plus the
      * fields being changed (proxies Google's locations.patch).
      *

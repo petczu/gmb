@@ -16,10 +16,25 @@ use Carbon\CarbonImmutable;
  */
 class ListingUpdater
 {
+    /**
+     * Google's fixed set of social-profile URL attributes (category-independent).
+     *
+     * @var array<string, string> attribute suffix => label
+     */
+    public const SOCIAL_ATTRIBUTES = [
+        'url_facebook' => 'Facebook',
+        'url_instagram' => 'Instagram',
+        'url_youtube' => 'YouTube',
+        'url_twitter' => 'X (Twitter)',
+        'url_linkedin' => 'LinkedIn',
+        'url_tiktok' => 'TikTok',
+        'url_pinterest' => 'Pinterest',
+    ];
+
     public function __construct(protected ZernioRestClient $client) {}
 
     /**
-     * @param  array<string, mixed>  $data  form state: description, phone, website, opening_hours[], special_hours[]
+     * @param  array<string, mixed>  $data  form state: description, phone, website, opening_hours[], special_hours[], socials{}
      */
     public function push(Location $location, array $data): void
     {
@@ -32,6 +47,16 @@ class ListingUpdater
                 (string) $location->zernio_account_id,
                 (string) $location->external_id,
                 $payload,
+            );
+        }
+
+        $socials = $this->buildSocialAttributes((array) ($data['socials'] ?? []));
+
+        if ($socials !== []) {
+            $this->client->updateAttributes(
+                (string) $location->zernio_account_id,
+                (string) $location->external_id,
+                $socials,
             );
         }
 
@@ -125,6 +150,37 @@ class ListingUpdater
         }
 
         return $payload;
+    }
+
+    /**
+     * Filled social URLs → Zernio gmb-attributes PUT entries. Empty fields are
+     * skipped (the attribute on Google stays as it is).
+     *
+     * @param  array<string, ?string>  $socials  keyed by SOCIAL_ATTRIBUTES suffix
+     * @return array<int, array{name: string, values: array<int, string>}>
+     */
+    public function buildSocialAttributes(array $socials): array
+    {
+        $attributes = [];
+
+        foreach (array_keys(self::SOCIAL_ATTRIBUTES) as $key) {
+            $url = trim((string) ($socials[$key] ?? ''));
+
+            if ($url === '') {
+                continue;
+            }
+
+            if (! preg_match('/^https?:\/\//i', $url)) {
+                $url = 'https://'.$url;
+            }
+
+            $attributes[] = [
+                'name' => 'attributes/'.$key,
+                'values' => [$url],
+            ];
+        }
+
+        return $attributes;
     }
 
     /** "09:30:00" → "09:30" (the API uses HH:MM strings). */
