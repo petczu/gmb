@@ -30,7 +30,7 @@ class WorkspaceProvisioner
         $workspace = Workspace::create([
             'id' => (string) Str::uuid(),
             'name' => $companyName,
-            'slug' => $this->uniqueSlug($companyName),
+            'slug' => $this->uniqueSlug(),
         ]);
 
         $workspace->users()->attach($owner->id, [
@@ -67,15 +67,16 @@ class WorkspaceProvisioner
         $registrar->forgetCachedPermissions();
     }
 
-    private function uniqueSlug(string $name): string
+    /**
+     * Anonymous random slug ("ws-x7k2m9qe4t") instead of a name-derived one:
+     * no PII in URLs/logs (the slug appears in the MCP endpoint and console
+     * commands) and no awkward "-2" suffixes on common names.
+     */
+    private function uniqueSlug(): string
     {
-        $base = Str::slug($name) ?: 'workspace';
-        $slug = $base;
-        $i = 1;
-
-        while (Workspace::query()->where('slug', $slug)->exists()) {
-            $slug = $base.'-'.(++$i);
-        }
+        do {
+            $slug = 'ws-'.Str::lower(Str::random(10));
+        } while (Workspace::query()->where('slug', $slug)->exists());
 
         return $slug;
     }

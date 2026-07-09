@@ -6,16 +6,15 @@
         </div>
     @else
         <div style="display:flex; flex-wrap:wrap; align-items:center; gap:1rem; border:1px solid #e5e7eb; border-radius:.9rem; padding:1rem 1.25rem; margin-bottom:.25rem;">
+            {{-- The page is opened from Locations → "Edit info" for ONE location,
+                 so it shows the name instead of a picker. --}}
             <div style="min-width:16rem;">
-                <label style="display:block; font-size:.78rem; font-weight:600; color:#6b7280; margin-bottom:.3rem;">
-                    {{ __('pages/business_profile.pick_location') }}
-                </label>
-                <select wire:model.live="locationId"
-                        style="width:100%; border:1px solid #e5e7eb; border-radius:.6rem; padding:.5rem .75rem; font-size:.9rem; background:#fff;">
-                    @foreach (\App\Models\Location::query()->orderBy('name')->get() as $location)
-                        <option value="{{ $location->id }}">{{ $location->name }}</option>
-                    @endforeach
-                </select>
+                <div class="muted-text" style="font-size:.78rem; font-weight:600; margin-bottom:.3rem;">
+                    {{ __('common.location') }}
+                </div>
+                <div style="font-weight:700; font-size:1.05rem;">
+                    {{ \App\Models\Location::query()->find($this->locationId)?->name ?? '—' }}
+                </div>
             </div>
 
             @if ($this->listingStatus !== null)
