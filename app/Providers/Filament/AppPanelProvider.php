@@ -101,7 +101,14 @@ class AppPanelProvider extends PanelProvider
             ->brandLogoHeight('2rem')
             ->favicon(asset('favicon/favicon.ico'))
             // SPA navigation → top progress bar on every page change (loading cue).
+            // The Google-connect flow must be a FULL browser navigation: SPA mode
+            // fetches links via wire:navigate, and a fetch that gets redirected
+            // to accounts.google.com dies on CORS.
             ->spa()
+            ->spaUrlExceptions(fn (): array => [
+                url('/connect/google'),
+                url('/connect/google').'/*',
+            ])
             // Collapsible left sidebar on desktop.
             ->sidebarCollapsibleOnDesktop()
             // Brand primary derived from the logo colour (#2d19ec).
