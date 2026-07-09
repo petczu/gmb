@@ -5,6 +5,20 @@ declare(strict_types=1);
 return [
     'compare_to_previous' => 'Mit Vorzeitraum vergleichen',
 
+    // Anpassen (Widgets ein-/ausblenden)
+    'customize' => 'Anpassen',
+    'customize_heading' => 'Dashboard anpassen',
+    'customize_desc' => 'Wähle, welche Blöcke auf deinem Dashboard erscheinen. Das betrifft nur deine eigene Ansicht.',
+    'customize_saved' => 'Dashboard aktualisiert',
+    'reset_filters' => 'Filter zurücksetzen',
+    'widget_review_stats' => 'Bewertungs-KPIs (Rating, Volumen, Antwortrate)',
+    'widget_star_distribution' => 'Sterneverteilung',
+    'widget_rating_trend' => 'Rating- & Volumen-Trend',
+    'widget_performance' => 'Profil-Performance-KPIs (Aufrufe, Anrufe, Klicks)',
+    'widget_performance_chart' => 'Profil-Performance-Diagramm',
+    'widget_searches' => 'Aufrufe im Detail & Top-Suchanfragen',
+    'widget_latest_reviews' => 'Neueste Bewertungen',
+
     // Empty State: noch keine Standorte verbunden
     'empty_title' => 'Verbinde deinen ersten Standort und erwecke diese Seite zum Leben',
     'empty_text' => 'Gerade gibt es hier nichts zu zeigen: Bewertungen, Ratings und Trends kommen aus deinem Google Business-Profil. Eine Verbindung und das Dashboard füllt sich von selbst.',

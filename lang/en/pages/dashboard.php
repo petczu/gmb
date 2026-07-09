@@ -5,6 +5,20 @@ declare(strict_types=1);
 return [
     'compare_to_previous' => 'Compare to previous',
 
+    // Customize (show/hide widgets)
+    'customize' => 'Customize',
+    'customize_heading' => 'Customize dashboard',
+    'customize_desc' => 'Choose which blocks appear on your dashboard. This only affects your own view.',
+    'customize_saved' => 'Dashboard updated',
+    'reset_filters' => 'Reset filters',
+    'widget_review_stats' => 'Review KPIs (rating, volume, response rate)',
+    'widget_star_distribution' => 'Star distribution',
+    'widget_rating_trend' => 'Rating & volume trend',
+    'widget_performance' => 'Profile performance KPIs (views, calls, clicks)',
+    'widget_performance_chart' => 'Profile performance chart',
+    'widget_searches' => 'Views breakdown & top search queries',
+    'widget_latest_reviews' => 'Latest reviews',
+
     // Connect-first empty state (no locations yet)
     'empty_title' => 'Connect your first location to bring this page to life',
     'empty_text' => 'Right now there is nothing to show: reviews, ratings and trends all come from your Google Business Profile. One connection and the dashboard fills itself.',

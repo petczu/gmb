@@ -7,6 +7,7 @@ namespace App\Filament\App\Widgets;
 use App\Models\Location;
 use App\Models\Review;
 use App\Support\DashboardPeriod;
+use App\Support\DashboardWidgets;
 use App\Support\DemoDashboard;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Filament\Widgets\StatsOverviewWidget;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ReviewStatsOverview extends StatsOverviewWidget
 {
+    use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
     protected static ?int $sort = 1;
@@ -23,7 +25,7 @@ class ReviewStatsOverview extends StatsOverviewWidget
 
     public static function canView(): bool
     {
-        return tenancy()->initialized;
+        return tenancy()->initialized && DashboardWidgets::visible('review_stats');
     }
 
     protected function getStats(): array

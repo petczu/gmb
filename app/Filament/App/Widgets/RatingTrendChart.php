@@ -7,6 +7,7 @@ namespace App\Filament\App\Widgets;
 use App\Models\Location;
 use App\Models\Review;
 use App\Support\DashboardPeriod;
+use App\Support\DashboardWidgets;
 use App\Support\DemoDashboard;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class RatingTrendChart extends ChartWidget
 {
+    use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
     protected ?string $heading = 'Rating & volume trend';
@@ -25,7 +27,7 @@ class RatingTrendChart extends ChartWidget
 
     public static function canView(): bool
     {
-        return tenancy()->initialized;
+        return tenancy()->initialized && DashboardWidgets::visible('rating_trend');
     }
 
     protected function getData(): array

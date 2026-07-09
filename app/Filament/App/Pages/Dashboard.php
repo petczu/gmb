@@ -5,18 +5,57 @@ declare(strict_types=1);
 namespace App\Filament\App\Pages;
 
 use App\Models\Location;
+use App\Support\DashboardWidgets;
+use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
+
+    /** Show/hide dashboard widgets, saved per user (null = all visible). */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('customize')
+                ->label(__('pages/dashboard.customize'))
+                ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
+                ->color('gray')
+                ->modalHeading(__('pages/dashboard.customize_heading'))
+                ->modalDescription(__('pages/dashboard.customize_desc'))
+                ->schema([
+                    CheckboxList::make('widgets')
+                        ->hiddenLabel()
+                        ->options(DashboardWidgets::labels())
+                        ->default(DashboardWidgets::enabled())
+                        ->bulkToggleable(),
+                ])
+                ->action(function (array $data): void {
+                    $selected = array_values(array_intersect(DashboardWidgets::KEYS, (array) ($data['widgets'] ?? [])));
+
+                    // Full selection is stored as null so widgets added later
+                    // stay visible by default.
+                    auth()->user()->forceFill([
+                        'dashboard_widgets' => count($selected) === count(DashboardWidgets::KEYS) ? null : $selected,
+                    ])->save();
+
+                    Notification::make()->title(__('pages/dashboard.customize_saved'))->success()->send();
+
+                    $this->redirect(static::getUrl());
+                }),
+        ];
+    }
 
     public function filtersForm(Schema $schema): Schema
     {
@@ -31,7 +70,7 @@ class Dashboard extends BaseDashboard
                         Select::make('period')
                             ->label(__('common.period'))
                             ->options(__('common.periods'))
-                            ->default('last_30')
+                            ->default('last_7')
                             ->selectablePlaceholder(false)
                             ->live(),
 
@@ -61,7 +100,31 @@ class Dashboard extends BaseDashboard
                             ->default(true)
                             ->inline(false),
                     ]),
+
+                    Actions::make([
+                        Action::make('resetFilters')
+                            ->label(__('pages/dashboard.reset_filters'))
+                            ->icon(Heroicon::OutlinedArrowUturnLeft)
+                            ->link()
+                            ->color('gray')
+                            ->action(function (Dashboard $livewire): void {
+                                $livewire->filters = self::defaultFilters();
+                                $livewire->getFiltersForm()->fill($livewire->filters);
+                            }),
+                    ]),
                 ]),
         ]);
+    }
+
+    /** The filter form's initial state (also what Reset restores). */
+    public static function defaultFilters(): array
+    {
+        return [
+            'period' => 'last_7',
+            'location_id' => null,
+            'startDate' => null,
+            'endDate' => null,
+            'compare' => true,
+        ];
     }
 }

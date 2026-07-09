@@ -7,6 +7,7 @@ namespace App\Filament\App\Widgets;
 use App\Models\Location;
 use App\Models\Review;
 use App\Support\DashboardPeriod;
+use App\Support\DashboardWidgets;
 use App\Support\DemoDashboard;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StarDistributionChart extends ChartWidget
 {
+    use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
     protected ?string $heading = 'Star distribution';
@@ -24,7 +26,7 @@ class StarDistributionChart extends ChartWidget
 
     public static function canView(): bool
     {
-        return tenancy()->initialized;
+        return tenancy()->initialized && DashboardWidgets::visible('star_distribution');
     }
 
     protected function getData(): array

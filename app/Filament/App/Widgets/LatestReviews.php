@@ -7,6 +7,7 @@ namespace App\Filament\App\Widgets;
 use App\Models\Location;
 use App\Models\Review;
 use App\Support\DashboardPeriod;
+use App\Support\DashboardWidgets;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class LatestReviews extends TableWidget
 {
+    use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
     protected static ?int $sort = 4;
@@ -27,7 +29,9 @@ class LatestReviews extends TableWidget
     {
         // Hidden until the first location is connected — the dashboard shows
         // the connect-first empty state instead.
-        return tenancy()->initialized && Location::query()->exists();
+        return tenancy()->initialized
+            && DashboardWidgets::visible('latest_reviews')
+            && Location::query()->exists();
     }
 
     public function table(Table $table): Table
