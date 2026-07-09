@@ -66,8 +66,10 @@
                             style="flex:none; display:inline-flex; align-items:center; gap:0.4rem; cursor:pointer; padding:0.4rem 0.9rem; border-radius:0.5rem; background:rgb(24 0 255); color:#fff; font-size:0.875rem; font-weight:600; border:0;"
                         >
                             <span wire:loading.remove wire:target="select('{{ $location['id'] }}')">{{ __('onboarding.connect') }}</span>
-                            <span wire:loading wire:target="select('{{ $location['id'] }}')">
-                                <svg style="width:1rem; height:1rem; vertical-align:-2px; margin-right:0.3rem; animation:spin 0.8s linear infinite;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            {{-- inline-flex keeps spinner + label on ONE line (the
+                                 CSS reset makes svg display:block otherwise). --}}
+                            <span wire:loading.inline-flex wire:target="select('{{ $location['id'] }}')" style="align-items:center; gap:0.4rem;">
+                                <svg style="width:1rem; height:1rem; flex:none; animation:spin 0.8s linear infinite;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.3" />
                                     <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
                                 </svg>{{ __('onboarding.connecting') }}</span>
