@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Reviews;
 
+use App\Mail\LocationSyncedMail;
 use App\Mail\NewReviewsMail;
 use App\Models\Location;
 use App\Models\Review;
@@ -49,6 +50,9 @@ class ReviewSync
         /** @var array<string, bool> $newLocations distinct location names with new reviews */
         $newLocations = [];
         $firstReviewId = null; // for the single-review deep-link in the digest
+
+        /** @var list<array{name: string, count: int, rating: ?float}> $firstSynced locations whose FIRST import finished this run */
+        $firstSynced = [];
 
         try {
             $locations = Location::query()->get();
@@ -151,6 +155,14 @@ class ReviewSync
                     'last_synced_at' => now(),
                     'last_sync_error' => null,
                 ])->save();
+
+                if ($firstSyncForLocation) {
+                    $firstSynced[] = [
+                        'name' => (string) $location->name,
+                        'count' => (int) $agg->total,
+                        'rating' => $agg->avg_rating !== null ? round((float) $agg->avg_rating, 1) : null,
+                    ];
+                }
             }
 
         } finally {
@@ -158,6 +170,27 @@ class ReviewSync
                 tenancy()->initialize($previous);
             } else {
                 tenancy()->end();
+            }
+        }
+
+        // "Your reviews are in" — ONE email per run covering every location
+        // whose first import finished (the backfill itself is never digested).
+        if ($firstSynced !== []) {
+            try {
+                app(NotificationDispatcher::class)->dispatch(
+                    $workspace,
+                    NotificationCategory::OPERATIONS,
+                    fn (string $name, string $lang) => new LocationSyncedMail(
+                        name: $name,
+                        locations: $firstSynced,
+                        lang: $lang,
+                    ),
+                );
+            } catch (Throwable $e) {
+                Log::warning('Location synced email failed', [
+                    'workspace' => $workspace->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 

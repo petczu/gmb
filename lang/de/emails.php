@@ -7,6 +7,20 @@ return [
     'signoff' => 'Danke',
     'team' => 'Dein Repunio-Team',
 
+    'location_connected' => [
+        'subject' => ':location ist verbunden',
+        'intro' => 'Dein Standort :location ist jetzt verbunden. Wir importieren gerade seine Bewertungen von Google; je nach Menge kann das ein paar Minuten dauern.',
+        'note' => 'Du bekommst eine weitere E-Mail, sobald die Bewertungen da sind.',
+        'cta' => 'Standorte ansehen',
+    ],
+
+    'location_synced' => [
+        'subject' => 'Deine Bewertungen sind da',
+        'intro' => 'Der erste Import ist abgeschlossen. Das ist angekommen:',
+        'note' => 'Ab jetzt kommen neue Bewertungen automatisch an, und deine Automatisierungsregeln greifen.',
+        'cta' => 'Bewertungs-Posteingang öffnen',
+    ],
+
     'drip_connect' => [
         'subject' => 'Dein Konto ist bereit. Ein Schritt fehlt noch',
         'intro' => 'Dein Repunio-Workspace ist eingerichtet, aber noch leer: Bewertungen, Ratings und Berichte kommen aus deinem Google Business-Profil, und es ist noch keines verbunden.',

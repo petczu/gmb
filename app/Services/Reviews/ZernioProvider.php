@@ -11,6 +11,7 @@ use Carbon\CarbonInterface;
 use GuzzleHttp\Client as GuzzleClient;
 use Zernio\Api\ConnectApi;
 use Zernio\Api\GMBReviewsApi;
+use Zernio\ApiException;
 use Zernio\Configuration;
 use Zernio\Model\GetGoogleBusinessReviews200ResponseReviewsInner as ZReview;
 use Zernio\Model\ReplyToGoogleBusinessReviewRequest;
@@ -42,9 +43,43 @@ class ZernioProvider implements ReviewProvider
         $this->connect = new ConnectApi($http, $config);
     }
 
+    /**
+     * Run a Zernio request, waiting out 429 rate limits. Zernio's limits are
+     * per API key with a per-second window on analytics endpoints; on 429 we
+     * wait until X-RateLimit-Reset (capped, fallback: exponential backoff) and
+     * retry a few times before giving up. The sync runs in a queued job, so
+     * blocking here simply spreads the calls out.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $request
+     * @return T
+     */
+    private function withRateLimitRetry(callable $request): mixed
+    {
+        $attempts = 0;
+
+        while (true) {
+            try {
+                return $request();
+            } catch (ApiException $e) {
+                if ($e->getCode() !== 429 || $attempts >= 4) {
+                    throw $e;
+                }
+
+                $attempts++;
+                $headers = array_change_key_case($e->getResponseHeaders() ?? [], CASE_LOWER);
+                $reset = (int) (($headers['x-ratelimit-reset'][0] ?? $headers['x-ratelimit-reset'] ?? 0));
+                $wait = $reset > 0 ? max(1, min(30, $reset - time())) : min(30, 2 ** $attempts);
+
+                sleep($wait);
+            }
+        }
+    }
+
     public function listLocations(string $accountId): array
     {
-        $response = $this->connect->getGmbLocations($accountId);
+        $response = $this->withRateLimitRetry(fn () => $this->connect->getGmbLocations($accountId));
 
         return array_map(function ($loc): LocationData {
             return new LocationData(
@@ -62,7 +97,9 @@ class ZernioProvider implements ReviewProvider
         $pageToken = null;
 
         do {
-            $response = $this->reviews->getGoogleBusinessReviews($accountId, $locationExternalId, 50, $pageToken);
+            $response = $this->withRateLimitRetry(
+                fn () => $this->reviews->getGoogleBusinessReviews($accountId, $locationExternalId, 50, $pageToken),
+            );
             $locId = (string) ($response->getLocationId() ?? $locationExternalId ?? '');
 
             foreach ($response->getReviews() ?? [] as $r) {
@@ -95,7 +132,7 @@ class ZernioProvider implements ReviewProvider
 
     public function reply(string $accountId, string $reviewExternalId, string $comment): void
     {
-        $request = new ReplyToGoogleBusinessReviewRequest();
+        $request = new ReplyToGoogleBusinessReviewRequest;
         $request->setComment($comment);
 
         $this->reviews->replyToGoogleBusinessReview($accountId, $reviewExternalId, $request);

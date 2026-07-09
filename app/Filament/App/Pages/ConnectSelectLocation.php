@@ -3,14 +3,18 @@
 namespace App\Filament\App\Pages;
 
 use App\Jobs\SyncWorkspaceReviews;
+use App\Mail\LocationConnectedMail;
 use App\Models\GoogleAccount;
 use App\Models\Location;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Billing\LocationBilling;
+use App\Services\Notifications\NotificationCategory;
+use App\Services\Notifications\NotificationDispatcher;
 use App\Services\Reviews\ZernioConnectionManager;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -114,6 +118,22 @@ class ConnectSelectLocation extends Page
 
             if ($location->wasRecentlyCreated) {
                 ActivityLogger::log('location.connected', ['location' => $location->name], $location);
+
+                // "Connected, import is running" email; the reviews-are-in email
+                // follows from ReviewSync once the first import finishes.
+                try {
+                    app(NotificationDispatcher::class)->dispatch(
+                        $workspace,
+                        NotificationCategory::OPERATIONS,
+                        fn (string $name, string $lang) => new LocationConnectedMail(
+                            name: $name,
+                            location: (string) $location->name,
+                            lang: $lang,
+                        ),
+                    );
+                } catch (Throwable $e) {
+                    Log::warning('Location connected email failed', ['error' => $e->getMessage()]);
+                }
             }
 
             // Pulling reviews can be hundreds of records, do it off the request

@@ -82,9 +82,10 @@ class LocationsTable
                         filled($record->last_sync_error) => __('resources/locations.sync_failed'),
                         default => __('resources/locations.syncing'),
                     })
-                    // The provider's error message, e.g. Zernio still backfilling
-                    // a freshly connected location or an expired Google token.
-                    ->tooltip(fn (Location $record): ?string => $record->last_sync_error)
+                    // Failure → the provider's error message; first import still
+                    // running → a "give it a few minutes" hint.
+                    ->tooltip(fn (Location $record): ?string => $record->last_sync_error
+                        ?? ($record->last_synced_at === null ? __('resources/locations.syncing_hint') : null))
                     ->placeholder(__('resources/locations.syncing'))
                     ->sortable()
                     ->visibleFrom('md'),

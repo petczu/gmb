@@ -10,7 +10,8 @@ return [
     'col_location' => 'Location',
     'col_reviews' => 'Reviews',
     'col_last_synced' => 'Last synced',
-    'syncing' => 'Syncing…',
+    'syncing' => 'Importing reviews…',
+    'syncing_hint' => 'The first import from Google can take a few minutes. You will get an email when it is done.',
     'sync_failed' => 'Sync failed',
 
     'disconnect' => 'Disconnect',

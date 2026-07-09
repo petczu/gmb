@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Models\Workspace;
 use App\Services\Reviews\ReviewSync;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -18,10 +19,14 @@ use Illuminate\Support\Facades\Log;
  * location is connected (the picker) so the user isn't blocked while hundreds
  * of reviews are pulled from Zernio.
  *
+ * Unique per workspace: connecting many locations in a row dispatches many
+ * jobs, and each one syncs the WHOLE workspace — running them in parallel
+ * multiplied the Zernio calls and tripped the 429 rate limit.
+ *
  * ReviewSync initializes the tenant itself from the given workspace, so this
  * job is safe to run from the central queue context.
  */
-class SyncWorkspaceReviews implements ShouldQueue
+class SyncWorkspaceReviews implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
@@ -32,7 +37,15 @@ class SyncWorkspaceReviews implements ShouldQueue
 
     public array $backoff = [30, 60, 120];
 
+    /** One pending/running sync per workspace at a time. */
+    public int $uniqueFor = 900;
+
     public function __construct(public string $workspaceId) {}
+
+    public function uniqueId(): string
+    {
+        return $this->workspaceId;
+    }
 
     public function handle(ReviewSync $sync): void
     {

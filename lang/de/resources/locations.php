@@ -10,7 +10,8 @@ return [
     'col_location' => 'Standort',
     'col_reviews' => 'Bewertungen',
     'col_last_synced' => 'Zuletzt synchronisiert',
-    'syncing' => 'Wird synchronisiert…',
+    'syncing' => 'Bewertungen werden importiert…',
+    'syncing_hint' => 'Der erste Import von Google kann ein paar Minuten dauern. Du bekommst eine E-Mail, sobald er fertig ist.',
     'sync_failed' => 'Sync fehlgeschlagen',
 
     'disconnect' => 'Trennen',

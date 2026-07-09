@@ -38,6 +38,8 @@ class EmailTemplateCatalog
             'auto_recharge_failed' => ['title' => 'Auto top-up failed', 'category' => 'Billing', 'sample' => ['name' => 'Peter', 'url' => self::url('billing')]],
             'subscription_canceled' => ['title' => 'Subscription canceled', 'category' => 'Billing', 'sample' => ['name' => 'Peter', 'date' => '11. July 2026', 'url' => self::url('billing')]],
             'subscription_resumed' => ['title' => 'Subscription resumed', 'category' => 'Billing', 'sample' => ['name' => 'Peter', 'url' => self::url('billing')]],
+            'location_connected' => ['title' => 'Location connected', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'location' => 'GAME OVER Vienna', 'url' => self::url('locations')]],
+            'location_synced' => ['title' => 'Reviews imported', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'count' => '2', 'url' => self::url('reviews')]],
             'account_disconnected' => ['title' => 'Account disconnected', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'account' => 'Acme Google', 'url' => self::url('locations')]],
             'sync_restored' => ['title' => 'Sync restored', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'account' => 'Acme Google', 'url' => self::url('locations')]],
             'approvals_pending' => ['title' => 'Approvals pending', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'count' => '4', 'url' => self::url('approvals')]],
@@ -104,6 +106,10 @@ class EmailTemplateCatalog
             ])],
             'negative_review' => ['table' => EmailBlocks::reviews([
                 ['author' => 'Cornel Tom', 'rating' => 2, 'snippet' => 'Long wait and the room felt rushed.'],
+            ])],
+            'location_synced' => ['items' => EmailBlocks::list([
+                '<strong>GAME OVER Vienna</strong>: 214 reviews · 4.7★',
+                '<strong>EscapeGame Innsbruck</strong>: 816 reviews · 4.8★',
             ])],
             'reply_failed' => ['table' => EmailBlocks::reviews([
                 ['author' => 'Cornel Tom', 'snippet' => 'Long wait and the room felt rushed.'],
@@ -202,6 +208,17 @@ class EmailTemplateCatalog
                 __('emails.subscription_resumed.intro', [], $locale),
             ], __('emails.subscription_resumed.cta', [], $locale)),
 
+            'location_connected' => self::shell($locale, self::greeting($locale), [
+                __('emails.location_connected.intro', ['location' => ':location'], $locale),
+                __('emails.location_connected.note', [], $locale),
+            ], __('emails.location_connected.cta', [], $locale)),
+
+            'location_synced' => self::shell($locale, self::greeting($locale), [
+                __('emails.location_synced.intro', [], $locale),
+                '{{ items }}',
+                __('emails.location_synced.note', [], $locale),
+            ], __('emails.location_synced.cta', [], $locale)),
+
             'account_disconnected' => self::shell($locale, self::greeting($locale), [
                 __('emails.account_disconnected.intro', ['account' => ':account'], $locale),
                 __('emails.account_disconnected.detail', [], $locale),
@@ -295,6 +312,8 @@ class EmailTemplateCatalog
             'ai_limit' => 'robot',
             'subscription_canceled' => 'pause',
             'subscription_resumed' => 'welcome',
+            'location_connected' => 'connected',
+            'location_synced' => 'reviews',
             'account_disconnected' => 'disconnected',
             'sync_restored' => 'connected',
             'approvals_pending' => 'inbox',

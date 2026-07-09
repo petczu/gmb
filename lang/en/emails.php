@@ -7,6 +7,20 @@ return [
     'signoff' => 'Thanks,',
     'team' => 'The Repunio team',
 
+    'location_connected' => [
+        'subject' => ':location is connected',
+        'intro' => 'Your location :location is now connected. We are importing its reviews from Google right now; depending on how many there are, this can take a few minutes.',
+        'note' => 'You will get another email as soon as the reviews are in.',
+        'cta' => 'View locations',
+    ],
+
+    'location_synced' => [
+        'subject' => 'Your reviews are in',
+        'intro' => 'The first import has finished. Here is what came in:',
+        'note' => 'From now on, new reviews arrive automatically and your automation rules apply to them.',
+        'cta' => 'Open the reviews inbox',
+    ],
+
     'drip_connect' => [
         'subject' => 'Your account is ready. One step left',
         'intro' => 'Your Repunio workspace is set up, but it is still empty: reviews, ratings and reports all come from your Google Business Profile, and none is connected yet.',
