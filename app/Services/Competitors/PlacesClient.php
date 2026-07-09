@@ -40,6 +40,46 @@ class PlacesClient
     }
 
     /**
+     * Text search with pagination: up to 20 places per page, $maxPages pages
+     * (Google caps text search at 60 results per query).
+     *
+     * @return list<array{place_id: string, name: string, address: ?string, rating: ?float, reviews_count: int}>
+     */
+    public function searchAll(string $query, int $maxPages = 3): array
+    {
+        $fieldMask = collect(explode(',', self::FIELDS))
+            ->map(fn (string $f): string => 'places.'.$f)
+            ->push('nextPageToken')
+            ->implode(',');
+
+        $results = [];
+        $token = null;
+
+        for ($page = 0; $page < $maxPages; $page++) {
+            $response = $this->request()
+                ->withHeaders(['X-Goog-FieldMask' => $fieldMask])
+                ->post(self::BASE.'/places:searchText', array_filter([
+                    'textQuery' => $query,
+                    'pageSize' => 20,
+                    'pageToken' => $token,
+                ]))
+                ->throw()
+                ->json();
+
+            foreach ($response['places'] ?? [] as $place) {
+                $results[] = $this->normalize($place);
+            }
+
+            $token = $response['nextPageToken'] ?? null;
+            if ($token === null) {
+                break;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
      * @return array{place_id: string, name: string, address: ?string, rating: ?float, reviews_count: int}
      */
     public function details(string $placeId): array
