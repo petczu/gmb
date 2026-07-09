@@ -29,4 +29,13 @@ return [
     '403_reply' => 'AI reply: no hard feelings, the buttons below know the way.',
     '403_home' => 'Go to homepage',
     '403_back' => 'Take me back',
+
+    '401_title' => 'Sign in required',
+    '401_headline' => 'We need to know it is you',
+    '401_text' => 'Your session may have expired, or you are not signed in yet. Sign in and we will bring you right back.',
+    '401_reviewer' => 'The receptionist',
+    '401_review' => '"Friendly visitor, but the name was not in the book."',
+    '401_reply' => 'AI reply: easily fixed, the sign-in button is right below.',
+    '401_signin' => 'Sign in',
+    '401_home' => 'Go to homepage',
 ];

@@ -29,4 +29,13 @@ return [
     '403_reply' => 'KI-Antwort: nichts für ungut, die Buttons unten kennen den Weg.',
     '403_home' => 'Zur Startseite',
     '403_back' => 'Zurück',
+
+    '401_title' => 'Anmeldung erforderlich',
+    '401_headline' => 'Wir müssen wissen, dass du es bist',
+    '401_text' => 'Deine Sitzung ist vielleicht abgelaufen, oder du bist noch nicht angemeldet. Melde dich an und wir bringen dich direkt zurück.',
+    '401_reviewer' => 'Der Empfang',
+    '401_review' => '„Freundlicher Besuch, aber der Name stand nicht im Buch."',
+    '401_reply' => 'KI-Antwort: leicht zu beheben, der Anmelde-Button ist direkt unten.',
+    '401_signin' => 'Anmelden',
+    '401_home' => 'Zur Startseite',
 ];
