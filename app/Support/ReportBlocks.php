@@ -16,6 +16,7 @@ class ReportBlocks
     /** Canonical render order. The Blade iterates blocks in this order. */
     public const ORDER = [
         'glance',
+        'performance',
         'summary',
         'topics',
         'staff',
@@ -42,6 +43,7 @@ class ReportBlocks
     {
         return [
             'glance' => 'At a glance (KPIs)',
+            'performance' => 'Profile performance (views, calls, clicks)',
             'summary' => 'Executive summary (AI)',
             'topics' => 'What customers talk about (AI)',
             'staff' => 'Staff mentions, bonuses (AI)',
@@ -65,7 +67,7 @@ class ReportBlocks
     public static function presets(): array
     {
         return [
-            'standard' => ['glance', 'summary', 'topics', 'distribution', 'volume', 'highlights', 'recommendations'],
+            'standard' => ['glance', 'performance', 'summary', 'topics', 'distribution', 'volume', 'highlights', 'recommendations'],
             'full' => self::ORDER,
             'bonus' => ['glance', 'summary', 'staff', 'cadence', 'recommendations', 'methodology'],
             'compliance' => ['glance', 'summary', 'cadence', 'methodology'],

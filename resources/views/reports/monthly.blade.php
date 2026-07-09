@@ -120,6 +120,82 @@
         </div>
     @endif
 
+    @if($has('performance') && ! empty($data['performance']))
+        @php $perf = $data['performance']; @endphp
+        <h2 style="margin-top:22px;">{{ __('report.perf_title') }}</h2>
+        <div class="kpis" style="grid-template-columns: repeat(5, 1fr);">
+            @foreach($perf['kpis'] as $pk)
+                <div class="kpi">
+                    <div class="label">{{ __('report.perf_'.$pk['key']) }}</div>
+                    <div class="value">{{ number_format($pk['value']) }}</div>
+                    @if($pk['pct'] !== null && $pk['pct'] !== 0)
+                        <div class="delta {{ $deltaClass($pk['pct']) }}">{{ $deltaStr($pk['pct'], '%') }} {{ __('report.vs_prev') }}</div>
+                    @else
+                        <div class="sub">{{ __('report.perf_'.$pk['key'].'_sub') }}</div>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+            <div class="kpi">
+                <div class="label">{{ __('report.perf_breakdown') }}</div>
+                @php
+                    $perfColors = ['search_desktop' => '#2563eb', 'search_mobile' => '#ef4444', 'maps_desktop' => '#f59e0b', 'maps_mobile' => '#22c55e'];
+                    $perfRadius = 38;
+                    $perfCircumference = 2 * M_PI * $perfRadius;
+                    $perfOffset = 0.0;
+                @endphp
+                <div style="display:flex; align-items:center; gap:16px; margin-top:8px;">
+                    <svg viewBox="0 0 100 100" width="110" height="110" style="flex:none;">
+                        <circle cx="50" cy="50" r="{{ $perfRadius }}" fill="none" stroke="#f3f4f6" stroke-width="15"/>
+                        @foreach($perfColors as $bk => $color)
+                            @php
+                                $pct = $perf['views'] > 0 ? ($perf['breakdown'][$bk] ?? 0) / $perf['views'] * 100 : 0;
+                                $len = max(0, min(100, $pct)) / 100 * $perfCircumference;
+                            @endphp
+                            @if($len > 0)
+                                <circle cx="50" cy="50" r="{{ $perfRadius }}" fill="none"
+                                    stroke="{{ $color }}" stroke-width="15"
+                                    stroke-dasharray="{{ round($len, 2) }} {{ round($perfCircumference - $len, 2) }}"
+                                    stroke-dashoffset="{{ round(-$perfOffset, 2) }}"
+                                    transform="rotate(-90 50 50)"/>
+                            @endif
+                            @php $perfOffset += $len; @endphp
+                        @endforeach
+                        <text x="50" y="54" text-anchor="middle" font-size="14" font-weight="700" fill="#111827">{{ $perf['views'] >= 10000 ? round($perf['views'] / 1000, 1).'K' : number_format($perf['views']) }}</text>
+                    </svg>
+                    <table style="flex:1; border-collapse:collapse; font-size:11px;">
+                        @foreach(array_keys($perfColors) as $bk)
+                            <tr>
+                                <td style="padding:3px 6px 3px 0;"><span style="display:inline-block; width:8px; height:8px; border-radius:99px; background:{{ $perfColors[$bk] }};"></span></td>
+                                <td style="padding:3px 0; color:#6b7280;">{{ __('report.perf_'.$bk) }}</td>
+                                <td style="padding:3px 0; text-align:right; font-weight:600;">{{ number_format($perf['breakdown'][$bk] ?? 0) }}</td>
+                                <td style="padding:3px 0 3px 8px; text-align:right; color:#9ca3af; width:44px;">{{ $perf['views'] > 0 ? round(($perf['breakdown'][$bk] ?? 0) / $perf['views'] * 100, 1) : 0 }}%</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </div>
+            </div>
+            <div class="kpi">
+                <div class="label">{{ __('report.perf_searches') }}</div>
+                @if(!empty($perf['keywords']))
+                    <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:6px;">
+                        @foreach($perf['keywords'] as $i => $kw)
+                            <tr>
+                                <td style="padding:3px 4px 3px 0; color:#9ca3af; width:16px;">{{ $i + 1 }}.</td>
+                                <td style="padding:3px 0;">{{ $kw['keyword'] }}</td>
+                                <td style="padding:3px 0; text-align:right; font-weight:600;">{{ number_format($kw['impressions']) }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                @else
+                    <div class="sub" style="margin-top:6px;">—</div>
+                @endif
+            </div>
+        </div>
+        <p style="font-size:10px; color:#9ca3af; margin:8px 0 2px;">{{ __('report.perf_note') }}</p>
+    @endif
+
     @if($has('summary'))
         <h2>{{ __('report.executive_summary') }}</h2>
         <div class="summary"><p style="margin:0;">{{ $insights['summary'] }}</p></div>

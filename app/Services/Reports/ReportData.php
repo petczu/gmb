@@ -8,6 +8,7 @@ use App\Models\Competitor;
 use App\Models\Location;
 use App\Models\Review;
 use App\Services\Competitors\CompetitorTrends;
+use App\Services\Listings\ListingPerformance;
 use App\Support\DashboardPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -81,6 +82,7 @@ class ReportData
             'busiestDay' => $busiest->keys()->first(),
             'busiestCount' => (int) ($busiest->first() ?? 0),
             'competitors' => $this->competitors($period),
+            'performance' => $this->performance($period),
             'highlightsPositive' => $this->highlights($period, [5, 4], 3),
             'highlightsCritical' => $this->highlights($period, [1, 2], 3),
             'reviewSnippets' => $this->snippets($period, 40),
@@ -129,6 +131,57 @@ class ReportData
                 'reviews' => (int) $c->reviews_count,
                 'new_reviews' => $trends->summary($c, $start)['reviews_delta'],
             ])->all(),
+        ];
+    }
+
+    /**
+     * GBP performance for the report window (views, calls, directions, website
+     * clicks, bookings) with percent deltas vs the previous window, plus the
+     * top search queries. Empty array = not available (no key, no accounts,
+     * fetch failed) → the block is skipped.
+     *
+     * @return array{kpis: list<array{key: string, value: int, pct: ?int}>, breakdown: array<string, int>, views: int, keywords: list<array{keyword: string, impressions: int}>}|array{}
+     */
+    protected function performance(DashboardPeriod $period): array
+    {
+        $service = app(ListingPerformance::class);
+
+        if (! $service->configured()) {
+            return [];
+        }
+
+        $current = $service->metrics($period->locationId, $period->start, $period->end);
+
+        if (! $current['available']) {
+            return [];
+        }
+
+        $previous = $period->compare
+            ? $service->metrics($period->locationId, $period->prevStart, $period->prevEnd)
+            : ['available' => false, 'views' => 0, 'totals' => []];
+
+        $pct = function (int $value, ?int $prev) use ($previous): ?int {
+            if (! $previous['available'] || $prev === null || $prev <= 0) {
+                return null;
+            }
+
+            return (int) round(($value - $prev) / $prev * 100);
+        };
+
+        $kpis = [['key' => 'views', 'value' => $current['views'], 'pct' => $pct($current['views'], $previous['views'] ?? null)]];
+        foreach (['calls', 'bookings', 'directions', 'website_clicks'] as $key) {
+            $kpis[] = [
+                'key' => $key,
+                'value' => (int) ($current['totals'][$key] ?? 0),
+                'pct' => $pct((int) ($current['totals'][$key] ?? 0), $previous['totals'][$key] ?? null),
+            ];
+        }
+
+        return [
+            'kpis' => $kpis,
+            'views' => $current['views'],
+            'breakdown' => array_intersect_key($current['totals'], array_flip(ListingPerformance::VIEW_KEYS)),
+            'keywords' => $service->keywords($period->locationId, limit: 8),
         ];
     }
 

@@ -60,6 +60,46 @@ class ZernioRestClient
     }
 
     /**
+     * GBP performance metrics (impressions, calls, clicks, directions,
+     * bookings) as daily series with totals. Dates are YYYY-MM-DD; Google
+     * provides at most 18 months of history and the last ~5 days lag.
+     *
+     * @return array<string, mixed> ['metrics' => [NAME => ['total' => int, 'values' => [['date','value'], ...]]]]
+     */
+    public function performance(string $accountId, string $startDate, string $endDate, ?string $metrics = null): array
+    {
+        return (array) $this->request()
+            ->get('/analytics/googlebusiness/performance', array_filter([
+                'accountId' => $accountId,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+                'metrics' => $metrics,
+            ]))
+            ->throw()
+            ->json();
+    }
+
+    /**
+     * GBP search keywords with impressions. Months are YYYY-MM (defaults to
+     * the last 3 months on the API side).
+     *
+     * @return array<int, array{keyword: string, impressions: int}>
+     */
+    public function searchKeywords(string $accountId, ?string $startMonth = null, ?string $endMonth = null): array
+    {
+        $response = (array) $this->request()
+            ->get('/analytics/googlebusiness/search-keywords', array_filter([
+                'accountId' => $accountId,
+                'startMonth' => $startMonth,
+                'endMonth' => $endMonth,
+            ]))
+            ->throw()
+            ->json();
+
+        return (array) ($response['keywords'] ?? []);
+    }
+
+    /**
      * Currently set Google Business attributes (e.g. the url_* social links).
      *
      * @return array<int, array<string, mixed>>

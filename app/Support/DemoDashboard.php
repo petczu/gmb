@@ -43,4 +43,50 @@ class DemoDashboard
 
         return ['ratings' => $ratings, 'volumes' => $volumes, 'labels' => $labels];
     }
+
+    /**
+     * GBP performance demo: totals + a 30-day daily views series.
+     *
+     * @return array{totals: array<string, int>, views: int, labels: list<string>, series: list<int>}
+     */
+    public static function performance(): array
+    {
+        $series = [28, 34, 41, 52, 61, 55, 47, 39, 44, 50, 58, 66, 71, 63, 54, 46, 42, 49, 57, 64, 60, 52, 45, 51, 59, 68, 74, 66, 58, 61];
+
+        $labels = [];
+        $start = now()->subDays(29);
+        for ($i = 0; $i < 30; $i++) {
+            $labels[] = $start->copy()->addDays($i)->format('M j');
+        }
+
+        return [
+            'totals' => [
+                'search_desktop' => 92,
+                'search_mobile' => 355,
+                'maps_desktop' => 58,
+                'maps_mobile' => 740,
+                'calls' => 84,
+                'directions' => 312,
+                'website_clicks' => 508,
+                'bookings' => 0,
+            ],
+            'views' => 1245,
+            'labels' => $labels,
+            'series' => $series,
+        ];
+    }
+
+    /** @return list<array{keyword: string, impressions: int}> */
+    public static function searchKeywords(): array
+    {
+        return [
+            ['keyword' => 'escape room', 'impressions' => 637],
+            ['keyword' => 'escape room near me', 'impressions' => 454],
+            ['keyword' => 'escape game', 'impressions' => 287],
+            ['keyword' => 'team building activities', 'impressions' => 130],
+            ['keyword' => 'things to do with friends', 'impressions' => 96],
+            ['keyword' => 'birthday party ideas', 'impressions' => 59],
+            ['keyword' => 'puzzle room downtown', 'impressions' => 41],
+        ];
+    }
 }
