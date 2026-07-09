@@ -20,4 +20,13 @@ return [
     '500_reply' => 'AI reply: alert received, humans notified, fix on the way.',
     '500_retry' => 'Try again',
     '500_home' => 'Go to homepage',
+
+    '403_title' => 'Access denied',
+    '403_headline' => 'This door needs a different key',
+    '403_text' => 'Your account does not have permission to view this page. If you think it should, ask your workspace owner to adjust your role.',
+    '403_reviewer' => 'The doorkeeper',
+    '403_review' => '"Nice try. Polite, even. But the list is the list."',
+    '403_reply' => 'AI reply: no hard feelings, the buttons below know the way.',
+    '403_home' => 'Go to homepage',
+    '403_back' => 'Take me back',
 ];

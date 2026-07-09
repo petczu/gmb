@@ -9,6 +9,7 @@ use App\Models\GoogleAccount;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Billing\LocationBilling;
+use App\Services\Reviews\ZernioConnectionManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -107,6 +108,18 @@ class WorkspaceDeletionService
             }
         } catch (Throwable $e) {
             Log::warning('Workspace purge: subscription cancelNow failed', [
+                'workspace' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // Delete the Zernio profile too — profile names are unique over there,
+        // so a leftover would block reconnecting a future workspace with the
+        // same name (and keeps pulling Google data for nobody).
+        try {
+            app(ZernioConnectionManager::class)->deleteProfile($workspace);
+        } catch (Throwable $e) {
+            Log::warning('Workspace purge: Zernio profile deletion failed', [
                 'workspace' => $id,
                 'error' => $e->getMessage(),
             ]);

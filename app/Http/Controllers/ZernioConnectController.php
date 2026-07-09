@@ -21,11 +21,25 @@ class ZernioConnectController extends Controller
 {
     private const ACCOUNTS_URL = '/locations';
 
+    /**
+     * Where errors (and plain-redirect exits) send the user back to: the
+     * onboarding wizard when the flow started there, Locations otherwise.
+     * Remembered in the session so it survives the Google round-trip.
+     */
+    private function returnUrl(): string
+    {
+        return (string) session('zernio_return', self::ACCOUNTS_URL);
+    }
+
     public function connect(ZernioConnectionManager $manager): RedirectResponse
     {
+        session(['zernio_return' => str_contains((string) url()->previous(), '/onboarding')
+            ? '/onboarding'
+            : self::ACCOUNTS_URL]);
+
         $workspace = $this->workspace();
         if ($workspace === null) {
-            return redirect(self::ACCOUNTS_URL);
+            return redirect($this->returnUrl());
         }
 
         try {
@@ -33,7 +47,7 @@ class ZernioConnectController extends Controller
         } catch (Throwable $e) {
             Notification::make()->title('Could not start Google connection')->body($e->getMessage())->danger()->send();
 
-            return redirect(self::ACCOUNTS_URL);
+            return redirect($this->returnUrl());
         }
 
         session(['zernio_oauth_state' => $result['state']]);
@@ -47,7 +61,7 @@ class ZernioConnectController extends Controller
 
         $workspace = $this->workspace();
         if ($workspace === null) {
-            return redirect(self::ACCOUNTS_URL);
+            return redirect($this->returnUrl());
         }
 
         // Headless flow: Zernio returns a token + step=select_page; the client
@@ -78,7 +92,7 @@ class ZernioConnectController extends Controller
         } catch (Throwable $e) {
             Notification::make()->title('Google connection failed')->body($e->getMessage())->danger()->send();
 
-            return redirect(self::ACCOUNTS_URL);
+            return redirect($this->returnUrl());
         }
 
         Notification::make()

@@ -65,6 +65,16 @@
     .good-note { color: rgb(22 101 52); }
     .dark .good-note { color: #4ade80; }
     .dark .billing-edit-link { color: #a5b4fc !important; }
+    .muted-text { color: rgb(107 114 128); }
+    .dark .muted-text { color: #a1a1aa; }
+    /* Green "done" pill (e.g. a connected location). */
+    .ok-pill { background: rgb(220 252 231); color: rgb(22 101 52); }
+    .dark .ok-pill { background: rgba(34,197,94,.15); color: #4ade80; }
+    /* Full-page busy overlay + its centered card. */
+    .load-overlay { background: rgba(255,255,255,.55); }
+    .dark .load-overlay { background: rgba(0,0,0,.55); }
+    .load-card { background: #fff; color: rgb(55 65 81); box-shadow: 0 10px 40px rgba(0,0,0,.12); }
+    .dark .load-card { background: #18181b; color: #e4e4e7; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
     /* "Trial · N days left" pill on the current plan card. */
     .trial-pill { display: inline-block; vertical-align: middle; margin-inline-start: .4rem; background: #eef2ff; color: #2d19ec; font-size: .68rem; font-weight: 700; padding: .18rem .55rem; border-radius: 999px; letter-spacing: .02em; }
     .dark .trial-pill { background: rgba(99,102,241,.18); color: #a5b4fc; }

@@ -20,4 +20,13 @@ return [
     '500_reply' => 'KI-Antwort: Alarm erhalten, Menschen informiert, die Lösung ist unterwegs.',
     '500_retry' => 'Nochmal versuchen',
     '500_home' => 'Zur Startseite',
+
+    '403_title' => 'Zugriff verweigert',
+    '403_headline' => 'Diese Tür braucht einen anderen Schlüssel',
+    '403_text' => 'Dein Konto hat keine Berechtigung für diese Seite. Wenn du denkst, dass das falsch ist, bitte den Workspace-Inhaber, deine Rolle anzupassen.',
+    '403_reviewer' => 'Der Türsteher',
+    '403_review' => '„Netter Versuch. Sogar höflich. Aber die Liste ist die Liste."',
+    '403_reply' => 'KI-Antwort: nichts für ungut, die Buttons unten kennen den Weg.',
+    '403_home' => 'Zur Startseite',
+    '403_back' => 'Zurück',
 ];

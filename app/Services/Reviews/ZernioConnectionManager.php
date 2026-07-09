@@ -28,7 +28,9 @@ class ZernioConnectionManager
     public const PLATFORM = 'googlebusiness';
 
     /**
-     * Ensure the workspace has a Zernio profile; create one if missing.
+     * Ensure the workspace has a Zernio profile; reuse an existing one with the
+     * same name (profile names are unique on Zernio, and a stale profile can
+     * survive a re-registration or a lost zernio_profile_id) or create one.
      */
     public function ensureProfile(Workspace $workspace): string
     {
@@ -36,14 +38,41 @@ class ZernioConnectionManager
             return (string) $workspace->zernio_profile_id;
         }
 
-        $request = (new CreateProfileRequest())->setName($workspace->name ?: 'Workspace '.$workspace->id);
-        $created = $this->profilesApi()->createProfile($request);
-        $profileId = (string) $created->getProfile()?->getId();
+        $name = $workspace->name ?: 'Workspace '.$workspace->id;
+
+        $profileId = $this->profileIdByName($name);
+
+        if ($profileId === null) {
+            try {
+                $created = $this->profilesApi()->createProfile((new CreateProfileRequest)->setName($name));
+                $profileId = (string) $created->getProfile()?->getId();
+            } catch (\Throwable $e) {
+                // Race / stale state: "a profile with this name already exists"
+                // → adopt it instead of failing the whole connect flow.
+                $profileId = $this->profileIdByName($name);
+
+                if ($profileId === null) {
+                    throw $e;
+                }
+            }
+        }
 
         $workspace->zernio_profile_id = $profileId;
         $workspace->save();
 
         return $profileId;
+    }
+
+    /** Id of the existing Zernio profile with this exact name, or null. */
+    private function profileIdByName(string $name): ?string
+    {
+        foreach ($this->profilesApi()->listProfiles()->getProfiles() ?? [] as $profile) {
+            if ((string) $profile->getName() === $name) {
+                return (string) $profile->getId();
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -122,7 +151,7 @@ class ZernioConnectionManager
      */
     public function selectLocation(string $profileId, ?string $pendingDataToken, ?string $tempToken, string $locationId, string $redirectUrl): void
     {
-        $request = (new SelectGoogleBusinessLocationRequest())
+        $request = (new SelectGoogleBusinessLocationRequest)
             ->setProfileId($profileId)
             ->setLocationId($locationId)
             ->setRedirectUrl($redirectUrl)
@@ -168,6 +197,22 @@ class ZernioConnectionManager
     public function unlink(GoogleAccount $account): void
     {
         $account->delete();
+    }
+
+    /**
+     * Delete the workspace's Zernio profile (used by the GDPR purge so stale
+     * profiles don't pile up on Zernio and block future name reuse).
+     */
+    public function deleteProfile(Workspace $workspace): void
+    {
+        if (! $workspace->zernio_profile_id) {
+            return;
+        }
+
+        $this->profilesApi()->deleteProfile((string) $workspace->zernio_profile_id);
+
+        $workspace->zernio_profile_id = null;
+        $workspace->save();
     }
 
     private function accountsApi(): AccountsApi
