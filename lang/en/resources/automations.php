@@ -24,7 +24,9 @@ return [
     // Run action
     'run_now' => 'Run now',
     'run_heading' => 'Run this automation now',
-    'run_desc' => 'Apply this automation to all matching unanswered reviews.',
+    'run_desc' => 'Apply this automation to matching unanswered reviews. Optionally limit it to a review-date period; leave both fields empty to include all.',
+    'run_from' => 'Reviews from',
+    'run_until' => 'Reviews until',
     'run_title' => 'Ran “:name”',
     'run_body' => 'Generated :generated, published :published, queued :queued, skipped :skipped.',
 

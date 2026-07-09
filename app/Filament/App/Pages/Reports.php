@@ -96,11 +96,34 @@ class Reports extends Page implements HasForms
                 Section::make()
                     ->compact()
                     ->schema([
-                        Grid::make(4)->schema([
+                        // One row: period, location, compare, language. The
+                        // custom-range date pickers wrap onto the next row only
+                        // when their "Custom" option is selected.
+                        Grid::make(['default' => 1, 'sm' => 2, 'lg' => 4])->schema([
                             Select::make('period')
                                 ->label(__('common.period'))
                                 ->options(__('common.periods'))
                                 ->default('last_30')
+                                ->selectablePlaceholder(false)
+                                ->live(),
+
+                            Select::make('location_id')
+                                ->label(__('pages/reports.location'))
+                                ->placeholder(__('common.all_locations'))
+                                ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
+                                ->live(),
+
+                            Select::make('compareMode')
+                                ->label(__('pages/reports.compare'))
+                                ->options(__('pages/reports.compare_options'))
+                                ->default('previous')
+                                ->selectablePlaceholder(false)
+                                ->live(),
+
+                            Select::make('language')
+                                ->label(__('pages/reports.report_language'))
+                                ->options(['en' => 'English', 'de' => 'Deutsch'])
+                                ->default('en')
                                 ->selectablePlaceholder(false)
                                 ->live(),
 
@@ -112,21 +135,6 @@ class Reports extends Page implements HasForms
                                 ->prefixIcon('heroicon-o-calendar')
                                 ->visible(fn (callable $get): bool => $get('period') === 'custom')->live(),
 
-                            Select::make('location_id')
-                                ->label(__('pages/reports.location'))
-                                ->placeholder(__('common.all_locations'))
-                                ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
-                                ->live(),
-                        ]),
-
-                        Grid::make(4)->schema([
-                            Select::make('compareMode')
-                                ->label(__('pages/reports.compare'))
-                                ->options(__('pages/reports.compare_options'))
-                                ->default('previous')
-                                ->selectablePlaceholder(false)
-                                ->live(),
-
                             DatePicker::make('compareStartDate')->label(__('pages/reports.compare_from'))->native(false)->maxDate(now())
                                 ->prefixIcon('heroicon-o-calendar')
                                 ->visible(fn (callable $get): bool => $get('compareMode') === 'custom')->live(),
@@ -134,15 +142,6 @@ class Reports extends Page implements HasForms
                             DatePicker::make('compareEndDate')->label(__('pages/reports.compare_to'))->native(false)->maxDate(now())
                                 ->prefixIcon('heroicon-o-calendar')
                                 ->visible(fn (callable $get): bool => $get('compareMode') === 'custom')->live(),
-                        ]),
-
-                        Grid::make(4)->schema([
-                            Select::make('language')
-                                ->label(__('pages/reports.report_language'))
-                                ->options(['en' => 'English', 'de' => 'Deutsch'])
-                                ->default('en')
-                                ->selectablePlaceholder(false)
-                                ->live(),
                         ]),
                     ]),
 

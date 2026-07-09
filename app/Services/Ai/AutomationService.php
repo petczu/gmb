@@ -8,7 +8,10 @@ use App\Models\Automation;
 use App\Models\AutoReplyQueueItem;
 use App\Models\Review;
 use App\Models\Workspace;
+use App\Services\Billing\AiUsageService;
 use App\Services\Reviews\ReviewProviderFactory;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Throwable;
 
 /**
@@ -25,7 +28,7 @@ class AutomationService
         private readonly ReplyGenerator $generator,
         private readonly AiCreditService $credits,
         private readonly ReviewProviderFactory $providers,
-        private readonly \App\Services\Billing\AiUsageService $usage,
+        private readonly AiUsageService $usage,
         private readonly ReplyScheduler $scheduler,
     ) {}
 
@@ -151,11 +154,12 @@ class AutomationService
     }
 
     /**
-     * Run ONE automation across all eligible reviews it matches.
+     * Run ONE automation across all eligible reviews it matches, optionally
+     * limited to a review-date window (the manual "Run now" period scoping).
      *
      * @return array{generated:int, published:int, queued:int, skipped:int}
      */
-    public function processAutomation(Workspace $workspace, Automation $automation): array
+    public function processAutomation(Workspace $workspace, Automation $automation, ?CarbonInterface $from = null, ?CarbonInterface $until = null): array
     {
         $stats = ['generated' => 0, 'published' => 0, 'queued' => 0, 'skipped' => 0];
 
@@ -163,7 +167,7 @@ class AutomationService
             return $stats;
         }
 
-        $this->eligibleReviews()
+        $this->eligibleReviews($from, $until)
             ->each(function (Review $review) use ($workspace, $automation, &$stats): void {
                 if (! $automation->matches($review)) {
                     return;
@@ -189,11 +193,16 @@ class AutomationService
         return $stats;
     }
 
-    /** Unreplied reviews without an active (pending/published) queue item. */
-    private function eligibleReviews(): \Illuminate\Database\Eloquent\Builder
+    /**
+     * Unreplied reviews without an active (pending/published) queue item,
+     * optionally limited to a review-date window.
+     */
+    private function eligibleReviews(?CarbonInterface $from = null, ?CarbonInterface $until = null): Builder
     {
         return Review::query()
             ->whereNull('reply_text')
+            ->when($from, fn ($q) => $q->where('created_at_external', '>=', $from))
+            ->when($until, fn ($q) => $q->where('created_at_external', '<=', $until))
             ->whereDoesntHave('queueItems', fn ($q) => $q->whereIn('status', ['pending', 'published', 'scheduled']))
             ->with('location');
     }
@@ -218,7 +227,7 @@ class AutomationService
         }
     }
 
-    private function record(Review $review, string $text, string $status, string $mode, ?string $model = null, int $credits = 0, ?string $error = null, ?\Carbon\CarbonInterface $postAt = null): AutoReplyQueueItem
+    private function record(Review $review, string $text, string $status, string $mode, ?string $model = null, int $credits = 0, ?string $error = null, ?CarbonInterface $postAt = null): AutoReplyQueueItem
     {
         return AutoReplyQueueItem::create([
             'review_id' => $review->id,

@@ -8,6 +8,7 @@ use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Billing\LocationBilling;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -95,32 +96,34 @@ class LocationsTable
                     ->visibleFrom('md'),
             ])
             ->recordActions([
-                Action::make('editInfo')
-                    ->label(__('resources/locations.edit_info'))
-                    ->icon(Heroicon::OutlinedPencilSquare)
-                    ->visible(fn (): bool => auth()->user()?->can('edit_business_info') ?? false)
-                    ->url(fn (Location $record): string => BusinessProfile::getUrl().'?location='.$record->id),
+                ActionGroup::make([
+                    Action::make('editInfo')
+                        ->label(__('resources/locations.edit_info'))
+                        ->icon(Heroicon::OutlinedPencilSquare)
+                        ->visible(fn (): bool => auth()->user()?->can('edit_business_info') ?? false)
+                        ->url(fn (Location $record): string => BusinessProfile::getUrl().'?location='.$record->id),
 
-                Action::make('disconnect')
-                    ->label(__('resources/locations.disconnect'))
-                    ->icon(Heroicon::OutlinedTrash)
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading(__('resources/locations.disconnect_heading'))
-                    ->modalDescription(__('resources/locations.disconnect_desc'))
-                    ->action(function (Location $record): void {
-                        ActivityLogger::log('location.disconnected', ['location' => $record->name]);
-                        $record->reviews()->delete();
-                        $record->delete();
+                    Action::make('disconnect')
+                        ->label(__('resources/locations.disconnect'))
+                        ->icon(Heroicon::OutlinedTrash)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('resources/locations.disconnect_heading'))
+                        ->modalDescription(__('resources/locations.disconnect_desc'))
+                        ->action(function (Location $record): void {
+                            ActivityLogger::log('location.disconnected', ['location' => $record->name]);
+                            $record->reviews()->delete();
+                            $record->delete();
 
-                        // Reflect the lower location count on the subscription.
-                        $workspace = Workspace::find(session('current_workspace_id'));
-                        if ($workspace !== null) {
-                            app(LocationBilling::class)->syncQuantity($workspace);
-                        }
+                            // Reflect the lower location count on the subscription.
+                            $workspace = Workspace::find(session('current_workspace_id'));
+                            if ($workspace !== null) {
+                                app(LocationBilling::class)->syncQuantity($workspace);
+                            }
 
-                        Notification::make()->title(__('resources/locations.disconnected'))->success()->send();
-                    }),
+                            Notification::make()->title(__('resources/locations.disconnected'))->success()->send();
+                        }),
+                ]),
             ]);
     }
 }

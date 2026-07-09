@@ -61,6 +61,14 @@ class ClaudeReplyGenerator implements ReplyGenerator
             // Shared humanizer rules: replies must read like a real person, not AI.
             ...Humanizer::rules(),
             '- Be specific to what the review actually says.',
+            // Review-reply craft: universal Google-review conventions that hold
+            // regardless of the configured persona (which may refine them).
+            'Google review conventions:',
+            '- Reviewer names are often usernames: use only a cleaned first name ("John D." is John, drop stray letters or digits), skip the name entirely when it is messy, and do not open every reply with the name or the same greeting.',
+            '- A rating with no text gets 1-2 short sentences: thank them and invite them back.',
+            '- For a critical review: acknowledge honestly, apologize naturally, offer to make it right directly. Never defensive, no emojis.',
+            '- For a positive review: at most one light emoji, and only when it fits the tone.',
+            '- Vary structure and opening between replies; do not follow one template.',
         ];
 
         if ($language) {

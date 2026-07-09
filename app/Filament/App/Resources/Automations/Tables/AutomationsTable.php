@@ -6,11 +6,14 @@ use App\Filament\App\Resources\Automations\AutomationResource;
 use App\Models\Automation;
 use App\Models\Workspace;
 use App\Services\Ai\AutomationService;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -69,31 +72,49 @@ class AutomationsTable
             ])
             ->recordActions([
                 ActionGroup::make([
-                Action::make('run')
-                    ->label(__('resources/automations.run_now'))
-                    ->icon(Heroicon::OutlinedPlay)
-                    ->requiresConfirmation()
-                    ->modalHeading(__('resources/automations.run_heading'))
-                    ->modalDescription(__('resources/automations.run_desc'))
-                    ->visible(fn (Automation $record): bool => $record->enabled)
-                    ->action(function (Automation $record): void {
-                        $workspace = Workspace::findOrFail(session('current_workspace_id'));
-                        $stats = app(AutomationService::class)->processAutomation($workspace, $record);
+                    Action::make('run')
+                        ->label(__('resources/automations.run_now'))
+                        ->icon(Heroicon::OutlinedPlay)
+                        ->requiresConfirmation()
+                        ->modalHeading(__('resources/automations.run_heading'))
+                        ->modalDescription(__('resources/automations.run_desc'))
+                        ->schema([
+                            Grid::make(2)->schema([
+                                DatePicker::make('from')
+                                    ->label(__('resources/automations.run_from'))
+                                    ->native(false)
+                                    ->maxDate(now()),
+                                DatePicker::make('until')
+                                    ->label(__('resources/automations.run_until'))
+                                    ->native(false)
+                                    ->maxDate(now()),
+                            ]),
+                        ])
+                        ->visible(fn (Automation $record): bool => $record->enabled)
+                        ->action(function (Automation $record, array $data): void {
+                            $workspace = Workspace::findOrFail(session('current_workspace_id'));
 
-                        Notification::make()
-                            ->title(__('resources/automations.run_title', ['name' => $record->name]))
-                            ->body(__('resources/automations.run_body', [
-                                'generated' => $stats['generated'],
-                                'published' => $stats['published'],
-                                'queued' => $stats['queued'],
-                                'skipped' => $stats['skipped'],
-                            ]))
-                            ->success()
-                            ->send();
-                    }),
+                            $stats = app(AutomationService::class)->processAutomation(
+                                $workspace,
+                                $record,
+                                filled($data['from'] ?? null) ? CarbonImmutable::parse($data['from'])->startOfDay() : null,
+                                filled($data['until'] ?? null) ? CarbonImmutable::parse($data['until'])->endOfDay() : null,
+                            );
 
-                EditAction::make(),
-                DeleteAction::make(),
+                            Notification::make()
+                                ->title(__('resources/automations.run_title', ['name' => $record->name]))
+                                ->body(__('resources/automations.run_body', [
+                                    'generated' => $stats['generated'],
+                                    'published' => $stats['published'],
+                                    'queued' => $stats['queued'],
+                                    'skipped' => $stats['skipped'],
+                                ]))
+                                ->success()
+                                ->send();
+                        }),
+
+                    EditAction::make(),
+                    DeleteAction::make(),
                 ]),
             ]);
     }

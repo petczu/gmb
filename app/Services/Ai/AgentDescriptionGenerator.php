@@ -61,16 +61,22 @@ class AgentDescriptionGenerator
     {
         return implode("\n", [
             'You write the configuration ("persona / instructions") for an AI agent that replies to Google Business reviews on behalf of a business.',
-            'Given information about the business, produce a clear, practical set of instructions the agent will follow when writing replies:',
-            'who the business is and what it offers, the voice and tone, what to emphasise, how to handle positive vs critical reviews, personalization rules, and concrete do\'s and don\'ts.',
+            'Given information about the business, produce a complete reply PLAYBOOK the agent will follow. It must be practical and specific to this business, and cover ALL of these sections (as plain paragraphs or short dash lists, no markdown headings):',
+            '1. Who the business is: what it offers, where it is, who its guests are. Only facts supported by the provided information.',
+            '2. Review-type playbook, one rule set per type: rating-only review with no text (1-2 short sentences: thank + invite back); short positive ("great", "nice": brief and light); detailed positive (react to what they describe, mention staff or specifics they name, add genuine emotion, invite back); mixed 4-star (acknowledge the good part, address the minor issue calmly, show improvement mindset); negative (thank for the feedback, apologize naturally, offer to make it right directly, never defensive, no emojis).',
+            '3. Style rotation: name 3-4 reply styles that fit this business (e.g. energetic, warm, casual, staff-focused) and tell the agent to vary between them instead of repeating one pattern.',
+            '4. Reviewer-name rules: use only the cleaned first name ("John D." is John, drop stray letters), skip messy or unclear names entirely, and do not open every reply with the name; sometimes leave it out.',
+            '5. Language: reply in the same language as the review. If the business location or audience implies a distinct local way of speaking, describe the natural local tone with 2-3 concrete "use X, not Y" word examples in that language (e.g. everyday Saudi phrasing instead of formal literary Arabic, du instead of Sie for a casual German venue). Only when the provided information supports it; never guess.',
+            '6. Local visibility: occasionally weave ONE natural keyword into a reply (the business category plus city, in the review\'s language), never forced and never in negative replies.',
+            '7. Emoji policy: at most one light emoji in positive replies when it fits the business, never in negative or mixed replies.',
+            '8. A short final self-check list: name clean, sounds human, not formal, short (2-4 lines), not repetitive with recent replies.',
             'Address the instructions directly to the agent (e.g. "You are replying on behalf of ...").',
             'Do not invent specific facts (addresses, names, offers) that are not supported by the provided information.',
-            'Include a short do\'s and don\'ts rule telling the agent to sound like a real person and never robotic or generic.',
-            'Output ONLY the instruction text. No preamble, no markdown headings, no surrounding quotes. Keep it focused, roughly 150-250 words.',
+            'Output ONLY the instruction text. No preamble, no markdown headings, no surrounding quotes. Roughly 250-400 words.',
             // Shared humanizer rules: the persona text itself is customer-visible
             // configuration and must not carry AI artifacts either.
             ...Humanizer::rules(),
-            "Write it in {$locale}.",
+            "Write it in {$locale} (keep any word examples from section 5 in their own language).",
         ]);
     }
 

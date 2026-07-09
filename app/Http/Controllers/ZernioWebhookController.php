@@ -61,18 +61,26 @@ class ZernioWebhookController extends Controller
      * Hex-encoded HMAC-SHA256 of the RAW body keyed by the shared secret,
      * compared with hash_equals. Tolerates an optional `sha256=` prefix on the
      * header (the openapi only documents "HMAC-SHA256 via X-Zernio-Signature"
-     * without pinning the encoding). No secret configured → reject.
+     * without pinning the encoding). ZERNIO_WEBHOOK_SECRET may hold SEVERAL
+     * comma-separated secrets: Zernio generates a secret per webhook
+     * registration, and during a domain move two registrations (old + new
+     * domain) point at the same app. No secret configured → reject.
      */
     private function signatureIsValid(string $rawBody, string $header): bool
     {
-        $secret = (string) config('services.reviews.webhook_secret');
-        if ($secret === '' || $header === '') {
+        $secrets = array_filter(array_map('trim', explode(',', (string) config('services.reviews.webhook_secret'))));
+        if ($secrets === [] || $header === '') {
             return false;
         }
 
         $provided = str_starts_with($header, 'sha256=') ? substr($header, 7) : $header;
-        $expected = hash_hmac('sha256', $rawBody, $secret);
 
-        return hash_equals($expected, $provided);
+        foreach ($secrets as $secret) {
+            if (hash_equals(hash_hmac('sha256', $rawBody, $secret), $provided)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

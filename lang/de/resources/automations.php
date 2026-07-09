@@ -24,7 +24,9 @@ return [
     // Run action
     'run_now' => 'Jetzt ausführen',
     'run_heading' => 'Diese Automatisierung jetzt ausführen',
-    'run_desc' => 'Wende diese Automatisierung auf alle passenden unbeantworteten Bewertungen an.',
+    'run_desc' => 'Wende diese Automatisierung auf passende unbeantwortete Bewertungen an. Optional auf einen Bewertungszeitraum begrenzen; beide Felder leer lassen für alle.',
+    'run_from' => 'Bewertungen ab',
+    'run_until' => 'Bewertungen bis',
     'run_title' => '„:name“ ausgeführt',
     'run_body' => ':generated generiert, :published veröffentlicht, :queued in Warteschlange, :skipped übersprungen.',
 
