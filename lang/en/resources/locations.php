@@ -11,6 +11,7 @@ return [
     'col_reviews' => 'Reviews',
     'col_last_synced' => 'Last synced',
     'syncing' => 'Syncing…',
+    'sync_failed' => 'Sync failed',
 
     'disconnect' => 'Disconnect',
     'disconnect_heading' => 'Disconnect location',

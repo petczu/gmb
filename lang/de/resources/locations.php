@@ -11,6 +11,7 @@ return [
     'col_reviews' => 'Bewertungen',
     'col_last_synced' => 'Zuletzt synchronisiert',
     'syncing' => 'Wird synchronisiert…',
+    'sync_failed' => 'Sync fehlgeschlagen',
 
     'disconnect' => 'Trennen',
     'disconnect_heading' => 'Standort trennen',

@@ -72,10 +72,19 @@ class LocationsTable
                 TextColumn::make('last_synced_at')
                     ->label(__('resources/locations.col_last_synced'))
                     ->badge(fn (Location $record): bool => $record->last_synced_at === null)
-                    ->color(fn (Location $record): string => $record->last_synced_at === null ? 'warning' : 'gray')
-                    ->formatStateUsing(fn (?string $state, Location $record): string => $record->last_synced_at === null
-                        ? __('resources/locations.syncing')
-                        : $record->last_synced_at->diffForHumans())
+                    ->color(fn (Location $record): string => match (true) {
+                        $record->last_synced_at !== null => 'gray',
+                        filled($record->last_sync_error) => 'danger',
+                        default => 'warning',
+                    })
+                    ->formatStateUsing(fn (?string $state, Location $record): string => match (true) {
+                        $record->last_synced_at !== null => $record->last_synced_at->diffForHumans(),
+                        filled($record->last_sync_error) => __('resources/locations.sync_failed'),
+                        default => __('resources/locations.syncing'),
+                    })
+                    // The provider's error message, e.g. Zernio still backfilling
+                    // a freshly connected location or an expired Google token.
+                    ->tooltip(fn (Location $record): ?string => $record->last_sync_error)
                     ->placeholder(__('resources/locations.syncing'))
                     ->sortable()
                     ->visibleFrom('md'),

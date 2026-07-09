@@ -64,11 +64,14 @@ class ReviewSync
                 try {
                     $reviews = $provider->listReviews($accountId, $location->external_id);
                 } catch (Throwable $e) {
-                    // e.g. expired Google token — skip this location, don't abort.
+                    // e.g. expired Google token, or Zernio still backfilling a
+                    // freshly connected location — skip it, don't abort, and
+                    // surface the error in the Locations table.
                     Log::warning('ReviewSync: location reviews failed', [
                         'location' => $location->external_id,
                         'error' => $e->getMessage(),
                     ]);
+                    $location->forceFill(['last_sync_error' => Str::limit($e->getMessage(), 500)])->save();
                     $stats['errors']++;
 
                     continue;
@@ -146,6 +149,7 @@ class ReviewSync
                     'reviews_count' => (int) $agg->total,
                     'rating' => $agg->avg_rating !== null ? round((float) $agg->avg_rating, 1) : null,
                     'last_synced_at' => now(),
+                    'last_sync_error' => null,
                 ])->save();
             }
 
