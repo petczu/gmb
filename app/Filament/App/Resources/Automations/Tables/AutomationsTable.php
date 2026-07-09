@@ -83,10 +83,12 @@ class AutomationsTable
                                 DatePicker::make('from')
                                     ->label(__('resources/automations.run_from'))
                                     ->native(false)
+                                    ->prefixIcon('heroicon-o-calendar')
                                     ->maxDate(now()),
                                 DatePicker::make('until')
                                     ->label(__('resources/automations.run_until'))
                                     ->native(false)
+                                    ->prefixIcon('heroicon-o-calendar')
                                     ->maxDate(now()),
                             ]),
                         ])
