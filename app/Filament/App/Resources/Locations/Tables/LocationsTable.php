@@ -35,10 +35,14 @@ class LocationsTable
             ->columns([
                 TextColumn::make('name')
                     ->label(__('resources/locations.col_location'))
+                    ->limit(32)
+                    ->tooltip(fn (Location $record): ?string => mb_strlen((string) $record->name) > 32 ? $record->name : null)
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('address')
+                    ->limit(45)
+                    ->tooltip(fn (Location $record): ?string => mb_strlen((string) $record->address) > 45 ? $record->address : null)
                     ->toggleable()
                     ->searchable()
                     ->visibleFrom('lg'),

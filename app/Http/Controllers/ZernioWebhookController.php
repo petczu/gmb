@@ -12,10 +12,13 @@ use Throwable;
 
 /**
  * Receives Zernio webhooks (review.new / review.updated → ingest + reply
- * reconciliation; account.connected / account.disconnected → status). The raw
- * body is HMAC-SHA256 signed with our shared secret via the X-Zernio-Signature
- * header (see config services.reviews.webhook_secret). A bad signature → 403;
- * any other failure is logged and answered 200 so Zernio does not retry-storm.
+ * reconciliation; account.connected / account.disconnected → status; anything
+ * else — e.g. post.external.created for posts published outside our app — is
+ * acknowledged and logged as unhandled). The raw body is HMAC-SHA256 signed
+ * with our shared secret via the X-Late-Signature header (X-Zernio-Signature
+ * fallback; see config services.reviews.webhook_secret). A bad signature →
+ * 403; any other failure is logged and answered 200 so Zernio does not
+ * retry-storm.
  */
 class ZernioWebhookController extends Controller
 {
@@ -25,7 +28,11 @@ class ZernioWebhookController extends Controller
     {
         $raw = $request->getContent();
 
-        if (! $this->signatureIsValid($raw, (string) $request->header('X-Zernio-Signature'))) {
+        // Zernio actually signs with X-Late-Signature (their platform's internal
+        // name); X-Zernio-Signature is kept as a fallback per the openapi docs.
+        $signature = (string) ($request->header('X-Late-Signature') ?: $request->header('X-Zernio-Signature'));
+
+        if (! $this->signatureIsValid($raw, $signature)) {
             abort(403);
         }
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Competitor;
-use App\Models\CompetitorSnapshot;
+use App\Models\PlaceSnapshot;
 use App\Services\Competitors\CompetitorTrends;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -36,13 +36,23 @@ class CompetitorTrendsTest extends TestCase
             $table->timestamps();
         });
 
-        Schema::create('competitor_snapshots', function ($table): void {
+        // Snapshots live on the CENTRAL connection (shared across tenants) —
+        // point 'mysql' at an in-memory sqlite for the pinned model.
+        config()->set('database.connections.mysql', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+        ]);
+        DB::purge('mysql');
+
+        Schema::connection('mysql')->create('place_snapshots', function ($table): void {
             $table->increments('id');
-            $table->unsignedBigInteger('competitor_id');
+            $table->string('place_id');
             $table->date('day');
             $table->decimal('rating', 3, 2)->nullable();
             $table->unsignedInteger('reviews_count')->default(0);
-            $table->unique(['competitor_id', 'day']);
+            $table->unique(['place_id', 'day']);
         });
 
         Schema::create('reviews', function ($table): void {
@@ -57,7 +67,7 @@ class CompetitorTrendsTest extends TestCase
     {
         CarbonImmutable::setTestNow();
         Schema::dropIfExists('reviews');
-        Schema::dropIfExists('competitor_snapshots');
+        Schema::connection('mysql')->dropIfExists('place_snapshots');
         Schema::dropIfExists('competitors');
         parent::tearDown();
     }
@@ -83,8 +93,8 @@ class CompetitorTrendsTest extends TestCase
             ['2026-06-28', 4.55, 1265],
             ['2026-07-05', 4.60, 1290],
         ] as [$day, $rating, $count]) {
-            CompetitorSnapshot::create([
-                'competitor_id' => $competitor->id, 'day' => $day,
+            PlaceSnapshot::create([
+                'place_id' => $competitor->place_id, 'day' => $day,
                 'rating' => $rating, 'reviews_count' => $count,
             ]);
         }
@@ -99,8 +109,8 @@ class CompetitorTrendsTest extends TestCase
     public function test_summary_needs_at_least_two_snapshots(): void
     {
         $competitor = $this->competitor();
-        CompetitorSnapshot::create([
-            'competitor_id' => $competitor->id, 'day' => '2026-07-05',
+        PlaceSnapshot::create([
+            'place_id' => $competitor->place_id, 'day' => '2026-07-05',
             'rating' => 4.60, 'reviews_count' => 1290,
         ]);
 
@@ -119,8 +129,8 @@ class CompetitorTrendsTest extends TestCase
         $competitor->forceFill(['reviews_count' => 1300])->save();
         $trends->record($competitor); // same day → update, not duplicate
 
-        $this->assertSame(1, CompetitorSnapshot::count());
-        $this->assertSame(1300, CompetitorSnapshot::sole()->reviews_count);
+        $this->assertSame(1, PlaceSnapshot::count());
+        $this->assertSame(1300, PlaceSnapshot::sole()->reviews_count);
     }
 
     public function test_own_new_reviews_counts_the_window_exactly(): void

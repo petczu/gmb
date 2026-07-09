@@ -8,18 +8,17 @@
         <div class="hint-box" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
             <span>{{ __('pages/competitors.intro') }}</span>
             <span style="display:inline-flex; align-items:center; gap:.5rem; flex-shrink:0; flex-wrap:wrap;">
-                <select wire:model.live="trendPeriod"
-                        style="border:1px solid #e5e7eb; border-radius:.6rem; padding:.4rem .7rem; font-size:.85rem; background:#fff;">
+                <select wire:model.live="trendPeriod" class="ctl-input">
                     @foreach (__('common.periods') as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>
                     @endforeach
                 </select>
                 @if ($this->trendPeriod === 'custom')
                     <input type="date" wire:model.live="trendFrom" max="{{ now()->toDateString() }}"
-                           style="border:1px solid #e5e7eb; border-radius:.6rem; padding:.35rem .6rem; font-size:.85rem; background:#fff;">
+                           class="ctl-input" style="padding:.35rem .6rem;">
                     <span style="color:#9ca3af;">–</span>
                     <input type="date" wire:model.live="trendTo" max="{{ now()->toDateString() }}"
-                           style="border:1px solid #e5e7eb; border-radius:.6rem; padding:.35rem .6rem; font-size:.85rem; background:#fff;">
+                           class="ctl-input" style="padding:.35rem .6rem;">
                 @endif
             </span>
         </div>

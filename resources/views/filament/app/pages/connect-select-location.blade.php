@@ -23,9 +23,12 @@
 
     @if ($error)
         <x-filament::section>
-            <x-slot name="heading">{{ __('onboarding.could_not_load') }}</x-slot>
-            <p style="color: rgb(220 38 38);">{{ $error }}</p>
+            <x-slot name="heading">{{ $pendingExpired ? __('onboarding.pending_expired_title') : __('onboarding.could_not_load') }}</x-slot>
+            <p @class(['muted-text' => $pendingExpired]) @style(['color: rgb(220 38 38)' => ! $pendingExpired])>{{ $error }}</p>
             <x-slot name="footerActions">
+                @if ($pendingExpired)
+                    <x-filament::button tag="a" href="{{ route('zernio.google.connect') }}">{{ __('onboarding.reconnect_google') }}</x-filament::button>
+                @endif
                 <x-filament::button tag="a" href="/locations" color="gray">{{ __('onboarding.back') }}</x-filament::button>
             </x-slot>
         </x-filament::section>

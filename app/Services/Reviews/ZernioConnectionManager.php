@@ -248,7 +248,9 @@ class ZernioConnectionManager
 
     private function httpClient(): GuzzleClient
     {
-        return new GuzzleClient(['timeout' => 15, 'connect_timeout' => 5]);
+        // select-location finalizes the Google account on Zernio's side and can
+        // take well over 15s — a short timeout aborted otherwise-fine connects.
+        return new GuzzleClient(['timeout' => 60, 'connect_timeout' => 5]);
     }
 
     private function host(): string

@@ -48,6 +48,9 @@ class ConnectSelectLocation extends Page
 
     public ?string $error = null;
 
+    /** The OAuth pending token expired — offer a one-click reconnect. */
+    public bool $pendingExpired = false;
+
     public function mount(): void
     {
         $pending = session('zernio_pending');
@@ -67,7 +70,14 @@ class ConnectSelectLocation extends Page
                 $pending['tempToken'] ?? null,
             );
         } catch (Throwable $e) {
-            $this->error = $e->getMessage();
+            // Zernio keeps the pending OAuth data only briefly; a stale page
+            // (or a consumed token) gets a friendly "reconnect" instead of raw JSON.
+            if (str_contains($e->getMessage(), 'Pending OAuth data not found')) {
+                $this->pendingExpired = true;
+                $this->error = __('onboarding.pending_expired');
+            } else {
+                $this->error = $e->getMessage();
+            }
         }
     }
 

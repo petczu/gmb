@@ -5,26 +5,33 @@ declare(strict_types=1);
 namespace App\Services\Competitors;
 
 use App\Models\Competitor;
-use App\Models\CompetitorSnapshot;
+use App\Models\PlaceSnapshot;
 use App\Models\Review;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * Trends over the daily competitor snapshots: review/rating deltas for a
- * period and a sparkline series. The own location's growth comes straight
- * from the reviews table (exact, date-based).
+ * Trends over the daily place snapshots (CENTRAL, keyed by place_id and
+ * shared across workspaces): review/rating deltas for a period and a
+ * sparkline series. The own location's growth comes straight from the
+ * reviews table (exact, date-based).
  */
 class CompetitorTrends
 {
     /** Record today's snapshot of the competitor's current values. */
     public function record(Competitor $competitor): void
     {
+        self::recordPlace((string) $competitor->place_id, $competitor->rating !== null ? (float) $competitor->rating : null, (int) $competitor->reviews_count);
+    }
+
+    /** Record today's snapshot for a raw place (shared central row). */
+    public static function recordPlace(string $placeId, ?float $rating, int $reviewsCount): void
+    {
         // A Carbon instance (not a "Y-m-d" string) so the WHERE binding matches
         // the stored value under both sqlite and mysql date handling.
-        CompetitorSnapshot::updateOrCreate(
-            ['competitor_id' => $competitor->id, 'day' => CarbonImmutable::today()->startOfDay()],
-            ['rating' => $competitor->rating, 'reviews_count' => $competitor->reviews_count],
+        PlaceSnapshot::updateOrCreate(
+            ['place_id' => $placeId, 'day' => CarbonImmutable::today()->startOfDay()],
+            ['rating' => $rating, 'reviews_count' => $reviewsCount],
         );
     }
 
@@ -39,9 +46,9 @@ class CompetitorTrends
     {
         $end ??= CarbonImmutable::today()->endOfDay();
 
-        /** @var Collection<int, CompetitorSnapshot> $snapshots */
-        $snapshots = CompetitorSnapshot::query()
-            ->where('competitor_id', $competitor->id)
+        /** @var Collection<int, PlaceSnapshot> $snapshots */
+        $snapshots = PlaceSnapshot::query()
+            ->where('place_id', $competitor->place_id)
             ->orderBy('day')
             ->get();
 
@@ -51,18 +58,18 @@ class CompetitorTrends
 
         // Baseline: the last snapshot at/before the window start, else the
         // earliest inside it. Current: the latest snapshot at/before the end.
-        $baseline = $snapshots->last(fn (CompetitorSnapshot $s): bool => $s->day->lte($start))
-            ?? $snapshots->first(fn (CompetitorSnapshot $s): bool => $s->day->gt($start) && $s->day->lte($end));
-        $current = $snapshots->last(fn (CompetitorSnapshot $s): bool => $s->day->lte($end));
+        $baseline = $snapshots->last(fn (PlaceSnapshot $s): bool => $s->day->lte($start))
+            ?? $snapshots->first(fn (PlaceSnapshot $s): bool => $s->day->gt($start) && $s->day->lte($end));
+        $current = $snapshots->last(fn (PlaceSnapshot $s): bool => $s->day->lte($end));
 
         $comparable = $baseline !== null && $current !== null && ! $baseline->is($current);
 
         // Previous window of the same length, strictly snapshot-based.
         $prevStart = $start->subDays(max(1, (int) $start->diffInDays($end)));
-        $atPrevStart = $snapshots->last(fn (CompetitorSnapshot $s): bool => $s->day->lte($prevStart));
-        $atStart = $snapshots->last(fn (CompetitorSnapshot $s): bool => $s->day->lte($start));
+        $atPrevStart = $snapshots->last(fn (PlaceSnapshot $s): bool => $s->day->lte($prevStart));
+        $atStart = $snapshots->last(fn (PlaceSnapshot $s): bool => $s->day->lte($start));
 
-        $inWindow = $snapshots->filter(fn (CompetitorSnapshot $s): bool => $s->day->gte($start) && $s->day->lte($end));
+        $inWindow = $snapshots->filter(fn (PlaceSnapshot $s): bool => $s->day->gte($start) && $s->day->lte($end));
 
         return [
             'reviews_delta' => $comparable ? $current->reviews_count - $baseline->reviews_count : null,

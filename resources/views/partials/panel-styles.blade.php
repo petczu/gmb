@@ -56,6 +56,11 @@
     .dark .preset-btn { background: transparent; border-color: rgba(255,255,255,.2); }
     .qty-input { width: 7rem; padding: .35rem .6rem; border: 1px solid rgb(209 213 219); border-radius: .5rem; font-size: .9rem; }
     .dark .qty-input { background: transparent; border-color: rgba(255,255,255,.2); color: inherit; }
+    /* Small raw select/date controls in page blades (period pickers etc.). */
+    .ctl-input { border: 1px solid #e5e7eb; border-radius: .6rem; padding: .4rem .7rem; font-size: .85rem; background: #fff; color: inherit; }
+    .dark .ctl-input { background: #18181b; border-color: rgba(255,255,255,.2); }
+    .dark .ctl-input option { background: #18181b; }
+    .dark input.ctl-input::-webkit-calendar-picker-indicator { filter: invert(1); }
     /* Inline light-theme grays inside the cards, brightened for dark. */
     .dark .panel-card [style*="color:rgb(55 65 81)"],
     .dark .panel-card [style*="color:rgb(75 85 99)"] { color: #d4d4d8 !important; }
