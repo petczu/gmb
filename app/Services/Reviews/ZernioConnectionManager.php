@@ -28,27 +28,43 @@ class ZernioConnectionManager
     public const PLATFORM = 'googlebusiness';
 
     /**
-     * Ensure the workspace has a Zernio profile; reuse an existing one with the
-     * same name (profile names are unique on Zernio, and a stale profile can
-     * survive a re-registration or a lost zernio_profile_id) or create one.
+     * Ensure the workspace has a LIVE Zernio profile. The stored id is verified
+     * against Zernio (profiles can be deleted over there); a stale id falls back
+     * to adopting an existing profile with the same name (names are unique on
+     * Zernio) and only then to creating a fresh one.
      */
     public function ensureProfile(Workspace $workspace): string
     {
+        $name = $workspace->name ?: 'Workspace '.$workspace->id;
+        $profiles = $this->profilesApi()->listProfiles()->getProfiles() ?? [];
+
+        // Stored id still exists on Zernio's side?
         if ($workspace->zernio_profile_id) {
-            return (string) $workspace->zernio_profile_id;
+            $stored = (string) $workspace->zernio_profile_id;
+
+            foreach ($profiles as $profile) {
+                if ((string) $profile->getId() === $stored) {
+                    return $stored;
+                }
+            }
+            // Deleted on Zernio — fall through and re-resolve.
         }
 
-        $name = $workspace->name ?: 'Workspace '.$workspace->id;
-
-        $profileId = $this->profileIdByName($name);
+        $profileId = null;
+        foreach ($profiles as $profile) {
+            if ((string) $profile->getName() === $name) {
+                $profileId = (string) $profile->getId();
+                break;
+            }
+        }
 
         if ($profileId === null) {
             try {
                 $created = $this->profilesApi()->createProfile((new CreateProfileRequest)->setName($name));
                 $profileId = (string) $created->getProfile()?->getId();
             } catch (\Throwable $e) {
-                // Race / stale state: "a profile with this name already exists"
-                // → adopt it instead of failing the whole connect flow.
+                // Race: "a profile with this name already exists" → adopt it
+                // instead of failing the whole connect flow.
                 $profileId = $this->profileIdByName($name);
 
                 if ($profileId === null) {
