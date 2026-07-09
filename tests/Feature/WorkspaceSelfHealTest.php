@@ -8,8 +8,10 @@ use App\Http\Middleware\SetCurrentWorkspace;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Workspaces\WorkspaceProvisioner;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Http\Request;
 use Mockery;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
@@ -27,14 +29,15 @@ class WorkspaceSelfHealTest extends TestCase
         parent::tearDown();
     }
 
-    private function userWithoutWorkspaces(): User
+    private function userWithoutWorkspaces(bool $betaAccess = true): User
     {
-        $relation = Mockery::mock(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
+        $relation = Mockery::mock(BelongsToMany::class);
         $relation->shouldReceive('first')->andReturnNull();
 
         $user = Mockery::mock(User::class);
         $user->shouldReceive('workspaces')->andReturn($relation);
         $user->shouldReceive('getAttribute')->with('id')->andReturn(1);
+        $user->shouldReceive('hasBetaAccess')->andReturn($betaAccess);
 
         return $user;
     }
@@ -55,11 +58,28 @@ class WorkspaceSelfHealTest extends TestCase
         $request = Request::create('/', 'GET');
         $request->setUserResolver(fn (): User => $user);
 
-        (new SetCurrentWorkspace)->handle($request, fn (): \Symfony\Component\HttpFoundation\Response => response('ok'));
+        (new SetCurrentWorkspace)->handle($request, fn (): Response => response('ok'));
 
         $this->assertSame('ws-healed', session('current_workspace_id'));
         $this->assertTrue(tenancy()->initialized);
         $this->assertSame('ws-healed', tenant('id'));
+    }
+
+    public function test_pending_beta_user_gets_no_workspace(): void
+    {
+        session()->forget('current_workspace_id');
+
+        $provisioner = Mockery::mock(WorkspaceProvisioner::class);
+        $provisioner->shouldNotReceive('create');
+        $this->app->instance(WorkspaceProvisioner::class, $provisioner);
+
+        $request = Request::create('/', 'GET');
+        $request->setUserResolver(fn (): User => $this->userWithoutWorkspaces(betaAccess: false));
+
+        (new SetCurrentWorkspace)->handle($request, fn (): Response => response('ok'));
+
+        $this->assertNull(session('current_workspace_id'));
+        $this->assertFalse(tenancy()->initialized);
     }
 
     public function test_guest_request_does_not_provision_anything(): void
@@ -73,7 +93,7 @@ class WorkspaceSelfHealTest extends TestCase
         $request = Request::create('/', 'GET');
         $request->setUserResolver(fn (): ?User => null);
 
-        (new SetCurrentWorkspace)->handle($request, fn (): \Symfony\Component\HttpFoundation\Response => response('ok'));
+        (new SetCurrentWorkspace)->handle($request, fn (): Response => response('ok'));
 
         $this->assertNull(session('current_workspace_id'));
         $this->assertFalse(tenancy()->initialized);

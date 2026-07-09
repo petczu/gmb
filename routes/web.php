@@ -10,6 +10,7 @@ use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceSwitchController;
 use App\Http\Controllers\ZernioConnectController;
 use App\Http\Controllers\ZernioWebhookController;
+use App\Http\Middleware\EnsureBetaApproved;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Http\Middleware\SetLocale;
 use App\Models\User;
@@ -64,20 +65,35 @@ Route::middleware('web')->group(function () {
     Route::post('invite/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
 });
 
+// Private beta: "request received" screen for signed-in users whose account
+// has not been activated yet (EnsureBetaApproved redirects them here).
+Route::middleware(['web', 'auth', SetLocale::class])
+    ->get('beta/pending', function () {
+        $user = auth()->user();
+
+        if ($user instanceof User && $user->hasBetaAccess()) {
+            return redirect('/');
+        }
+
+        return response()->view('beta.pending', ['email' => (string) $user?->email]);
+    })
+    ->name('beta.pending');
+
 // Switch the active workspace (multi-workspace members). Writes the session
 // pointer; SetCurrentWorkspace initializes the new tenant on the next request.
 Route::middleware(['web', 'auth'])
     ->post('workspace/switch', WorkspaceSwitchController::class)
     ->name('workspace.switch');
 
-// Create an additional workspace from the switcher.
-Route::middleware(['web', 'auth'])->group(function (): void {
+// Create an additional workspace from the switcher. Beta-gated so pending
+// applicants can't provision tenant databases through this side door.
+Route::middleware(['web', 'auth', EnsureBetaApproved::class])->group(function (): void {
     Route::get('workspace/new', [WorkspaceController::class, 'create'])->name('workspace.create');
     Route::post('workspace/new', [WorkspaceController::class, 'store'])->name('workspace.store');
 });
 
 // Zernio Google Business OAuth connect flow (browser redirect + callback).
-Route::middleware(['web', 'auth', SetCurrentWorkspace::class])
+Route::middleware(['web', 'auth', EnsureBetaApproved::class, SetCurrentWorkspace::class])
     ->prefix('connect/google')
     ->group(function () {
         Route::get('/', [ZernioConnectController::class, 'connect'])->name('zernio.google.connect');

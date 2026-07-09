@@ -41,6 +41,13 @@ class SetCurrentWorkspace
             // the panel without a tenant, where tenant-model queries would hit
             // the central DB and 500.
             if ($first === null) {
+                // Beta applicants intentionally have no workspace yet — don't
+                // provision one; EnsureBetaApproved redirects them right after.
+                // Approval later lands here again and provisions normally.
+                if (! $request->user()->hasBetaAccess()) {
+                    return $next($request);
+                }
+
                 $first = app(WorkspaceProvisioner::class)->create($request->user(), '');
             }
 

@@ -6,6 +6,7 @@ namespace App\Filament\App\Auth;
 
 use App\Mail\WelcomeMail;
 use App\Models\Invitation;
+use App\Services\Auth\BetaAccess;
 use App\Services\Auth\EmailOtp;
 use App\Services\Auth\TooManyCodeRequests;
 use App\Services\Workspaces\WorkspaceProvisioner;
@@ -170,12 +171,27 @@ class Register extends BaseRegister
         $user->forceFill(['email_verified_at' => now()])->save();
 
         // Invited sign-up: attach to the inviter's workspace instead of
-        // provisioning an empty one of their own.
+        // provisioning an empty one of their own. The invitation also vouches
+        // for them in the private beta.
         if ($this->attachToPendingInvite($user)) {
+            $user->forceFill(['approved_at' => now()])->save();
             $this->sendWelcomeEmail($user);
 
             return $user;
         }
+
+        $beta = app(BetaAccess::class);
+
+        // Private beta: unknown emails only apply for access. No workspace is
+        // provisioned; EnsureBetaApproved shows the pending screen until a
+        // super admin activates the account.
+        if (! $beta->grantsImmediateAccess($email)) {
+            $beta->sendReceivedEmail($user);
+
+            return $user;
+        }
+
+        $user->forceFill(['approved_at' => now()])->save();
 
         $workspace = app(WorkspaceProvisioner::class)->create($user, '');
         session(['current_workspace_id' => $workspace->id]);

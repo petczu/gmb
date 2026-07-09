@@ -18,8 +18,10 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\Contracts\OAuthenticatable;
 use Laravel\Passport\HasApiTokens;
@@ -54,6 +56,17 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     }
 
     /**
+     * Whether this user may use the app during the private beta (approved,
+     * super admin, or beta mode disabled). See Services\Auth\BetaAccess.
+     */
+    public function hasBetaAccess(): bool
+    {
+        return ! config('beta.enabled')
+            || $this->approved_at !== null
+            || $this->isSuperAdmin();
+    }
+
+    /**
      * CENTRAL model — users live in the central DB. Pin the connection so auth
      * lookups aren't redirected to a tenant DB while tenancy is initialized.
      */
@@ -68,6 +81,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     {
         return [
             'email_verified_at' => 'datetime',
+            'approved_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -75,7 +89,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     /**
      * Workspaces this user belongs to (central pivot workspace_user).
      */
-    public function workspaces(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function workspaces(): BelongsToMany
     {
         return $this->belongsToMany(Workspace::class, 'workspace_user')
             ->withPivot(['role', 'membership_type', 'permissions'])
@@ -88,7 +102,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
      */
     public function allowedLocationIds(string $workspaceId): ?array
     {
-        $permissions = \Illuminate\Support\Facades\DB::connection('mysql')
+        $permissions = DB::connection('mysql')
             ->table('workspace_user')
             ->where('user_id', $this->id)
             ->where('workspace_id', $workspaceId)

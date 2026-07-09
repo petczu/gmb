@@ -30,6 +30,8 @@ class EmailTemplateCatalog
         return [
             'signup_code' => ['title' => 'Sign-up code', 'category' => 'Onboarding', 'sample' => ['code' => '482913', 'minutes' => '10']],
             'welcome' => ['title' => 'Welcome', 'category' => 'Onboarding', 'sample' => ['name' => 'Peter', 'url' => self::url()]],
+            'beta_received' => ['title' => 'Beta request received', 'category' => 'Onboarding', 'sample' => ['name' => 'Peter']],
+            'beta_approved' => ['title' => 'Beta access activated', 'category' => 'Onboarding', 'sample' => ['name' => 'Peter', 'url' => self::url()]],
             'invite' => ['title' => 'Team invitation', 'category' => 'Team', 'sample' => ['inviter' => 'Peter', 'workspace' => 'Acme Agency', 'role' => 'admin', 'url' => self::url('invite/abc')]],
             'trial_ending' => ['title' => 'Trial ending', 'category' => 'Billing', 'sample' => ['name' => 'Peter', 'days' => '3', 'date' => 'July 11, 2026', 'url' => self::url('billing')]],
             'payment_succeeded' => ['title' => 'Payment received', 'category' => 'Billing', 'sample' => ['name' => 'Peter', 'amount' => '€24.00 EUR', 'url' => self::url('billing')]],
@@ -57,6 +59,7 @@ class EmailTemplateCatalog
             'drip_inbox' => ['title' => 'Series 1 · Reviews inbox', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('reviews'), 'unsubscribe_url' => self::url('unsubscribe')]],
             'drip_automation' => ['title' => 'Series 2 · Automations', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('automations'), 'unsubscribe_url' => self::url('unsubscribe')]],
             'drip_growth' => ['title' => 'Series 3 · Collect reviews', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('review-pages'), 'unsubscribe_url' => self::url('unsubscribe')]],
+            'drip_competitors' => ['title' => 'Series · Competitors nudge', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('competitors'), 'unsubscribe_url' => self::url('unsubscribe')]],
             'drip_reports' => ['title' => 'Series 4 · Reports', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('reports/builder'), 'unsubscribe_url' => self::url('unsubscribe')]],
             'drip_team' => ['title' => 'Series 5 · Team', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url('team'), 'unsubscribe_url' => self::url('unsubscribe')]],
             'drip_member' => ['title' => 'Series · Invited member', 'category' => 'Onboarding series', 'sample' => ['name' => 'Peter', 'url' => self::url(), 'unsubscribe_url' => self::url('unsubscribe')]],
@@ -172,6 +175,19 @@ class EmailTemplateCatalog
                 __('emails.welcome.intro', [], $locale),
                 __('emails.welcome.next', [], $locale),
             ], __('emails.welcome.cta', [], $locale)),
+
+            // No CTA button: there is nothing to open until access is activated.
+            'beta_received' => implode("\n\n", [
+                self::greeting($locale),
+                __('emails.beta_received.intro', [], $locale),
+                __('emails.beta_received.note', [], $locale),
+                __('emails.signoff', [], $locale)."\n".__('emails.team', [], $locale),
+            ]),
+
+            'beta_approved' => self::shell($locale, self::greeting($locale), [
+                __('emails.beta_approved.intro', [], $locale),
+                __('emails.beta_approved.note', [], $locale),
+            ], __('emails.beta_approved.cta', [], $locale)),
 
             'invite' => self::shell($locale, __('emails.invite.greeting', [], $locale), [
                 __('emails.invite.intro', ['inviter' => ':inviter', 'workspace' => ':workspace', 'role' => ':role'], $locale),
@@ -304,6 +320,8 @@ class EmailTemplateCatalog
     {
         $map = [
             'welcome' => 'welcome',
+            'beta_received' => 'time',
+            'beta_approved' => 'celebration',
             'invite' => 'team',
             'trial_ending' => 'time',
             'payment_succeeded' => 'payment-ok',
@@ -329,6 +347,7 @@ class EmailTemplateCatalog
             'drip_inbox' => 'reviews',
             'drip_automation' => 'robot',
             'drip_growth' => 'progress',
+            'drip_competitors' => 'attention',
             'drip_reports' => 'recap',
             'drip_team' => 'team',
             'drip_member' => 'welcome',

@@ -39,6 +39,19 @@ class SocialiteUserProvisioner
         // (email_verified_at is guarded, so set it outside mass-assignment.)
         $user->forceFill(['email_verified_at' => now()])->save();
 
+        $beta = app(BetaAccess::class);
+
+        // Private beta: unknown emails only apply for access (EnsureBetaApproved
+        // shows the pending screen); allowlisted ones start right away. Both
+        // paths are plain inserts/updates, transaction-safe.
+        if (! $beta->grantsImmediateAccess((string) $user->email)) {
+            $beta->sendReceivedEmail($user);
+
+            return $user;
+        }
+
+        $user->forceFill(['approved_at' => now()])->save();
+
         try {
             Mail::to($user->email)->send(new WelcomeMail($user->name, $user->locale ?? 'en'));
         } catch (\Throwable $e) {

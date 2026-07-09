@@ -7,6 +7,13 @@ return [
     'signoff' => 'Thanks,',
     'team' => 'The Repunio team',
 
+    'drip_competitors' => [
+        'subject' => 'Do you know how the business next door is doing?',
+        'intro' => 'Your own reviews are under control. The next question every owner asks: am I ahead of the competition or falling behind? Repunio can watch that for you, with daily rating and review counts for any business on Google.',
+        'tip' => 'Takes two minutes: open Competitors, search the name, add it. From then on you will see who is pulling ahead, by how much, and whether your rating keeps up.',
+        'cta' => 'Add your first competitor',
+    ],
+
     'location_connected' => [
         'subject' => ':location is connected',
         'intro' => 'Your location :location is now connected. We are importing its reviews from Google right now; depending on how many there are, this can take a few minutes.',
@@ -32,6 +39,19 @@ return [
         'subject' => ':code is your Repunio sign-up code',
         'intro' => 'Enter this code on the sign-up page to confirm your email address:',
         'note' => 'The code is valid for :minutes minutes. If you did not request it, you can safely ignore this email.',
+    ],
+
+    'beta_received' => [
+        'subject' => 'Thanks! Your access request is in',
+        'intro' => 'Thanks for signing up! Repunio is currently in private beta and we activate new accounts in small waves.',
+        'note' => 'We will email you as soon as your access is ready. There is nothing else to do right now.',
+    ],
+
+    'beta_approved' => [
+        'subject' => 'Your Repunio access is ready',
+        'intro' => 'Good news: your account has been activated. You can now log in and set everything up.',
+        'note' => 'Start by connecting your Google Business Profile, your reviews are imported within minutes.',
+        'cta' => 'Open Repunio',
     ],
 
     'welcome' => [

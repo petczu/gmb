@@ -7,6 +7,13 @@ return [
     'signoff' => 'Danke',
     'team' => 'Dein Repunio-Team',
 
+    'drip_competitors' => [
+        'subject' => 'Weißt du, wie es dem Geschäft nebenan geht?',
+        'intro' => 'Deine eigenen Bewertungen sind unter Kontrolle. Die nächste Frage, die sich jeder Inhaber stellt: liege ich vor der Konkurrenz oder falle ich zurück? Repunio beobachtet das für dich, mit täglichen Ratings und Bewertungszahlen für jedes Unternehmen auf Google.',
+        'tip' => 'Dauert zwei Minuten: öffne Wettbewerber, such den Namen, füge ihn hinzu. Ab dann siehst du, wer davonzieht, um wie viel, und ob dein Rating mithält.',
+        'cta' => 'Ersten Wettbewerber hinzufügen',
+    ],
+
     'location_connected' => [
         'subject' => ':location ist verbunden',
         'intro' => 'Dein Standort :location ist jetzt verbunden. Wir importieren gerade seine Bewertungen von Google; je nach Menge kann das ein paar Minuten dauern.',
@@ -32,6 +39,19 @@ return [
         'subject' => ':code ist dein Repunio-Anmeldecode',
         'intro' => 'Gib diesen Code auf der Registrierungsseite ein, um deine E-Mail-Adresse zu bestätigen:',
         'note' => 'Der Code ist :minutes Minuten gültig. Falls du ihn nicht angefordert hast, kannst du diese E-Mail einfach ignorieren.',
+    ],
+
+    'beta_received' => [
+        'subject' => 'Danke! Deine Zugangsanfrage ist eingegangen',
+        'intro' => 'Danke für deine Registrierung! Repunio ist derzeit in einer privaten Beta und wir schalten neue Konten in kleinen Wellen frei.',
+        'note' => 'Wir melden uns per E-Mail, sobald dein Zugang bereit ist. Du musst im Moment nichts weiter tun.',
+    ],
+
+    'beta_approved' => [
+        'subject' => 'Dein Repunio-Zugang ist bereit',
+        'intro' => 'Gute Neuigkeiten: dein Konto wurde freigeschaltet. Du kannst dich jetzt anmelden und alles einrichten.',
+        'note' => 'Verbinde zuerst dein Google-Unternehmensprofil, deine Bewertungen werden innerhalb weniger Minuten importiert.',
+        'cta' => 'Repunio öffnen',
     ],
 
     'welcome' => [
