@@ -1,3 +1,18 @@
+<style>
+    .ask-ai-md > :first-child { margin-top: 0; }
+    .ask-ai-md > :last-child { margin-bottom: 0; }
+    .ask-ai-md p { margin: .4rem 0; }
+    .ask-ai-md h1, .ask-ai-md h2, .ask-ai-md h3 { font-size: .9rem; font-weight: 700; margin: .7rem 0 .35rem; }
+    .ask-ai-md ul, .ask-ai-md ol { margin: .35rem 0; padding-left: 1.1rem; }
+    .ask-ai-md li { margin: .12rem 0; }
+    .ask-ai-md strong { font-weight: 700; }
+    .ask-ai-md code { background: #e9e9ee; padding: .05rem .3rem; border-radius: .3rem; font-size: .8rem; }
+    .ask-ai-md table { border-collapse: collapse; width: 100%; margin: .5rem 0; font-size: .78rem; display: block; overflow-x: auto; }
+    .ask-ai-md th, .ask-ai-md td { border: 1px solid #e5e7eb; padding: .3rem .5rem; text-align: left; white-space: nowrap; }
+    .ask-ai-md th { background: #ececf1; font-weight: 600; }
+    .ask-ai-md tr:nth-child(even) td { background: #fafafb; }
+    .ask-ai-md a { color: #2d19ec; text-decoration: underline; }
+</style>
 <div x-data="{ open: false }"
      x-on:ask-ai-answer.window="$wire.answer()"
      x-on:ask-ai-scroll.window="$nextTick(() => { if ($refs.thread) $refs.thread.scrollTop = $refs.thread.scrollHeight })"
@@ -19,20 +34,44 @@
                 <div style="font-weight:700; font-size:.92rem; color:#111827;">{{ __('pages/ask_ai.title') }}</div>
                 <div style="font-size:.72rem; color:#9ca3af;">{{ __('pages/ask_ai.subtitle') }}</div>
             </div>
-            @if ($messages !== [])
-                <button type="button" wire:click="clearChat" title="{{ __('pages/ask_ai.clear') }}"
-                        style="border:none; background:none; color:#9ca3af; cursor:pointer; padding:.25rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width:1.1rem; height:1.1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
-                </button>
-            @endif
+            {{-- History --}}
+            <button type="button" wire:click="toggleHistory" title="{{ __('pages/ask_ai.history') }}"
+                    style="border:none; background:none; color:{{ $showHistory ? '#2d19ec' : '#9ca3af' }}; cursor:pointer; padding:.25rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width:1.15rem; height:1.15rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+            </button>
+            {{-- New chat --}}
+            <button type="button" wire:click="newChat" title="{{ __('pages/ask_ai.new_chat') }}"
+                    style="border:none; background:none; color:#9ca3af; cursor:pointer; padding:.25rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width:1.2rem; height:1.2rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+            </button>
             <button type="button" x-on:click="open = false"
                     style="border:none; background:none; color:#9ca3af; cursor:pointer; padding:.25rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:1.15rem; height:1.15rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
             </button>
         </div>
 
+        {{-- History dropdown --}}
+        @if ($showHistory)
+            <div style="border-bottom:1px solid #f3f4f6; background:#fff; max-height:14rem; overflow-y:auto;">
+                @forelse ($conversations as $conversation)
+                    <div wire:key="conv-{{ $conversation->id }}"
+                         style="display:flex; align-items:center; gap:.5rem; padding:.55rem 1rem; font-size:.82rem; cursor:pointer; {{ $conversation->id === $conversationId ? 'background:#f4f4ff;' : '' }}"
+                         wire:click="openConversation({{ $conversation->id }})">
+                        <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#111827;">{{ $conversation->title ?: __('pages/ask_ai.untitled') }}</span>
+                        <span style="flex:none; color:#9ca3af; font-size:.7rem;">{{ $conversation->last_message_at?->diffForHumans(short: true) }}</span>
+                        <button type="button" wire:click.stop="deleteConversation({{ $conversation->id }})" title="{{ __('pages/ask_ai.delete') }}"
+                                style="flex:none; border:none; background:none; color:#c0c0c8; cursor:pointer; padding:.1rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width:.95rem; height:.95rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                @empty
+                    <div style="padding:.7rem 1rem; font-size:.8rem; color:#9ca3af;">{{ __('pages/ask_ai.no_history') }}</div>
+                @endforelse
+            </div>
+        @endif
+
         {{-- Thread --}}
-        <div x-ref="thread" style="flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:.6rem; background:#fff;">
+        <div x-ref="thread" style="flex:1; min-height:0; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:.6rem; background:#fff;">
             @if ($messages === [])
                 <div style="color:#6b7280; font-size:.85rem; line-height:1.55;">
                     <div style="font-weight:700; color:#111827; margin-bottom:.3rem;">{{ __('pages/ask_ai.empty_title') }}</div>
@@ -52,7 +91,7 @@
                 @if ($message['role'] === 'user')
                     <div style="align-self:flex-end; max-width:88%; background:#2d19ec; color:#fff; border-radius:.9rem .9rem .2rem .9rem; padding:.55rem .85rem; font-size:.86rem; white-space:pre-wrap;">{{ $message['content'] }}</div>
                 @else
-                    <div style="align-self:flex-start; max-width:88%; background:#f4f4f6; color:#111827; border-radius:.9rem .9rem .9rem .2rem; padding:.6rem .85rem; font-size:.86rem; line-height:1.55; white-space:pre-wrap;">{{ $message['content'] }}</div>
+                    <div class="ask-ai-md" style="align-self:flex-start; max-width:88%; background:#f4f4f6; color:#111827; border-radius:.9rem .9rem .9rem .2rem; padding:.6rem .85rem; font-size:.86rem; line-height:1.55;">{!! \App\Support\ChatRenderer::render($message['content']) !!}</div>
                 @endif
             @endforeach
 

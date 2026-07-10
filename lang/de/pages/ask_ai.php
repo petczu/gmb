@@ -20,4 +20,9 @@ return [
     'failed' => 'Etwas ist schiefgelaufen, bitte versuche es erneut.',
     'rate_limited' => 'Zu viele Fragen gerade, versuche es gleich noch einmal.',
     'subtitle' => 'Antworten aus deinen Live-Bewertungsdaten',
+    'history' => 'Chat-Verlauf',
+    'new_chat' => 'Neuer Chat',
+    'untitled' => 'Chat ohne Titel',
+    'no_history' => 'Noch keine gespeicherten Chats.',
+    'delete' => 'Löschen',
 ];

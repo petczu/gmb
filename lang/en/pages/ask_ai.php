@@ -20,4 +20,9 @@ return [
     'failed' => 'Something went wrong, please try again.',
     'rate_limited' => 'Too many questions for now, try again in a bit.',
     'subtitle' => 'Answers from your live review data',
+    'history' => 'Chat history',
+    'new_chat' => 'New chat',
+    'untitled' => 'Untitled chat',
+    'no_history' => 'No saved chats yet.',
+    'delete' => 'Delete',
 ];

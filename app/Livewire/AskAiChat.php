@@ -5,31 +5,43 @@ declare(strict_types=1);
 namespace App\Livewire;
 
 use App\Ai\Agents\WorkspaceAnalyst;
+use App\Models\AiConversation;
 use App\Models\Workspace;
 use App\Services\Ai\AiCreditService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Throwable;
 
 /**
- * Floating "Ask AI" chat (round launcher bottom-right, Intercom style) over the
- * current workspace's review data. Read-only agent; history survives page
- * navigation within the session.
+ * Floating "Ask AI" chat over the current workspace's review data. Read-only
+ * agent. Conversations are saved per user in the tenant DB, so a user can start
+ * a new chat or continue an earlier one across sessions and devices.
  */
 class AskAiChat extends Component
 {
     /** @var list<array{role: string, content: string}> */
     public array $messages = [];
 
+    public ?int $conversationId = null;
+
     public string $question = '';
 
     public bool $busy = false;
 
+    public bool $showHistory = false;
+
     public function mount(): void
     {
-        $this->messages = (array) session($this->sessionKey(), []);
+        // Resume the user's most recent conversation, if any.
+        $latest = $this->query()->latest('last_message_at')->first();
+
+        if ($latest !== null) {
+            $this->conversationId = (int) $latest->id;
+            $this->messages = (array) $latest->messages;
+        }
     }
 
     /** Two-phase send: render the user's bubble + spinner, then answer. */
@@ -53,6 +65,7 @@ class AskAiChat extends Component
         $this->messages[] = ['role' => 'user', 'content' => $question];
         $this->question = '';
         $this->busy = true;
+        $this->showHistory = false;
         $this->persist();
 
         $this->dispatch('ask-ai-answer');
@@ -100,25 +113,84 @@ class AskAiChat extends Component
         $this->send();
     }
 
-    public function clearChat(): void
+    /** Start a fresh conversation (the current one is already saved). */
+    public function newChat(): void
     {
+        $this->conversationId = null;
         $this->messages = [];
         $this->busy = false;
-        $this->persist();
+        $this->showHistory = false;
+    }
+
+    /** Load a saved conversation. */
+    public function openConversation(int $id): void
+    {
+        $conversation = $this->query()->whereKey($id)->first();
+        if ($conversation === null) {
+            return;
+        }
+
+        $this->conversationId = (int) $conversation->id;
+        $this->messages = (array) $conversation->messages;
+        $this->busy = false;
+        $this->showHistory = false;
+        $this->dispatch('ask-ai-scroll');
+    }
+
+    public function deleteConversation(int $id): void
+    {
+        $this->query()->whereKey($id)->delete();
+
+        if ($this->conversationId === $id) {
+            $this->newChat();
+        }
+    }
+
+    public function toggleHistory(): void
+    {
+        $this->showHistory = ! $this->showHistory;
     }
 
     public function render(): View
     {
-        return view('livewire.ask-ai-chat');
+        return view('livewire.ask-ai-chat', [
+            'conversations' => $this->query()
+                ->whereNotNull('last_message_at')
+                ->latest('last_message_at')
+                ->limit(20)
+                ->get(['id', 'title', 'last_message_at']),
+        ]);
     }
 
+    /** Persist the current thread, creating the conversation on the first turn. */
     protected function persist(): void
     {
-        session([$this->sessionKey() => $this->messages]);
+        if ($this->messages === []) {
+            return;
+        }
+
+        $conversation = $this->conversationId !== null
+            ? $this->query()->find($this->conversationId)
+            : null;
+
+        $conversation ??= new AiConversation(['user_id' => auth()->id()]);
+
+        if (blank($conversation->title)) {
+            $firstUser = collect($this->messages)->firstWhere('role', 'user');
+            $conversation->title = Str::limit(trim((string) ($firstUser['content'] ?? __('pages/ask_ai.untitled'))), 60);
+        }
+
+        $conversation->messages = $this->messages;
+        $conversation->last_message_at = now();
+        $conversation->user_id ??= auth()->id();
+        $conversation->save();
+
+        $this->conversationId = (int) $conversation->id;
     }
 
-    protected function sessionKey(): string
+    /** Conversations belonging to the current user. */
+    protected function query()
     {
-        return 'ask_ai_chat_'.(string) session('current_workspace_id');
+        return AiConversation::query()->where('user_id', auth()->id());
     }
 }
