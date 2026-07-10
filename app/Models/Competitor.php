@@ -8,14 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * TENANT model — a competitor business tracked against one of the workspace's
- * own locations. Rating/review counts come from the Google Places API and are
- * refreshed weekly by competitors:refresh.
+ * TENANT model — a competitor place inside a CompetitorBattle. Rating/review
+ * counts come from the Google Places API (or a connected location's synced
+ * data) and are refreshed daily by competitors:refresh. location_id is kept as
+ * the battle's primary own location for back-compat (reports, own-growth).
  */
 class Competitor extends Model
 {
     protected $fillable = [
-        'location_id', 'place_id', 'name', 'address',
+        'battle_id', 'location_id', 'place_id', 'name', 'address',
         'rating', 'reviews_count', 'last_checked_at',
     ];
 
@@ -31,5 +32,13 @@ class Competitor extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    /**
+     * @return BelongsTo<CompetitorBattle, $this>
+     */
+    public function battle(): BelongsTo
+    {
+        return $this->belongsTo(CompetitorBattle::class, 'battle_id');
     }
 }
