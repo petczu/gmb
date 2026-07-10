@@ -180,7 +180,11 @@ class AutoReplyQueueItemsTable
                         ->modalWidth(Width::Large)
                         ->modalHeading(__('resources/auto_reply.review_reply'))
                         ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending' && $record->review !== null)
-                        ->fillForm(fn (AutoReplyQueueItem $record): array => ['generated_text' => $record->generated_text])
+                        ->fillForm(fn (AutoReplyQueueItem $record): array => [
+                            'generated_text' => $record->generated_text,
+                            // Preselect the agent that actually generated this draft.
+                            'ai_agent_id' => $record->ai_agent_id,
+                        ])
                         ->schema([
                             Placeholder::make('review_preview')
                                 ->label(fn (AutoReplyQueueItem $record): string => $record->review ? ReplyComposer::previewLabel($record->review) : '')

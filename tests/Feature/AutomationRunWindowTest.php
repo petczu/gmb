@@ -76,6 +76,7 @@ class AutomationRunWindowTest extends TestCase
             $table->string('status');
             $table->string('mode');
             $table->string('model')->nullable();
+            $table->unsignedBigInteger('ai_agent_id')->nullable();
             $table->integer('credits_spent')->default(0);
             $table->text('error')->nullable();
             $table->unsignedInteger('decided_by')->nullable();

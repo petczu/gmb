@@ -76,6 +76,7 @@ class AutomationService
         $usesAi = $automation->content_type === 'ai_agent';
         $cost = $usesAi ? (int) config('services.ai.reply_credits', 1) : 0;
         $model = null;
+        $agentId = null;
 
         if ($usesAi) {
             $agent = $automation->aiAgent;
@@ -112,6 +113,7 @@ class AutomationService
             $this->credits->logUsage($workspace, 'auto_reply', $generated->model, $generated->inputTokens, $generated->outputTokens, $creditDelta, 'review', (string) $review->id);
             $text = $generated->text;
             $model = $generated->model;
+            $agentId = (int) $agent->id;
         } else {
             $text = trim((string) $automation->default_message);
             if ($text === '') {
@@ -121,7 +123,7 @@ class AutomationService
 
         // Approval path is unchanged: queue for a human decision.
         if ($automation->approve_before_posting) {
-            return $this->record($review, $text, 'pending', 'draft', model: $model, credits: $cost);
+            return $this->record($review, $text, 'pending', 'draft', model: $model, credits: $cost, agentId: $agentId);
         }
 
         // Auto path: schedule the post for an "organic" time. A zero delay with
@@ -131,7 +133,7 @@ class AutomationService
         $source = $usesAi ? 'ai_auto' : 'manual';
 
         if ($postAt->lessThanOrEqualTo(now())) {
-            $item = $this->record($review, $text, 'published', 'auto', model: $model, credits: $cost);
+            $item = $this->record($review, $text, 'published', 'auto', model: $model, credits: $cost, agentId: $agentId);
             $this->publish($review, $text, $source);
             $item->forceFill(['decided_at' => now()])->save();
 
@@ -147,6 +149,7 @@ class AutomationService
             model: $model,
             credits: $cost,
             postAt: $postAt,
+            agentId: $agentId,
         );
     }
 
@@ -281,7 +284,7 @@ class AutomationService
         }
     }
 
-    private function record(Review $review, string $text, string $status, string $mode, ?string $model = null, int $credits = 0, ?string $error = null, ?CarbonInterface $postAt = null): AutoReplyQueueItem
+    private function record(Review $review, string $text, string $status, string $mode, ?string $model = null, int $credits = 0, ?string $error = null, ?CarbonInterface $postAt = null, ?int $agentId = null): AutoReplyQueueItem
     {
         return AutoReplyQueueItem::create([
             'review_id' => $review->id,
@@ -289,6 +292,7 @@ class AutomationService
             'status' => $status,
             'mode' => $mode,
             'model' => $model,
+            'ai_agent_id' => $agentId,
             'credits_spent' => $credits,
             'error' => $error,
             'post_at' => $postAt,

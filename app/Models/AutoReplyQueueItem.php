@@ -21,6 +21,7 @@ class AutoReplyQueueItem extends Model
         'status',
         'mode',
         'model',
+        'ai_agent_id',
         'credits_spent',
         'error',
         'decided_by',
@@ -37,6 +38,11 @@ class AutoReplyQueueItem extends Model
     public function review(): BelongsTo
     {
         return $this->belongsTo(Review::class);
+    }
+
+    public function aiAgent(): BelongsTo
+    {
+        return $this->belongsTo(AiAgent::class, 'ai_agent_id');
     }
 
     /** Scheduled replies whose post time has arrived. */
