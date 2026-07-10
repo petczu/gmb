@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Competitor;
+use App\Models\Location;
 use App\Models\TrackedPlace;
 use App\Models\Workspace;
 use App\Services\Competitors\CompetitorTrends;
@@ -38,20 +39,48 @@ class RefreshCompetitorsCommand extends Command
             ? Workspace::query()->get()
             : Workspace::query()->where('id', $this->argument('workspace'))->orWhere('slug', $this->argument('workspace'))->get();
 
-        // Pass 1 — the distinct place ids across all tenants + admin watchlist.
+        // Pass 1 — the distinct place ids across all tenants + admin watchlist,
+        // plus a map of place ids we ALREADY sync (connected locations with a
+        // resolved place_id) → their fresh rating/reviews. Those get a snapshot
+        // from our own data and skip the paid Places call entirely.
         $placeIds = TrackedPlace::query()->pluck('place_id')->all();
 
+        /** @var array<string, array{name: ?string, address: ?string, rating: ?float, reviews_count: int}> $connected */
+        $connected = [];
+
         foreach ($workspaces as $workspace) {
-            $this->inTenant($workspace, function () use (&$placeIds): void {
+            $this->inTenant($workspace, function () use (&$placeIds, &$connected): void {
                 $placeIds = array_merge($placeIds, Competitor::query()->pluck('place_id')->all());
+
+                Location::query()
+                    ->whereNotNull('place_id')->where('place_id', '!=', '')
+                    ->get(['place_id', 'name', 'address', 'rating', 'reviews_count'])
+                    ->each(function (Location $location) use (&$connected): void {
+                        $connected[(string) $location->place_id] = [
+                            'name' => $location->name,
+                            'address' => $location->address,
+                            'rating' => $location->rating !== null ? (float) $location->rating : null,
+                            'reviews_count' => (int) $location->reviews_count,
+                        ];
+                    });
             });
         }
 
         // Pass 2 — ONE details call per place, one central snapshot per day.
+        // Connected places are snapshotted from synced data (no Places call).
         /** @var array<string, array{name: ?string, address: ?string, rating: ?float, reviews_count: int}> $fresh */
         $fresh = [];
+        $skipped = 0;
 
         foreach (array_values(array_unique($placeIds)) as $placeId) {
+            if (isset($connected[$placeId])) {
+                $fresh[$placeId] = $connected[$placeId];
+                CompetitorTrends::recordPlace($placeId, $fresh[$placeId]['rating'], $fresh[$placeId]['reviews_count']);
+                $skipped++;
+
+                continue;
+            }
+
             try {
                 $details = $places->details($placeId);
                 $fresh[$placeId] = [
@@ -88,7 +117,11 @@ class RefreshCompetitorsCommand extends Command
             });
         }
 
-        $this->info(sprintf('Competitors refreshed (%d unique places).', count($fresh)));
+        $this->info(sprintf(
+            'Competitors refreshed (%d unique places, %d from connected locations without a Places call).',
+            count($fresh),
+            $skipped,
+        ));
 
         return self::SUCCESS;
     }

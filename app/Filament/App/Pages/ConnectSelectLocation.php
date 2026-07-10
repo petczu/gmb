@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Pages;
 
+use App\Jobs\ResolveLocationPlaceId;
 use App\Jobs\SyncWorkspaceReviews;
 use App\Mail\LocationConnectedMail;
 use App\Models\GoogleAccount;
@@ -125,6 +126,13 @@ class ConnectSelectLocation extends Page
                     'status' => 'active',
                 ],
             );
+
+            // Resolve the Google Maps place_id off the request so competitor
+            // snapshots can reuse this location's synced data instead of a paid
+            // Places call (see LocationPlaceResolver).
+            if (blank($location->place_id)) {
+                ResolveLocationPlaceId::dispatch((string) $workspace->id, (int) $location->id);
+            }
 
             if ($location->wasRecentlyCreated) {
                 ActivityLogger::log('location.connected', ['location' => $location->name], $location);
