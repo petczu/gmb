@@ -1,22 +1,23 @@
-<style>
-    .ask-ai-md > :first-child { margin-top: 0; }
-    .ask-ai-md > :last-child { margin-bottom: 0; }
-    .ask-ai-md p { margin: .4rem 0; }
-    .ask-ai-md h1, .ask-ai-md h2, .ask-ai-md h3 { font-size: .9rem; font-weight: 700; margin: .7rem 0 .35rem; }
-    .ask-ai-md ul, .ask-ai-md ol { margin: .35rem 0; padding-left: 1.1rem; }
-    .ask-ai-md li { margin: .12rem 0; }
-    .ask-ai-md strong { font-weight: 700; }
-    .ask-ai-md code { background: #e9e9ee; padding: .05rem .3rem; border-radius: .3rem; font-size: .8rem; }
-    .ask-ai-md table { border-collapse: collapse; width: 100%; margin: .5rem 0; font-size: .78rem; display: block; overflow-x: auto; }
-    .ask-ai-md th, .ask-ai-md td { border: 1px solid #e5e7eb; padding: .3rem .5rem; text-align: left; white-space: nowrap; }
-    .ask-ai-md th { background: #ececf1; font-weight: 600; }
-    .ask-ai-md tr:nth-child(even) td { background: #fafafb; }
-    .ask-ai-md a { color: #2d19ec; text-decoration: underline; }
-</style>
 <div x-data="{ open: false }"
      x-on:ask-ai-answer.window="$wire.answer()"
      x-on:ask-ai-scroll.window="$nextTick(() => { if ($refs.thread) $refs.thread.scrollTop = $refs.thread.scrollHeight })"
      style="position:fixed; right:1.4rem; bottom:1.4rem; z-index:40;">
+    {{-- Single Livewire root: styles must live INSIDE it, never as a sibling. --}}
+    <style>
+        .ask-ai-md > :first-child { margin-top: 0; }
+        .ask-ai-md > :last-child { margin-bottom: 0; }
+        .ask-ai-md p { margin: .4rem 0; }
+        .ask-ai-md h1, .ask-ai-md h2, .ask-ai-md h3 { font-size: .9rem; font-weight: 700; margin: .7rem 0 .35rem; }
+        .ask-ai-md ul, .ask-ai-md ol { margin: .35rem 0; padding-left: 1.1rem; }
+        .ask-ai-md li { margin: .12rem 0; }
+        .ask-ai-md strong { font-weight: 700; }
+        .ask-ai-md code { background: #e9e9ee; padding: .05rem .3rem; border-radius: .3rem; font-size: .8rem; }
+        .ask-ai-md table { border-collapse: collapse; width: 100%; margin: .5rem 0; font-size: .78rem; display: block; overflow-x: auto; }
+        .ask-ai-md th, .ask-ai-md td { border: 1px solid #e5e7eb; padding: .3rem .5rem; text-align: left; white-space: nowrap; }
+        .ask-ai-md th { background: #ececf1; font-weight: 600; }
+        .ask-ai-md tr:nth-child(even) td { background: #fafafb; }
+        .ask-ai-md a { color: #2d19ec; text-decoration: underline; }
+    </style>
 
     {{-- Chat window --}}
     <div x-show="open" x-cloak
