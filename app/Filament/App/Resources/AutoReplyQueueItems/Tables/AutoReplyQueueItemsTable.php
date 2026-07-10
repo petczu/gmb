@@ -2,19 +2,32 @@
 
 namespace App\Filament\App\Resources\AutoReplyQueueItems\Tables;
 
+use App\Filament\App\Support\ReplyComposer;
 use App\Models\AutoReplyQueueItem;
+use App\Models\Location;
+use App\Models\Review;
 use App\Models\Workspace;
 use App\Services\Ai\AutoReplyService;
+use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\Indicator;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\HtmlString;
+use Livewire\Component;
 
 class AutoReplyQueueItemsTable
 {
@@ -29,8 +42,14 @@ class AutoReplyQueueItemsTable
             // Manual generations from the reply modal are usage records, not
             // approvals; `scheduled` auto-replies are awaiting their organic post
             // time, not a human decision. Keep both out of the approvals queue.
-            ->modifyQueryUsing(fn ($query) => $query->whereNotIn('status', ['draft', 'scheduled']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereNotIn('status', ['draft', 'scheduled'])->with('review.location'))
             ->columns([
+                TextColumn::make('review.location.name')
+                    ->label(__('resources/auto_reply.col_location'))
+                    ->wrap()
+                    ->toggleable()
+                    ->visibleFrom('lg'),
+
                 TextColumn::make('review.author_name')->label(__('resources/auto_reply.col_author')),
 
                 TextColumn::make('review.rating')
@@ -105,46 +124,137 @@ class AutoReplyQueueItemsTable
                         return Indicator::make(__('resources/auto_reply.status_indicator', ['status' => $labels[$value] ?? $value]))
                             ->color($colors[$value] ?? 'success');
                     }),
+
+                // Review date window (filters through the related review).
+                Filter::make('date')
+                    ->label(__('resources/auto_reply.filter_date'))
+                    ->schema([
+                        DatePicker::make('from')->label(__('common.from'))->native(false)->maxDate(now())->prefixIcon('heroicon-o-calendar'),
+                        DatePicker::make('until')->label(__('common.to'))->native(false)->maxDate(now())->prefixIcon('heroicon-o-calendar'),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['from'] ?? null, fn (Builder $q, $d): Builder => $q->whereHas('review', fn (Builder $r) => $r->whereDate('created_at_external', '>=', $d)))
+                        ->when($data['until'] ?? null, fn (Builder $q, $d): Builder => $q->whereHas('review', fn (Builder $r) => $r->whereDate('created_at_external', '<=', $d))))
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['from'] ?? null) {
+                            $indicators[] = __('resources/auto_reply.filter_from', ['date' => Carbon::parse($data['from'])->translatedFormat('j. M Y')]);
+                        }
+                        if ($data['until'] ?? null) {
+                            $indicators[] = __('resources/auto_reply.filter_to', ['date' => Carbon::parse($data['until'])->translatedFormat('j. M Y')]);
+                        }
+
+                        return $indicators;
+                    }),
+
+                SelectFilter::make('location')
+                    ->label(__('resources/auto_reply.col_location'))
+                    ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->searchable()
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['value'] ?? null, fn (Builder $q, $id): Builder => $q->whereHas('review', fn (Builder $r) => $r->where('location_id', $id)))),
+
+                SelectFilter::make('rating')
+                    ->label(__('resources/auto_reply.col_rating'))
+                    ->options([5 => '5★', 4 => '4★', 3 => '3★', 2 => '2★', 1 => '1★'])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['value'] ?? null, fn (Builder $q, $rating): Builder => $q->whereHas('review', fn (Builder $r) => $r->where('rating', $rating)))),
+
+                SelectFilter::make('source')
+                    ->label(__('resources/auto_reply.col_source'))
+                    ->options([
+                        'ai' => __('resources/auto_reply.source_ai'),
+                        'template' => __('resources/auto_reply.source_template'),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(($data['value'] ?? null) === 'ai', fn (Builder $q): Builder => $q->whereNotNull('model'))
+                        ->when(($data['value'] ?? null) === 'template', fn (Builder $q): Builder => $q->whereNull('model'))),
             ])
             ->recordActions([
                 ActionGroup::make([
-                Action::make('approve')
-                    ->label(__('resources/auto_reply.approve'))
-                    ->icon(Heroicon::OutlinedCheck)
-                    ->color('success')
-                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
-                    ->requiresConfirmation()
-                    ->action(function (AutoReplyQueueItem $record): void {
-                        $workspace = Workspace::find(session('current_workspace_id'));
-                        app(AutoReplyService::class)->approve($workspace, $record, Auth::id());
-                        Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
-                    }),
+                    Action::make('review')
+                        ->label(__('resources/auto_reply.review_reply'))
+                        ->icon(Heroicon::OutlinedChatBubbleLeftRight)
+                        ->color('primary')
+                        ->slideOver()
+                        ->modalWidth(Width::Large)
+                        ->modalHeading(__('resources/auto_reply.review_reply'))
+                        ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending' && $record->review !== null)
+                        ->fillForm(fn (AutoReplyQueueItem $record): array => ['generated_text' => $record->generated_text])
+                        ->schema([
+                            Placeholder::make('review_preview')
+                                ->label(fn (AutoReplyQueueItem $record): string => $record->review ? ReplyComposer::previewLabel($record->review) : '')
+                                ->content(fn (AutoReplyQueueItem $record): HtmlString => $record->review ? ReplyComposer::reviewPreview($record->review) : new HtmlString('')),
 
-                Action::make('edit')
-                    ->label(__('resources/auto_reply.edit_publish'))
-                    ->icon(Heroicon::OutlinedPencilSquare)
-                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
-                    ->fillForm(fn (AutoReplyQueueItem $record): array => ['generated_text' => $record->generated_text])
-                    ->schema([
-                        Textarea::make('generated_text')->label(__('resources/auto_reply.reply'))->required()->rows(4)->maxLength(4096),
-                    ])
-                    ->action(function (array $data, AutoReplyQueueItem $record): void {
-                        $record->update(['generated_text' => $data['generated_text']]);
-                        $workspace = Workspace::find(session('current_workspace_id'));
-                        app(AutoReplyService::class)->approve($workspace, $record->fresh(), Auth::id());
-                        Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
-                    }),
+                            ReplyComposer::agentSelect(),
 
-                Action::make('reject')
-                    ->label(__('resources/auto_reply.reject'))
-                    ->icon(Heroicon::OutlinedXMark)
-                    ->color('danger')
-                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
-                    ->requiresConfirmation()
-                    ->action(function (AutoReplyQueueItem $record): void {
-                        app(AutoReplyService::class)->reject($record, Auth::id());
-                        Notification::make()->title(__('resources/auto_reply.draft_rejected'))->success()->send();
-                    }),
+                            Textarea::make('generated_text')
+                                ->label(__('resources/reviews.your_reply'))
+                                ->required()
+                                ->rows(5)
+                                ->maxLength(4096)
+                                ->hint(fn (): HtmlString => new HtmlString(ReplyComposer::generateHintHtml()))
+                                ->hintAction(
+                                    Action::make('generate')
+                                        ->label(__('resources/reviews.generate_with_ai'))
+                                        ->extraAttributes(['data-gen' => 'reply', 'class' => 'gen-hidden'])
+                                        ->action(function (Set $set, Get $get, AutoReplyQueueItem $record, Component $livewire): void {
+                                            if ($record->review === null) {
+                                                return;
+                                            }
+                                            $text = ReplyComposer::generateReply($record->review, $get('ai_agent_id') ? (int) $get('ai_agent_id') : null);
+                                            if ($text !== null) {
+                                                $set('generated_text', $text);
+                                            }
+                                            $livewire->dispatch('reply-generated');
+                                        }),
+                                )
+                                ->extraInputAttributes(['data-emoji' => 'reply']),
+
+                            ReplyComposer::emojiPickerPlaceholder(),
+                        ])
+                        ->modalSubmitActionLabel(__('resources/auto_reply.approve_publish'))
+                        ->extraModalFooterActions([
+                            Action::make('rejectInline')
+                                ->label(__('resources/auto_reply.reject'))
+                                ->icon(Heroicon::OutlinedXMark)
+                                ->color('danger')
+                                ->cancelParentActions()
+                                ->requiresConfirmation()
+                                ->action(function (AutoReplyQueueItem $record): void {
+                                    app(AutoReplyService::class)->reject($record, Auth::id());
+                                    Notification::make()->title(__('resources/auto_reply.draft_rejected'))->success()->send();
+                                }),
+                        ])
+                        ->action(function (array $data, AutoReplyQueueItem $record): void {
+                            $record->update(['generated_text' => $data['generated_text']]);
+                            $workspace = Workspace::find(session('current_workspace_id'));
+                            app(AutoReplyService::class)->approve($workspace, $record->fresh(), Auth::id());
+                            Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
+                        }),
+
+                    Action::make('approve')
+                        ->label(__('resources/auto_reply.approve'))
+                        ->icon(Heroicon::OutlinedCheck)
+                        ->color('success')
+                        ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
+                        ->requiresConfirmation()
+                        ->action(function (AutoReplyQueueItem $record): void {
+                            $workspace = Workspace::find(session('current_workspace_id'));
+                            app(AutoReplyService::class)->approve($workspace, $record, Auth::id());
+                            Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
+                        }),
+
+                    Action::make('reject')
+                        ->label(__('resources/auto_reply.reject'))
+                        ->icon(Heroicon::OutlinedXMark)
+                        ->color('danger')
+                        ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
+                        ->requiresConfirmation()
+                        ->action(function (AutoReplyQueueItem $record): void {
+                            app(AutoReplyService::class)->reject($record, Auth::id());
+                            Notification::make()->title(__('resources/auto_reply.draft_rejected'))->success()->send();
+                        }),
                 ]),
             ]);
     }

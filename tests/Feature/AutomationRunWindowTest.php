@@ -9,8 +9,14 @@ use App\Models\AutoReplyQueueItem;
 use App\Models\Location;
 use App\Models\Review;
 use App\Models\Workspace;
+use App\Services\Ai\AiCreditService;
 use App\Services\Ai\AutomationService;
+use App\Services\Ai\ReplyGenerator;
+use App\Services\Ai\ReplyScheduler;
+use App\Services\Billing\AiUsageService;
+use App\Services\Reviews\ReviewProviderFactory;
 use Illuminate\Support\Facades\Schema;
+use Mockery;
 use Tests\TestCase;
 
 /**
@@ -85,6 +91,7 @@ class AutomationRunWindowTest extends TestCase
         Schema::dropIfExists('reviews');
         Schema::dropIfExists('locations');
         Schema::dropIfExists('automations');
+        Mockery::close();
         parent::tearDown();
     }
 
@@ -114,8 +121,20 @@ class AutomationRunWindowTest extends TestCase
         $workspace = new Workspace;
         $workspace->id = 'ws-test';
 
+        // The pending-approvals email writes to the central workspace row, which
+        // this lightweight test does not set up — stub it out, it is covered by
+        // the notification's own path.
+        $service = Mockery::mock(AutomationService::class, [
+            app(ReplyGenerator::class),
+            app(AiCreditService::class),
+            app(ReviewProviderFactory::class),
+            app(AiUsageService::class),
+            app(ReplyScheduler::class),
+        ])->makePartial();
+        $service->shouldReceive('notifyPendingApprovals')->andReturnNull();
+
         // Windowed pass (the scheduled --since=48): only the fresh review.
-        $stats = app(AutomationService::class)->processWorkspace($workspace, now()->subHours(48)->toImmutable());
+        $stats = $service->processWorkspace($workspace, now()->subHours(48)->toImmutable());
 
         $this->assertSame(1, $stats['generated']);
         $this->assertSame(1, $stats['queued']);
@@ -123,7 +142,7 @@ class AutomationRunWindowTest extends TestCase
         $this->assertSame(0, AutoReplyQueueItem::query()->where('review_id', $backlog->id)->count());
 
         // Unwindowed pass (explicit manual run) picks up the backlog too.
-        $stats = app(AutomationService::class)->processWorkspace($workspace);
+        $stats = $service->processWorkspace($workspace);
 
         $this->assertSame(1, $stats['generated']);
         $this->assertSame(1, AutoReplyQueueItem::query()->where('review_id', $backlog->id)->where('status', 'pending')->count());

@@ -8,6 +8,7 @@ return [
     'empty_desc' => 'When automations draft replies that need approval, they show up here.',
 
     // Columns
+    'col_location' => 'Location',
     'col_author' => 'Author',
     'col_rating' => 'Rating',
     'col_review' => 'Review',
@@ -27,9 +28,16 @@ return [
 
     // Actions
     'approve' => 'Approve & publish',
+    'approve_publish' => 'Approve & publish',
     'edit_publish' => 'Edit & publish',
+    'review_reply' => 'Review & reply',
     'reply' => 'Reply',
     'reject' => 'Reject',
+
+    // Filters
+    'filter_date' => 'Review date',
+    'filter_from' => 'From :date',
+    'filter_to' => 'Until :date',
 
     // Notifications
     'reply_published' => 'Reply published',

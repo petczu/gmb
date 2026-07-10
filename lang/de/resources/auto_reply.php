@@ -8,6 +8,7 @@ return [
     'empty_desc' => 'Wenn Automatisierungen Antworten entwerfen, die eine Genehmigung benötigen, erscheinen sie hier.',
 
     // Columns
+    'col_location' => 'Standort',
     'col_author' => 'Autor',
     'col_rating' => 'Bewertung',
     'col_review' => 'Bewertung',
@@ -27,9 +28,16 @@ return [
 
     // Actions
     'approve' => 'Freigeben & veröffentlichen',
+    'approve_publish' => 'Freigeben & veröffentlichen',
     'edit_publish' => 'Bearbeiten & veröffentlichen',
+    'review_reply' => 'Ansehen & antworten',
     'reply' => 'Antwort',
     'reject' => 'Ablehnen',
+
+    // Filters
+    'filter_date' => 'Bewertungsdatum',
+    'filter_from' => 'Ab :date',
+    'filter_to' => 'Bis :date',
 
     // Notifications
     'reply_published' => 'Antwort veröffentlicht',

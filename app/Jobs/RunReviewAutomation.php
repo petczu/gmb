@@ -43,7 +43,12 @@ class RunReviewAutomation implements ShouldQueue
         try {
             $review = Review::find($this->reviewId);
             if ($review !== null) {
-                $service->processReview($workspace, $review);
+                $item = $service->processReview($workspace, $review);
+
+                // A queued draft awaits approval → notify the owner (throttled).
+                if ($item?->status === 'pending') {
+                    $service->notifyPendingApprovals($workspace);
+                }
             }
         } finally {
             $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();

@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace App\Services\Ai;
 
+use App\Mail\ApprovalsPendingMail;
 use App\Models\Automation;
 use App\Models\AutoReplyQueueItem;
 use App\Models\Review;
 use App\Models\Workspace;
 use App\Services\Billing\AiUsageService;
+use App\Services\Notifications\NotificationCategory;
+use App\Services\Notifications\NotificationDispatcher;
 use App\Services\Reviews\ReviewProviderFactory;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -194,7 +199,52 @@ class AutomationService
                 $this->tally($this->processReview($workspace, $review), $stats);
             });
 
+        if ($stats['queued'] > 0) {
+            $this->notifyPendingApprovals($workspace);
+        }
+
         return $stats;
+    }
+
+    /**
+     * Email the workspace owner that replies are waiting for approval, throttled
+     * to once per hour per workspace (a fresh backlog must not spam). The daily
+     * ApprovalsReminderCommand still nags about items sitting >24h. Best-effort:
+     * a mail failure never breaks the run. Assumes tenancy is initialized.
+     */
+    public function notifyPendingApprovals(Workspace $workspace): void
+    {
+        $count = AutoReplyQueueItem::query()->where('status', 'pending')->count();
+        if ($count <= 0) {
+            return;
+        }
+
+        // Throttle via a timestamp on the central workspace `data` JSON.
+        $last = $workspace->getAttribute('approvals_notified_at');
+        if (is_string($last) && Carbon::parse($last)->greaterThan(now()->subHour())) {
+            return;
+        }
+
+        $workspace->setAttribute('approvals_notified_at', now()->toIso8601String());
+        $workspace->save();
+
+        try {
+            app(NotificationDispatcher::class)->dispatch(
+                $workspace,
+                NotificationCategory::OPERATIONS,
+                fn (string $name, string $lang) => new ApprovalsPendingMail(
+                    name: $name,
+                    count: $count,
+                    approvalsUrl: rtrim((string) config('app.url'), '/').'/approvals',
+                    lang: $lang,
+                ),
+            );
+        } catch (Throwable $e) {
+            Log::warning('Pending approvals email failed', [
+                'workspace' => $workspace->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
