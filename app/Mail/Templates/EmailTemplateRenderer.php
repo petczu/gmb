@@ -86,7 +86,7 @@ class EmailTemplateRenderer
     /** Illustration keys shipped in public/images/email (decorative heroes). */
     public const IMAGES = [
         'welcome', 'reviews', 'celebration', 'attention',
-        'team', 'time', 'payment-ok', 'payment-issue', 'robot', 'pause',
+        'team', 'time', 'payment-ok', 'payment-issue', 'robot', 'robot-agent', 'pause',
         'disconnected', 'connected', 'inbox', 'send-failed', 'progress',
         'recap', 'tips',
     ];

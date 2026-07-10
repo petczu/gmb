@@ -345,7 +345,7 @@ class EmailTemplateCatalog
             'review_goal_reached' => 'celebration',
             'drip_connect' => 'connected',
             'drip_inbox' => 'reviews',
-            'drip_automation' => 'robot',
+            'drip_automation' => 'robot-agent',
             'drip_growth' => 'progress',
             'drip_competitors' => 'attention',
             'drip_reports' => 'recap',
