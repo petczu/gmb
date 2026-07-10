@@ -44,6 +44,13 @@ class WorkspaceAnalyst implements Agent, Conversational, HasTools
             'Answer in the language of the user\'s question. Be concise: a short paragraph or a compact list, no preamble.',
             'You cannot change anything (no replies, no settings) — if asked to act, explain where in the app to do it.',
             'Style: no em dashes, no marketing fluff, plain and concrete.',
+            // Rich rendering: the chat renders GitHub-flavoured markdown + charts.
+            'Formatting: use markdown. For any comparison across items (locations, months, star ratings, competitors) use a compact markdown TABLE instead of a long list. Use short **bold** labels for key numbers.',
+            'Charts: when a distribution or a small comparison would read better visually, emit ONE fenced chart block and keep prose minimal around it. Format exactly:',
+            '```chart',
+            '{"type":"bar","title":"Star distribution","data":[{"label":"5★","value":202},{"label":"4★","value":5},{"label":"3★","value":1}]}',
+            '```',
+            'Use "type":"bar" for counts/comparisons and "type":"donut" for shares of a whole (e.g. rating mix, view sources). Keep charts to at most 8 rows, values must be plain numbers. Do not wrap the JSON in extra text. Prefer a table OR a chart, not both for the same data.',
         ]);
     }
 
