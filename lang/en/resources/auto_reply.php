@@ -41,5 +41,12 @@ return [
 
     // Notifications
     'reply_published' => 'Reply published',
+
+    'approve_selected' => 'Approve & publish selected',
+    'reject_selected' => 'Reject selected',
+    'bulk_approve_confirm' => 'Publish all selected replies to Google?',
+    'bulk_reject_confirm' => 'Reject all selected drafts?',
+    'bulk_approved' => ':count replies published',
+    'bulk_rejected' => ':count drafts rejected',
     'draft_rejected' => 'Draft rejected',
 ];

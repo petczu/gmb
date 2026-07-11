@@ -10,7 +10,7 @@ use App\Models\Workspace;
 use App\Services\Ai\AutoReplyService;
 use Carbon\Carbon;
 use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
@@ -25,6 +25,7 @@ use Filament\Tables\Filters\Indicator;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
@@ -170,96 +171,155 @@ class AutoReplyQueueItemsTable
                         ->when(($data['value'] ?? null) === 'ai', fn (Builder $q): Builder => $q->whereNotNull('model'))
                         ->when(($data['value'] ?? null) === 'template', fn (Builder $q): Builder => $q->whereNull('model'))),
             ])
+            // Only pending drafts get a checkbox: published/skipped rows have
+            // nothing left to decide, so bulk actions can't touch them.
+            ->checkIfRecordIsSelectableUsing(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
+            ->toolbarActions([
+                BulkAction::make('approveSelected')
+                    ->label(__('resources/auto_reply.approve_selected'))
+                    ->icon(Heroicon::OutlinedCheck)
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalDescription(__('resources/auto_reply.bulk_approve_confirm'))
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (Collection $records): void {
+                        $workspace = Workspace::find(session('current_workspace_id'));
+                        $service = app(AutoReplyService::class);
+                        $count = 0;
+
+                        foreach ($records as $record) {
+                            if ($record->status !== 'pending') {
+                                continue;
+                            }
+                            $service->approve($workspace, $record, Auth::id());
+                            $count++;
+                        }
+
+                        Notification::make()
+                            ->title(__('resources/auto_reply.bulk_approved', ['count' => $count]))
+                            ->success()
+                            ->send();
+                    }),
+
+                BulkAction::make('rejectSelected')
+                    ->label(__('resources/auto_reply.reject_selected'))
+                    ->icon(Heroicon::OutlinedXMark)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription(__('resources/auto_reply.bulk_reject_confirm'))
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (Collection $records): void {
+                        $service = app(AutoReplyService::class);
+                        $count = 0;
+
+                        foreach ($records as $record) {
+                            if ($record->status !== 'pending') {
+                                continue;
+                            }
+                            $service->reject($record, Auth::id());
+                            $count++;
+                        }
+
+                        Notification::make()
+                            ->title(__('resources/auto_reply.bulk_rejected', ['count' => $count]))
+                            ->success()
+                            ->send();
+                    }),
+            ])
             ->recordActions([
-                ActionGroup::make([
-                    Action::make('review')
-                        ->label(__('resources/auto_reply.review_reply'))
-                        ->icon(Heroicon::OutlinedChatBubbleLeftRight)
-                        ->color('primary')
-                        ->slideOver()
-                        ->modalWidth(Width::Large)
-                        ->modalHeading(__('resources/auto_reply.review_reply'))
-                        ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending' && $record->review !== null)
-                        ->fillForm(fn (AutoReplyQueueItem $record): array => [
-                            'generated_text' => $record->generated_text,
-                            // Preselect the agent that actually generated this draft.
-                            'ai_agent_id' => $record->ai_agent_id,
-                        ])
-                        ->schema([
-                            Placeholder::make('review_preview')
-                                ->label(fn (AutoReplyQueueItem $record): string => $record->review ? ReplyComposer::previewLabel($record->review) : '')
-                                ->content(fn (AutoReplyQueueItem $record): HtmlString => $record->review ? ReplyComposer::reviewPreview($record->review) : new HtmlString('')),
+                Action::make('review')
+                    ->label(__('resources/auto_reply.review_reply'))
+                    ->icon(Heroicon::OutlinedChatBubbleLeftRight)
+                    ->color('primary')
+                    ->iconButton()
+                    ->tooltip(__('resources/auto_reply.review_reply'))
+                    ->slideOver()
+                    ->modalWidth(Width::Large)
+                    ->modalHeading(__('resources/auto_reply.review_reply'))
+                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending' && $record->review !== null)
+                    ->fillForm(fn (AutoReplyQueueItem $record): array => [
+                        'generated_text' => $record->generated_text,
+                        // Preselect the agent that actually generated this draft.
+                        'ai_agent_id' => $record->ai_agent_id,
+                    ])
+                    ->schema([
+                        Placeholder::make('review_preview')
+                            ->label(fn (AutoReplyQueueItem $record): string => $record->review ? ReplyComposer::previewLabel($record->review) : '')
+                            ->content(fn (AutoReplyQueueItem $record): HtmlString => $record->review ? ReplyComposer::reviewPreview($record->review) : new HtmlString('')),
 
-                            ReplyComposer::agentSelect(),
+                        ReplyComposer::agentSelect(),
 
-                            Textarea::make('generated_text')
-                                ->label(__('resources/reviews.your_reply'))
-                                ->required()
-                                ->rows(5)
-                                ->maxLength(4096)
-                                ->hint(fn (): HtmlString => new HtmlString(ReplyComposer::generateHintHtml()))
-                                ->hintAction(
-                                    Action::make('generate')
-                                        ->label(__('resources/reviews.generate_with_ai'))
-                                        ->extraAttributes(['data-gen' => 'reply', 'class' => 'gen-hidden'])
-                                        ->action(function (Set $set, Get $get, AutoReplyQueueItem $record, Component $livewire): void {
-                                            if ($record->review === null) {
-                                                return;
-                                            }
-                                            $text = ReplyComposer::generateReply($record->review, $get('ai_agent_id') ? (int) $get('ai_agent_id') : null);
-                                            if ($text !== null) {
-                                                $set('generated_text', $text);
-                                            }
-                                            $livewire->dispatch('reply-generated');
-                                        }),
-                                )
-                                ->extraInputAttributes(['data-emoji' => 'reply']),
+                        Textarea::make('generated_text')
+                            ->label(__('resources/reviews.your_reply'))
+                            ->required()
+                            ->rows(5)
+                            ->maxLength(4096)
+                            ->hint(fn (): HtmlString => new HtmlString(ReplyComposer::generateHintHtml()))
+                            ->hintAction(
+                                Action::make('generate')
+                                    ->label(__('resources/reviews.generate_with_ai'))
+                                    ->extraAttributes(['data-gen' => 'reply', 'class' => 'gen-hidden'])
+                                    ->action(function (Set $set, Get $get, AutoReplyQueueItem $record, Component $livewire): void {
+                                        if ($record->review === null) {
+                                            return;
+                                        }
+                                        $text = ReplyComposer::generateReply($record->review, $get('ai_agent_id') ? (int) $get('ai_agent_id') : null);
+                                        if ($text !== null) {
+                                            $set('generated_text', $text);
+                                        }
+                                        $livewire->dispatch('reply-generated');
+                                    }),
+                            )
+                            ->extraInputAttributes(['data-emoji' => 'reply']),
 
-                            ReplyComposer::emojiPickerPlaceholder(),
-                        ])
-                        ->modalSubmitActionLabel(__('resources/auto_reply.approve_publish'))
-                        ->extraModalFooterActions([
-                            Action::make('rejectInline')
-                                ->label(__('resources/auto_reply.reject'))
-                                ->icon(Heroicon::OutlinedXMark)
-                                ->color('danger')
-                                ->cancelParentActions()
-                                ->requiresConfirmation()
-                                ->action(function (AutoReplyQueueItem $record): void {
-                                    app(AutoReplyService::class)->reject($record, Auth::id());
-                                    Notification::make()->title(__('resources/auto_reply.draft_rejected'))->success()->send();
-                                }),
-                        ])
-                        ->action(function (array $data, AutoReplyQueueItem $record): void {
-                            $record->update(['generated_text' => $data['generated_text']]);
-                            $workspace = Workspace::find(session('current_workspace_id'));
-                            app(AutoReplyService::class)->approve($workspace, $record->fresh(), Auth::id());
-                            Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
-                        }),
+                        ReplyComposer::emojiPickerPlaceholder(),
+                    ])
+                    ->modalSubmitActionLabel(__('resources/auto_reply.approve_publish'))
+                    ->extraModalFooterActions([
+                        Action::make('rejectInline')
+                            ->label(__('resources/auto_reply.reject'))
+                            ->icon(Heroicon::OutlinedXMark)
+                            ->color('danger')
+                            ->cancelParentActions()
+                            ->requiresConfirmation()
+                            ->action(function (AutoReplyQueueItem $record): void {
+                                app(AutoReplyService::class)->reject($record, Auth::id());
+                                Notification::make()->title(__('resources/auto_reply.draft_rejected'))->success()->send();
+                            }),
+                    ])
+                    ->action(function (array $data, AutoReplyQueueItem $record): void {
+                        $record->update(['generated_text' => $data['generated_text']]);
+                        $workspace = Workspace::find(session('current_workspace_id'));
+                        app(AutoReplyService::class)->approve($workspace, $record->fresh(), Auth::id());
+                        Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
+                    }),
 
-                    Action::make('approve')
-                        ->label(__('resources/auto_reply.approve'))
-                        ->icon(Heroicon::OutlinedCheck)
-                        ->color('success')
-                        ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
-                        ->requiresConfirmation()
-                        ->action(function (AutoReplyQueueItem $record): void {
-                            $workspace = Workspace::find(session('current_workspace_id'));
-                            app(AutoReplyService::class)->approve($workspace, $record, Auth::id());
-                            Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
-                        }),
+                Action::make('approve')
+                    ->label(__('resources/auto_reply.approve'))
+                    ->icon(Heroicon::OutlinedCheck)
+                    ->color('success')
+                    ->iconButton()
+                    ->tooltip(__('resources/auto_reply.approve'))
+                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
+                    ->requiresConfirmation()
+                    ->action(function (AutoReplyQueueItem $record): void {
+                        $workspace = Workspace::find(session('current_workspace_id'));
+                        app(AutoReplyService::class)->approve($workspace, $record, Auth::id());
+                        Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
+                    }),
 
-                    Action::make('reject')
-                        ->label(__('resources/auto_reply.reject'))
-                        ->icon(Heroicon::OutlinedXMark)
-                        ->color('danger')
-                        ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
-                        ->requiresConfirmation()
-                        ->action(function (AutoReplyQueueItem $record): void {
-                            app(AutoReplyService::class)->reject($record, Auth::id());
-                            Notification::make()->title(__('resources/auto_reply.draft_rejected'))->success()->send();
-                        }),
-                ]),
+                Action::make('reject')
+                    ->label(__('resources/auto_reply.reject'))
+                    ->icon(Heroicon::OutlinedXMark)
+                    ->color('danger')
+                    ->iconButton()
+                    ->tooltip(__('resources/auto_reply.reject'))
+                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
+                    ->requiresConfirmation()
+                    ->action(function (AutoReplyQueueItem $record): void {
+                        app(AutoReplyService::class)->reject($record, Auth::id());
+                        Notification::make()->title(__('resources/auto_reply.draft_rejected'))->success()->send();
+                    }),
             ]);
     }
 }

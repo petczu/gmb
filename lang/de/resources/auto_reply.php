@@ -41,5 +41,12 @@ return [
 
     // Notifications
     'reply_published' => 'Antwort veröffentlicht',
+
+    'approve_selected' => 'Auswahl freigeben & veröffentlichen',
+    'reject_selected' => 'Auswahl ablehnen',
+    'bulk_approve_confirm' => 'Alle ausgewählten Antworten bei Google veröffentlichen?',
+    'bulk_reject_confirm' => 'Alle ausgewählten Entwürfe ablehnen?',
+    'bulk_approved' => ':count Antworten veröffentlicht',
+    'bulk_rejected' => ':count Entwürfe abgelehnt',
     'draft_rejected' => 'Entwurf abgelehnt',
 ];
