@@ -69,13 +69,13 @@ class FakeReviewProvider implements ReviewProvider
         }));
     }
 
-    public function reply(string $accountId, string $reviewExternalId, string $comment): void
+    public function reply(string $accountId, string $reviewExternalId, string $comment, ?string $locationExternalId = null): void
     {
         // No-op: the Fake backend always "accepts" the reply. The local Review
         // row is updated by the caller after this returns.
     }
 
-    public function deleteReply(string $accountId, string $reviewExternalId): void
+    public function deleteReply(string $accountId, string $reviewExternalId, ?string $locationExternalId = null): void
     {
         // No-op: the Fake backend always "accepts" the deletion.
     }

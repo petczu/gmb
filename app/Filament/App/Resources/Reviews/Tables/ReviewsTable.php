@@ -234,7 +234,7 @@ class ReviewsTable
                                 ->extraAttributes(['data-del-reply' => '1'])
                                 ->cancelParentActions()
                                 ->action(function (Review $record): void {
-                                    self::provider()->deleteReply(self::accountId($record), $record->external_review_id);
+                                    self::provider()->deleteReply(self::accountId($record), $record->external_review_id, $record->location?->external_id);
 
                                     $record->forceFill([
                                         'reply_text' => null,
@@ -253,7 +253,7 @@ class ReviewsTable
                                 $action->halt();
                             }
 
-                            self::provider()->reply(self::accountId($record), $record->external_review_id, $data['reply_text']);
+                            self::provider()->reply(self::accountId($record), $record->external_review_id, $data['reply_text'], $record->location?->external_id);
 
                             $record->forceFill([
                                 'reply_text' => $data['reply_text'],
@@ -274,7 +274,7 @@ class ReviewsTable
                         ->requiresConfirmation()
                         ->modalDescription(__('resources/reviews.delete_reply_desc'))
                         ->action(function (Review $record): void {
-                            self::provider()->deleteReply(self::accountId($record), $record->external_review_id);
+                            self::provider()->deleteReply(self::accountId($record), $record->external_review_id, $record->location?->external_id);
 
                             $record->forceFill([
                                 'reply_text' => null,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Mcp\Tools;
 
 use App\Models\Review;
+use App\Models\Workspace;
 use App\Services\Reviews\ReviewProviderFactory;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -20,7 +21,7 @@ class ReplyToReviewTool extends Tool
     {
         $workspace = tenant();
 
-        return $workspace instanceof \App\Models\Workspace && $workspace->mcpWriteEnabled();
+        return $workspace instanceof Workspace && $workspace->mcpWriteEnabled();
     }
 
     public function handle(Request $request): Response
@@ -38,7 +39,7 @@ class ReplyToReviewTool extends Tool
 
         $accountId = $review->location?->zernio_account_id ?? 'fake-account';
 
-        app(ReviewProviderFactory::class)->make()->reply($accountId, $review->external_review_id, $text);
+        app(ReviewProviderFactory::class)->make()->reply($accountId, $review->external_review_id, $text, $review->location?->external_id);
 
         $review->forceFill([
             'reply_text' => $text,

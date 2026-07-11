@@ -8,6 +8,7 @@ use App\Models\AutoReplyQueueItem;
 use App\Models\AutoReplyRule;
 use App\Models\Review;
 use App\Models\Workspace;
+use App\Services\Billing\AiUsageService;
 use App\Services\Reviews\ReviewProviderFactory;
 use Throwable;
 
@@ -24,7 +25,7 @@ class AutoReplyService
         private readonly ReplyGenerator $generator,
         private readonly AiCreditService $credits,
         private readonly ReviewProviderFactory $providers,
-        private readonly \App\Services\Billing\AiUsageService $usage,
+        private readonly AiUsageService $usage,
     ) {}
 
     /**
@@ -102,11 +103,28 @@ class AutoReplyService
 
     /**
      * Approve a pending draft: publish it and mark the queue item.
+     *
+     * When Google/Zernio rejects the reply (review deleted by the author,
+     * location reconnected under a new account, transient API failure), the
+     * draft is parked as `failed` with the reason instead of clogging the
+     * pending queue, and the exception is rethrown for the UI to report.
      */
     public function approve(Workspace $workspace, AutoReplyQueueItem $item, ?int $userId): void
     {
         $review = $item->review;
-        $this->publish($workspace, $review, $item->generated_text, 'ai_draft');
+
+        try {
+            $this->publish($workspace, $review, $item->generated_text, 'ai_draft');
+        } catch (Throwable $e) {
+            $item->forceFill([
+                'status' => 'failed',
+                'error' => mb_substr($e->getMessage(), 0, 500),
+                'decided_by' => $userId,
+                'decided_at' => now(),
+            ])->save();
+
+            throw $e;
+        }
 
         $item->forceFill([
             'status' => 'published',
@@ -169,7 +187,7 @@ class AutoReplyService
         $provider = $this->providers->make();
         $accountId = $review->location?->zernio_account_id ?? 'fake-account';
 
-        $provider->reply($accountId, $review->external_review_id, $text);
+        $provider->reply($accountId, $review->external_review_id, $text, $review->location?->external_id);
 
         $review->forceFill([
             'reply_text' => $text,

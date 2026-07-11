@@ -83,7 +83,7 @@ class ReviewController extends Controller
 
         $accountId = $model->location?->zernio_account_id ?? 'fake-account';
 
-        app(ReviewProviderFactory::class)->make()->reply($accountId, $model->external_review_id, $validated['reply']);
+        app(ReviewProviderFactory::class)->make()->reply($accountId, $model->external_review_id, $validated['reply'], $model->location?->external_id);
 
         // Setting reply_status to 'published' fires the reply.published webhook
         // via the Review model's updated hook.

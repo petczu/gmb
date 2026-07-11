@@ -48,5 +48,9 @@ return [
     'bulk_reject_confirm' => 'Reject all selected drafts?',
     'bulk_approved' => ':count replies published',
     'bulk_rejected' => ':count drafts rejected',
+    'publish_failed_title' => 'Publishing failed',
+    'publish_not_found' => 'Google says this review no longer exists. It may have been deleted by its author, or the location was reconnected under a new account. The draft was marked as failed.',
+    'publish_error' => 'The reply could not be published. The draft was marked as failed: :message',
+    'bulk_result' => ':published published, :failed failed. Failed drafts keep the error in the Failed filter.',
     'draft_rejected' => 'Draft rejected',
 ];

@@ -80,6 +80,8 @@ class AutoReplyQueueItemsTable
                 TextColumn::make('status')
                     ->label(__('resources/auto_reply.col_status'))
                     ->badge()
+                    // Failed drafts carry the publish error; surface it on hover.
+                    ->tooltip(fn (AutoReplyQueueItem $record): ?string => $record->status === 'failed' ? $record->error : null)
                     ->formatStateUsing(fn (string $state): string => __('resources/auto_reply.status_'.$state))
                     ->color(fn (string $state): string => match ($state) {
                         'published' => 'success',
@@ -185,19 +187,38 @@ class AutoReplyQueueItemsTable
                     ->action(function (Collection $records): void {
                         $workspace = Workspace::find(session('current_workspace_id'));
                         $service = app(AutoReplyService::class);
-                        $count = 0;
+                        $published = 0;
+                        $failed = 0;
 
                         foreach ($records as $record) {
                             if ($record->status !== 'pending') {
                                 continue;
                             }
-                            $service->approve($workspace, $record, Auth::id());
-                            $count++;
+
+                            // One rejected reply (review deleted on Google,
+                            // reconnected location) must not abort the batch:
+                            // approve() already parked it as failed.
+                            try {
+                                $service->approve($workspace, $record, Auth::id());
+                                $published++;
+                            } catch (\Throwable) {
+                                $failed++;
+                            }
+                        }
+
+                        if ($failed === 0) {
+                            Notification::make()
+                                ->title(__('resources/auto_reply.bulk_approved', ['count' => $published]))
+                                ->success()
+                                ->send();
+
+                            return;
                         }
 
                         Notification::make()
-                            ->title(__('resources/auto_reply.bulk_approved', ['count' => $count]))
-                            ->success()
+                            ->title(__('resources/auto_reply.bulk_result', ['published' => $published, 'failed' => $failed]))
+                            ->warning()
+                            ->persistent()
                             ->send();
                     }),
 
@@ -290,7 +311,15 @@ class AutoReplyQueueItemsTable
                     ->action(function (array $data, AutoReplyQueueItem $record): void {
                         $record->update(['generated_text' => $data['generated_text']]);
                         $workspace = Workspace::find(session('current_workspace_id'));
-                        app(AutoReplyService::class)->approve($workspace, $record->fresh(), Auth::id());
+
+                        try {
+                            app(AutoReplyService::class)->approve($workspace, $record->fresh(), Auth::id());
+                        } catch (\Throwable $e) {
+                            self::notifyPublishFailure($e);
+
+                            return;
+                        }
+
                         Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
                     }),
 
@@ -304,7 +333,15 @@ class AutoReplyQueueItemsTable
                     ->requiresConfirmation()
                     ->action(function (AutoReplyQueueItem $record): void {
                         $workspace = Workspace::find(session('current_workspace_id'));
-                        app(AutoReplyService::class)->approve($workspace, $record, Auth::id());
+
+                        try {
+                            app(AutoReplyService::class)->approve($workspace, $record, Auth::id());
+                        } catch (\Throwable $e) {
+                            self::notifyPublishFailure($e);
+
+                            return;
+                        }
+
                         Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
                     }),
 
@@ -321,5 +358,26 @@ class AutoReplyQueueItemsTable
                         Notification::make()->title(__('resources/auto_reply.draft_rejected'))->success()->send();
                     }),
             ]);
+    }
+
+    /**
+     * Explain a failed publish in human terms. A 404 from Zernio means the
+     * review is gone on Google's side (deleted by the author, or the location
+     * was reconnected under a new account), which deserves a clearer message
+     * than the raw API error.
+     */
+    private static function notifyPublishFailure(\Throwable $e): void
+    {
+        $message = $e->getMessage();
+        $notFound = str_contains($message, '404') || str_contains(strtolower($message), 'not found');
+
+        Notification::make()
+            ->title(__('resources/auto_reply.publish_failed_title'))
+            ->body($notFound
+                ? __('resources/auto_reply.publish_not_found')
+                : __('resources/auto_reply.publish_error', ['message' => mb_substr($message, 0, 200)]))
+            ->danger()
+            ->persistent()
+            ->send();
     }
 }

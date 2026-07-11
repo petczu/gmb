@@ -31,11 +31,16 @@ interface ReviewProvider
 
     /**
      * Post (or update) the reply to a review.
+     *
+     * $locationExternalId is the Google location the review belongs to: Zernio
+     * writes act on the account's *selected* location, and one account can
+     * serve several tracked locations, so the provider switches the selection
+     * to this location first (PUT /accounts/{id}/gmb-locations).
      */
-    public function reply(string $accountId, string $reviewExternalId, string $comment): void;
+    public function reply(string $accountId, string $reviewExternalId, string $comment, ?string $locationExternalId = null): void;
 
     /**
-     * Delete the reply on a review.
+     * Delete the reply on a review. $locationExternalId as in reply().
      */
-    public function deleteReply(string $accountId, string $reviewExternalId): void;
+    public function deleteReply(string $accountId, string $reviewExternalId, ?string $locationExternalId = null): void;
 }

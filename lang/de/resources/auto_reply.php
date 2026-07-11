@@ -48,5 +48,9 @@ return [
     'bulk_reject_confirm' => 'Alle ausgewählten Entwürfe ablehnen?',
     'bulk_approved' => ':count Antworten veröffentlicht',
     'bulk_rejected' => ':count Entwürfe abgelehnt',
+    'publish_failed_title' => 'Veröffentlichen fehlgeschlagen',
+    'publish_not_found' => 'Google meldet, dass diese Bewertung nicht mehr existiert. Sie wurde eventuell vom Autor gelöscht, oder der Standort wurde unter einem neuen Konto neu verbunden. Der Entwurf wurde als fehlgeschlagen markiert.',
+    'publish_error' => 'Die Antwort konnte nicht veröffentlicht werden. Der Entwurf wurde als fehlgeschlagen markiert: :message',
+    'bulk_result' => ':published veröffentlicht, :failed fehlgeschlagen. Fehlgeschlagene Entwürfe stehen mit Fehlermeldung im Filter „Fehlgeschlagen".',
     'draft_rejected' => 'Entwurf abgelehnt',
 ];

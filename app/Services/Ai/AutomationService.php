@@ -308,7 +308,7 @@ class AutomationService
         $provider = $this->providers->make();
         $accountId = $review->location?->zernio_account_id ?? 'fake-account';
 
-        $provider->reply($accountId, $review->external_review_id, $text);
+        $provider->reply($accountId, $review->external_review_id, $text, $review->location?->external_id);
 
         $review->forceFill([
             'reply_text' => $text,

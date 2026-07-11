@@ -9,12 +9,14 @@ use App\Services\Reviews\Data\ReviewData;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use GuzzleHttp\Client as GuzzleClient;
+use Illuminate\Support\Facades\Cache;
 use Zernio\Api\ConnectApi;
 use Zernio\Api\GMBReviewsApi;
 use Zernio\ApiException;
 use Zernio\Configuration;
 use Zernio\Model\GetGoogleBusinessReviews200ResponseReviewsInner as ZReview;
 use Zernio\Model\ReplyToGoogleBusinessReviewRequest;
+use Zernio\Model\UpdateGmbLocationRequest;
 
 /**
  * Live Zernio implementation. Wraps zernio-dev/zernio-php and normalizes its
@@ -130,17 +132,52 @@ class ZernioProvider implements ReviewProvider
         return $out;
     }
 
-    public function reply(string $accountId, string $reviewExternalId, string $comment): void
+    public function reply(string $accountId, string $reviewExternalId, string $comment, ?string $locationExternalId = null): void
     {
-        $request = new ReplyToGoogleBusinessReviewRequest;
-        $request->setComment($comment);
+        $this->withSelectedLocation($accountId, $locationExternalId, function () use ($accountId, $reviewExternalId, $comment): void {
+            $request = new ReplyToGoogleBusinessReviewRequest;
+            $request->setComment($comment);
 
-        $this->reviews->replyToGoogleBusinessReview($accountId, $reviewExternalId, $request);
+            $this->reviews->replyToGoogleBusinessReview($accountId, $reviewExternalId, $request);
+        });
     }
 
-    public function deleteReply(string $accountId, string $reviewExternalId): void
+    public function deleteReply(string $accountId, string $reviewExternalId, ?string $locationExternalId = null): void
     {
-        $this->reviews->deleteGoogleBusinessReviewReply($accountId, $reviewExternalId);
+        $this->withSelectedLocation($accountId, $locationExternalId, function () use ($accountId, $reviewExternalId): void {
+            $this->reviews->deleteGoogleBusinessReviewReply($accountId, $reviewExternalId);
+        });
+    }
+
+    /**
+     * Zernio's write endpoints act on the account's *selected* location, and
+     * one account can serve several tracked locations. Switch the selection to
+     * the target location, then run the write; without it, writes for any
+     * non-selected location fail with 404 "GBP resource not found".
+     *
+     * The lock serializes concurrent writers (queue workers) on the same
+     * account so a parallel switch can't land between our switch and write. A
+     * mismatch can't publish to the wrong business, review ids are per
+     * location, so the worst case stays a 404.
+     */
+    private function withSelectedLocation(string $accountId, ?string $locationExternalId, callable $write): void
+    {
+        if (blank($locationExternalId)) {
+            $write();
+
+            return;
+        }
+
+        $lock = Cache::lock("zernio:write:{$accountId}", seconds: 60);
+
+        $lock->block(30, function () use ($accountId, $locationExternalId, $write): void {
+            $this->withRateLimitRetry(fn () => $this->connect->updateGmbLocation(
+                $accountId,
+                (new UpdateGmbLocationRequest)->setSelectedLocationId($locationExternalId),
+            ));
+
+            $write();
+        });
     }
 
     private function rating(ZReview $r): int
