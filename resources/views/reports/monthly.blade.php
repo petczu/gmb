@@ -84,6 +84,11 @@
         <div>
             <h1>{{ $data['businessName'] }}</h1>
             <div class="sub">{{ __('report.performance_report') }} · {{ $data['periodLabel'] }}@if($data['compare']) · {{ __('report.footer_compared', ['period' => $data['previousLabel']]) }}@endif</div>
+            {{-- The title truncates a long selection to "first + N more"; spell
+                 out every covered location so the report's scope stays clear. --}}
+            @if(count($data['locationNames'] ?? []) > 3)
+                <div class="sub" style="margin-top:2px;">{{ __('report.covered_locations') }} {{ implode(' · ', $data['locationNames']) }}</div>
+            @endif
         </div>
         <div class="brand">
             @if(!empty($brand['logo']))
@@ -104,8 +109,15 @@
             </div>
             <div class="kpi">
                 <div class="label">{{ __('report.average_rating') }}</div>
-                <div class="value">{{ number_format((float)$k['avg']['value'], 2) }}★</div>
-                @if($data['compare'])<div class="delta {{ $deltaClass($k['avg']['delta']) }}">{{ $deltaStr($k['avg']['delta']) }} {{ __('report.vs_prev') }}</div>@else<div class="sub">{{ __('report.out_of_5') }}</div>@endif
+                <div class="value">{{ $k['avg']['value'] !== null ? number_format((float)$k['avg']['value'], 2).'★' : '—' }}</div>
+                @if($k['avg']['overall'] ?? false)
+                    {{-- No reviews in the window: this is the profile's overall rating. --}}
+                    <div class="sub">{{ __('report.overall_rating') }}</div>
+                @elseif($data['compare'] && $k['avg']['delta'] !== null)
+                    <div class="delta {{ $deltaClass($k['avg']['delta']) }}">{{ $deltaStr($k['avg']['delta']) }} {{ __('report.vs_prev') }}</div>
+                @else
+                    <div class="sub">{{ __('report.out_of_5') }}</div>
+                @endif
             </div>
             <div class="kpi">
                 <div class="label">{{ __('report.five_star_share') }}</div>

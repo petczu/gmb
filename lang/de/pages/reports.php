@@ -11,6 +11,7 @@ return [
     'demo_summary' => 'Das Demo-Restaurant erhielt in den letzten 30 Tagen 38 Bewertungen (+9 zum Vorzeitraum) mit durchschnittlich 4,60★. 84% der Bewertungen waren positiv, die Antwortquote lag bei 92%. Gäste lobten wiederholt das freundliche Team und den schnellen Service.',
 
     'location' => 'Standort',
+    'business_multi' => ':name + :count weitere',
     'compare' => 'Vergleichen',
     'compare_options' => [
         'none' => 'Nicht vergleichen',

@@ -11,6 +11,7 @@ return [
     'demo_summary' => 'Demo Restaurant received 38 reviews in the last 30 days (+9 vs the previous period), averaging 4.60★. 84% of reviews were positive and the response rate reached 92%. Guests repeatedly praised the friendly team and fast service.',
 
     'location' => 'Location',
+    'business_multi' => ':name + :count more',
     'compare' => 'Compare',
     'compare_options' => [
         'none' => 'Don’t compare',

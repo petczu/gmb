@@ -87,8 +87,12 @@ class Onboarding extends Page implements HasForms
             'address_line1' => $workspace->address_line1,
             'postal_code' => $workspace->postal_code,
             'city' => $workspace->city,
-            'plan' => 'growth',
-            'interval' => 'monthly',
+            // Preselect the plan picked on the marketing site's pricing page
+            // (parked in the session by the Register page), if any.
+            'plan' => Plans::find((string) session('intended_plan')) !== null
+                ? (string) session('intended_plan')
+                : 'growth',
+            'interval' => session('intended_interval') === 'yearly' && Plans::hasYearly() ? 'yearly' : 'monthly',
         ]);
     }
 
@@ -203,6 +207,7 @@ class Onboarding extends Page implements HasForms
                 if (! $this->billing()->hasUsedTrial($workspace)) {
                     $state = $this->form->getRawState();
                     $this->billing()->startLocalTrial($workspace, (string) ($state['plan'] ?? 'growth'));
+                    session()->forget(['intended_plan', 'intended_interval']);
 
                     Notification::make()
                         ->title(__('onboarding.trial_started_title'))
@@ -277,6 +282,7 @@ class Onboarding extends Page implements HasForms
 
         if (! $this->billing()->hasUsedTrial($workspace)) {
             $this->billing()->startLocalTrial($workspace, $plan);
+            session()->forget(['intended_plan', 'intended_interval']);
 
             Notification::make()
                 ->title(__('onboarding.trial_started_title'))

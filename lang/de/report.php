@@ -55,6 +55,8 @@ return [
     // At a glance
     'five_star_share' => '5-Sterne-Anteil',
     'out_of_5' => 'von 5,00 Sternen',
+    'overall_rating' => 'Gesamtbewertung des Profils',
+    'covered_locations' => 'Standorte in diesem Bericht:',
     'of' => 'von',
 
     // Staff mentions

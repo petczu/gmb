@@ -112,6 +112,13 @@ class AppPanelProvider extends PanelProvider
             ->spaUrlExceptions(fn (): array => [
                 url('/connect/google'),
                 url('/connect/google').'/*',
+                // Report documents are plain blades, not Livewire pages: letting
+                // wire:navigate handle them corrupts the SPA snapshot, so styles
+                // come back broken after browser Back until a hard refresh.
+                url('/reports/preview'),
+                url('/reports/download'),
+                url('/reports/saved').'/*',
+                url('/reports/shared').'/*',
             ])
             // Collapsible left sidebar on desktop.
             ->sidebarCollapsibleOnDesktop()

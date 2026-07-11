@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Auth;
 
+use App\Billing\Plans;
 use App\Mail\WelcomeMail;
 use App\Models\Invitation;
 use App\Services\Auth\BetaAccess;
@@ -37,6 +38,31 @@ use Spatie\Permission\PermissionRegistrar;
 class Register extends BaseRegister
 {
     public int $step = 1;
+
+    /**
+     * Deep link from the marketing site's pricing cards:
+     * /register?plan=pro&interval=year. The choice is parked in the session so
+     * it survives the OTP steps (and social login) and preselects the plan step
+     * of the onboarding wizard.
+     */
+    public function mount(): void
+    {
+        parent::mount();
+
+        $plan = strtolower((string) request()->query('plan'));
+        if (Plans::find($plan) !== null) {
+            session(['intended_plan' => $plan]);
+        }
+
+        $interval = match (strtolower((string) request()->query('interval'))) {
+            'year', 'yearly', 'annual' => 'yearly',
+            'month', 'monthly' => 'monthly',
+            default => null,
+        };
+        if ($interval !== null) {
+            session(['intended_interval' => $interval]);
+        }
+    }
 
     public function form(Schema $schema): Schema
     {

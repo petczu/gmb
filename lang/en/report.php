@@ -55,6 +55,8 @@ return [
     // At a glance
     'five_star_share' => '5-star share',
     'out_of_5' => 'of 5.00 stars',
+    'overall_rating' => 'overall profile rating',
+    'covered_locations' => 'Locations in this report:',
     'of' => 'of',
 
     // Staff mentions

@@ -43,6 +43,14 @@ class ReportData
         $pReplied = (int) $prev->whereNotNull('reply_text')->count();
         $pRate = $pTotal > 0 ? (int) round($pReplied / $pTotal * 100) : 0;
 
+        // A window without reviews has no average of its own — "0.00★, down
+        // 3.6" would just be alarming noise. Show the profile's overall Google
+        // rating instead, with no comparison arrow. A delta is also meaningless
+        // when either window is empty.
+        $avgIsOverall = $total === 0;
+        $avgValue = $avgIsOverall ? $this->overallRating($period) : round($avg, 2);
+        $avgDelta = ($total > 0 && $pTotal > 0) ? round($avg - $pAvg, 2) : null;
+
         // Star distribution (5..1).
         $byStar = $this->window($period, $period->start, $period->end)
             ->selectRaw('rating, count(*) as total')->groupBy('rating')->pluck('total', 'rating');
@@ -62,13 +70,21 @@ class ReportData
 
         return [
             'businessName' => $this->businessName($period),
+            // Full names of a hand-picked selection: the header truncates to
+            // "first + N more", so the report itself must still spell out
+            // exactly which locations it covers.
+            'locationNames' => $period->locationIds === [] ? [] : Location::query()
+                ->whereIn('id', $period->locationIds)
+                ->orderBy('name')
+                ->pluck('name')
+                ->all(),
             'allLocations' => count($period->locationIds) !== 1 && Location::query()->count() > 1,
             'periodLabel' => $period->label(),
             'previousLabel' => $period->previousLabel(),
             'compare' => $period->compare,
             'kpis' => [
                 'total' => ['value' => $total, 'prev' => $pTotal, 'delta' => $total - $pTotal],
-                'avg' => ['value' => round($avg, 2), 'prev' => round($pAvg, 2), 'delta' => round($avg - $pAvg, 2)],
+                'avg' => ['value' => $avgValue, 'prev' => round($pAvg, 2), 'delta' => $avgDelta, 'overall' => $avgIsOverall],
                 'responseRate' => ['value' => $rate, 'prev' => $pRate, 'delta' => $rate - $pRate],
                 'replied' => ['value' => $replied, 'prev' => $pReplied, 'delta' => $replied - $pReplied],
             ],
@@ -262,6 +278,17 @@ class ReportData
             ])->all();
     }
 
+    /** The profile's current Google rating, averaged over the selected locations. */
+    protected function overallRating(DashboardPeriod $period): ?float
+    {
+        $avg = Location::query()
+            ->when($period->locationIds !== [], fn ($q) => $q->whereIn('id', $period->locationIds))
+            ->whereNotNull('rating')
+            ->avg('rating');
+
+        return $avg !== null ? round((float) $avg, 2) : null;
+    }
+
     protected function businessName(DashboardPeriod $period): string
     {
         $names = Location::query()
@@ -273,12 +300,14 @@ class ReportData
             return (string) $names->first();
         }
 
-        // A hand-picked subset gets named in the header (up to three); the
-        // whole-workspace report keeps the generic label.
-        if ($period->locationIds !== [] && $names->count() <= 3) {
-            return $names->implode(' · ');
+        // A hand-picked subset must never masquerade as the whole workspace:
+        // name up to three locations, beyond that name the first plus a count.
+        if ($period->locationIds !== []) {
+            return $names->count() <= 3
+                ? $names->implode(' · ')
+                : __('pages/reports.business_multi', ['name' => $names->first(), 'count' => $names->count() - 1]);
         }
 
-        return 'All locations';
+        return __('common.all_locations');
     }
 }

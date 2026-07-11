@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Reports;
 
+use App\Models\Workspace;
 use Illuminate\Support\Facades\Log;
 use Laravel\Ai\Enums\Lab;
 use Throwable;
@@ -168,7 +169,7 @@ class ReportInsights
             return null;
         }
 
-        $workspace = \App\Models\Workspace::find($tenantKey);
+        $workspace = Workspace::find($tenantKey);
         $text = trim((string) $workspace?->getAttribute('report_ai_instructions'));
 
         return $text === '' ? null : mb_substr($text, 0, 2000);
@@ -292,20 +293,35 @@ class ReportInsights
     protected function fallback(array $data): array
     {
         $k = $data['kpis'];
-        $trend = $k['avg']['delta'] > 0 ? 'up' : ($k['avg']['delta'] < 0 ? 'down' : 'flat');
-        $trendWord = ['up' => 'improved', 'down' => 'declined', 'flat' => 'held steady'][$trend];
+        $avgDelta = $k['avg']['delta'];
+
+        // A null delta means one of the windows had no reviews, so there is no
+        // rating trend to speak of (the avg shown may be the profile's overall
+        // rating — see ReportData).
+        if ($avgDelta === null) {
+            $ratingClause = $k['avg']['value'] !== null
+                ? sprintf('the profile holds a %s★ rating', number_format((float) $k['avg']['value'], 2))
+                : 'there were too few reviews for a rating trend';
+        } else {
+            $trend = $avgDelta > 0 ? 'up' : ($avgDelta < 0 ? 'down' : 'flat');
+            $trendWord = ['up' => 'improved', 'down' => 'declined', 'flat' => 'held steady'][$trend];
+            $ratingClause = sprintf(
+                'averaging %s★ — ratings %s by %s',
+                number_format((float) $k['avg']['value'], 2),
+                $trendWord,
+                number_format(abs((float) $avgDelta), 2),
+            );
+        }
 
         $summary = sprintf(
-            '%s received %d reviews in %s (%s%d vs the previous period), averaging %s★ — ratings %s by %s. '.
+            '%s received %d reviews in %s (%s%d vs the previous period), %s. '.
             '%d%% of reviews were positive (4–5★) and %d%% were critical (1–2★). The response rate was %d%%.',
             $data['businessName'],
             $k['total']['value'],
             $data['periodLabel'],
             $k['total']['delta'] >= 0 ? '+' : '',
             $k['total']['delta'],
-            number_format((float) $k['avg']['value'], 2),
-            $trendWord,
-            number_format(abs((float) $k['avg']['delta']), 2),
+            $ratingClause,
             $data['positivePct'],
             $data['negativePct'],
             $k['responseRate']['value'],

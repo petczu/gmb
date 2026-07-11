@@ -66,7 +66,8 @@
                 <x-filament::section>
                     <x-slot name="heading">{{ __('pages/billing.ai_auto_replies') }}</x-slot>
                     <div style="font-size:1.5rem; font-weight:700; color:{{ $aiOver && $d['creditBalance'] <= 0 ? 'rgb(220 38 38)' : 'inherit' }};">
-                        {{ number_format($d['aiUsed']) }}@if ($d['subscribed']) / {{ number_format($d['aiCap']) }}@endif
+                        {{-- Cap shows for any active plan, incl. the card-less trial. --}}
+                        {{ number_format($d['aiUsed']) }}@if ($d['currentPlan']) / {{ number_format($d['aiCap']) }}@endif
                     </div>
                     <div style="font-size:0.8rem; color:{{ $aiOver && $d['creditBalance'] <= 0 ? 'rgb(220 38 38)' : 'rgb(107 114 128)' }};">
                         @if ($aiOver && $d['creditBalance'] > 0)
@@ -82,7 +83,7 @@
                 <x-filament::section>
                     <x-slot name="heading">{{ __('pages/billing.ai_reports') }}</x-slot>
                     <div style="font-size:1.5rem; font-weight:700; color:{{ $reportOver ? 'rgb(202 138 4)' : 'inherit' }};">
-                        {{ number_format($d['reportsUsed']) }}@if ($d['subscribed']) / {{ number_format($d['reportCap']) }}@endif
+                        {{ number_format($d['reportsUsed']) }}@if ($d['currentPlan']) / {{ number_format($d['reportCap']) }}@endif
                     </div>
                     <div style="font-size:0.8rem; color:{{ $reportOver ? 'rgb(202 138 4)' : 'rgb(107 114 128)' }};">
                         {{ $reportOver ? __('pages/billing.limit_basic_only') : __('pages/billing.this_month_resets') }}

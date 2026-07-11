@@ -83,4 +83,35 @@
     /* "Trial · N days left" pill on the current plan card. */
     .trial-pill { display: inline-block; vertical-align: middle; margin-inline-start: .4rem; background: #eef2ff; color: #2d19ec; font-size: .68rem; font-weight: 700; padding: .18rem .55rem; border-radius: 999px; letter-spacing: .02em; }
     .dark .trial-pill { background: rgba(99,102,241,.18); color: #a5b4fc; }
+
+    /* Multi-select fields (location filters etc.): a long selection blows the
+       field up to many rows. Collapse to the first three badges plus a "+N"
+       counter; focusing the field reveals the full list for editing. The extra
+       badges stay visibility-hidden (not display:none) so the CSS counter that
+       feeds "+N" still increments. */
+    .fi-select-input-value-badges-ctn { counter-reset: extra-badges; position: relative; align-items: center; }
+    .fi-select-input-value-badges-ctn > :nth-child(n + 4) {
+        counter-increment: extra-badges;
+        position: absolute;
+        visibility: hidden;
+        pointer-events: none;
+    }
+    .fi-select-input-value-badges-ctn:has(> :nth-child(4))::after {
+        content: '+' counter(extra-badges);
+        flex-shrink: 0;
+        font-size: .75rem;
+        font-weight: 600;
+        line-height: 1;
+        padding: .25rem .5rem;
+        border-radius: .375rem;
+        background: rgb(0 0 0 / .06);
+        color: rgb(107 114 128);
+    }
+    .dark .fi-select-input-value-badges-ctn:has(> :nth-child(4))::after { background: rgb(255 255 255 / .1); color: #a1a1aa; }
+    .fi-fo-select:focus-within .fi-select-input-value-badges-ctn > :nth-child(n + 4) {
+        position: static;
+        visibility: visible;
+        pointer-events: auto;
+    }
+    .fi-fo-select:focus-within .fi-select-input-value-badges-ctn::after { content: none; }
 </style>

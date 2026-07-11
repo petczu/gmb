@@ -302,17 +302,20 @@ class LocationBilling
      * the recurring per-location subscription.
      */
     /**
-     * Checkout for a custom number of credits (per-credit price × quantity).
+     * Checkout for a custom number of credits. Charged as ONE line item with
+     * the rounded total: a discounted per-credit Stripe price can land on
+     * fractional cents (10% off €0.08 = €0.072), which Checkout rejects in
+     * payment mode — and the total always matches the price shown in the app.
      * The granted amount is read back from metadata.credits by GrantCreditPack.
      */
     public function buyCredits(Workspace $workspace, int $quantity, string $successUrl, string $cancelUrl)
     {
-        $quantity = Credits::clamp($quantity);
-        $priceId = Credits::priceIdFor($quantity);
-
-        if ($priceId === null) {
+        if (! Credits::available()) {
             throw new \InvalidArgumentException('Credit purchasing is not configured (no per-credit price).');
         }
+
+        $quantity = Credits::clamp($quantity);
+        $amountCents = (int) round(Credits::cost($quantity) * 100);
 
         $this->prefillStripeCustomer($workspace);
 
@@ -321,7 +324,7 @@ class LocationBilling
             'workspace_id' => $workspace->id,
         ];
 
-        return $workspace->checkout([$priceId => $quantity], [
+        return $workspace->checkoutCharge($amountCents, "{$quantity} AI credits", 1, [
             'mode' => 'payment',
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,

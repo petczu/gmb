@@ -31,7 +31,8 @@ class Plan
 
     public function priceIdFor(string $interval): ?string
     {
-        return $interval === 'year' ? $this->yearlyPriceId : $this->priceId;
+        // Callers send both spellings ('year' from Billing, 'yearly' from onboarding).
+        return in_array($interval, ['year', 'yearly'], true) ? $this->yearlyPriceId : $this->priceId;
     }
 
     /** Yearly per-location price with the 20% annual discount baked in. */
