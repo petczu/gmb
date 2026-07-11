@@ -39,9 +39,15 @@ class AutomationService
 
     public function matching(Review $review): ?Automation
     {
+        // Deterministic overlap resolution: automations limited to specific
+        // locations act as overrides and win over "All locations" catch-alls
+        // (same pattern as AutoReplyRule); among equal scopes the older one
+        // runs. A review is always handled by exactly one automation.
         return Automation::query()
             ->where('enabled', true)
             ->where('trigger', 'new_review')
+            ->orderBy('all_locations')
+            ->orderBy('id')
             ->get()
             ->first(fn (Automation $a): bool => $a->matches($review));
     }

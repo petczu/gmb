@@ -16,4 +16,9 @@ class EditAutomation extends EditRecord
             DeleteAction::make(),
         ];
     }
+
+    protected function afterSave(): void
+    {
+        AutomationResource::notifyOverlaps($this->record);
+    }
 }

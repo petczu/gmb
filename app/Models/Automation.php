@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -46,6 +47,43 @@ class Automation extends Model
     public function aiAgent(): BelongsTo
     {
         return $this->belongsTo(AiAgent::class);
+    }
+
+    /**
+     * Other ENABLED automations competing for the same reviews (location and
+     * rating scopes both intersect). Used to warn on save; the runtime picks
+     * exactly one winner (see AutomationService::matching()).
+     *
+     * @return Collection<int, static>
+     */
+    public function overlapping(): Collection
+    {
+        return static::query()
+            ->where('enabled', true)
+            ->whereKeyNot($this->getKey() ?? 0)
+            ->get()
+            ->filter(fn (Automation $other): bool => $this->overlapsWith($other));
+    }
+
+    /** Whether both the location scope and the rating scope intersect. */
+    public function overlapsWith(Automation $other): bool
+    {
+        $locations = $this->all_locations || $other->all_locations
+            || array_intersect(
+                array_map('intval', $this->location_ids ?? []),
+                array_map('intval', $other->location_ids ?? []),
+            ) !== [];
+
+        if (! $locations) {
+            return false;
+        }
+
+        // An empty rating filter means "any rating" and intersects everything.
+        return empty($this->rating_filter) || empty($other->rating_filter)
+            || array_intersect(
+                array_map('intval', $this->rating_filter),
+                array_map('intval', $other->rating_filter),
+            ) !== [];
     }
 
     /**

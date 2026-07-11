@@ -9,6 +9,7 @@ use App\Filament\App\Resources\Automations\Schemas\AutomationForm;
 use App\Filament\App\Resources\Automations\Tables\AutomationsTable;
 use App\Models\Automation;
 use BackedEnum;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -65,5 +66,35 @@ class AutomationResource extends Resource
             'create' => CreateAutomation::route('/create'),
             'edit' => EditAutomation::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Soft warning after save when this automation competes with others for
+     * the same reviews (locations AND ratings intersect). Overlap is allowed:
+     * the runtime deterministically picks one winner (specific locations beat
+     * "All locations", then the older automation), so we inform, not block.
+     */
+    public static function notifyOverlaps(Automation $automation): void
+    {
+        if (! $automation->enabled) {
+            return;
+        }
+
+        $overlapping = $automation->overlapping();
+
+        if ($overlapping->isEmpty()) {
+            return;
+        }
+
+        $list = $overlapping
+            ->map(fn (Automation $other): string => '"'.$other->name.'"')
+            ->implode(', ');
+
+        Notification::make()
+            ->title(__('resources/automations.overlap_title'))
+            ->body(__('resources/automations.overlap_body', ['list' => $list]))
+            ->warning()
+            ->persistent()
+            ->send();
     }
 }

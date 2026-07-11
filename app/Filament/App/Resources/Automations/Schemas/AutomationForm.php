@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\Automations\Schemas;
 
 use App\Models\AiAgent;
+use App\Models\Automation;
 use App\Models\Location;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Radio;
@@ -51,6 +52,9 @@ class AutomationForm
 
                         Toggle::make('all_locations')
                             ->label(__('resources/automations.all_locations'))
+                            // Overlaps are allowed by design (see AutomationService::matching):
+                            // specific-location automations override this catch-all.
+                            ->helperText(__('resources/automations.all_locations_helper'))
                             ->default(true)
                             ->live()
                             ->columnSpanFull(),
@@ -58,7 +62,7 @@ class AutomationForm
                         Select::make('location_ids')
                             ->label(__('resources/automations.locations'))
                             ->multiple()
-                            ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
+                            ->options(fn (?Automation $record): array => self::locationOptions($record))
                             ->searchable()
                             ->visible(fn (Get $get): bool => ! $get('all_locations'))
                             ->columnSpanFull(),
@@ -157,5 +161,48 @@ class AutomationForm
                             ->visible(fn (Get $get): bool => $get('content_type') === 'default_message'),
                     ]),
             ]);
+    }
+
+    /**
+     * Location options, annotated when another enabled automation already
+     * covers a location. Overlap is legal (different rating filters are the
+     * point), so this informs instead of hiding or disabling the option.
+     *
+     * @return array<int, string>
+     */
+    private static function locationOptions(?Automation $current): array
+    {
+        $others = Automation::query()
+            ->where('enabled', true)
+            ->when($current?->exists, fn ($query) => $query->whereKeyNot($current->getKey()))
+            ->orderBy('all_locations')
+            ->orderBy('id')
+            ->get();
+
+        $options = [];
+
+        foreach (Location::query()->orderBy('name')->get(['id', 'name']) as $location) {
+            $covering = $others->first(fn (Automation $a): bool => $a->all_locations
+                || in_array((int) $location->id, array_map('intval', $a->location_ids ?? []), true));
+
+            $options[$location->id] = $covering === null
+                ? $location->name
+                : $location->name.' · '.__('resources/automations.covered_by', [
+                    'name' => $covering->name,
+                    'ratings' => self::ratingsLabel($covering),
+                ]);
+        }
+
+        return $options;
+    }
+
+    /** "5★, 4★" or the localized "any rating". */
+    private static function ratingsLabel(Automation $automation): string
+    {
+        if (empty($automation->rating_filter)) {
+            return __('resources/automations.any_rating');
+        }
+
+        return implode(', ', array_map(fn ($r): string => $r.'★', $automation->rating_filter));
     }
 }

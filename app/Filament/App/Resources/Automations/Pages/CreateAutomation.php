@@ -11,4 +11,9 @@ class CreateAutomation extends CreateRecord
 
     // Single "Create" button — drop "Create & create another".
     protected static bool $canCreateAnother = false;
+
+    protected function afterCreate(): void
+    {
+        AutomationResource::notifyOverlaps($this->record);
+    }
 }
