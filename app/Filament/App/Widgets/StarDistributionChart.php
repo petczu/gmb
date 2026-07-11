@@ -48,7 +48,7 @@ class StarDistributionChart extends ChartWidget
         $period = DashboardPeriod::fromFilters($this->pageFilters);
 
         $counts = Review::query()
-            ->when($period->locationId, fn (Builder $q, int $id): Builder => $q->where('location_id', $id))
+            ->when($period->locationIds !== [], fn (Builder $q): Builder => $q->whereIn('location_id', $period->locationIds))
             ->whereBetween('created_at_external', [$period->start, $period->end])
             ->selectRaw('rating, count(*) as total')
             ->groupBy('rating')

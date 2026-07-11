@@ -14,6 +14,10 @@ use Carbon\CarbonImmutable;
  */
 class DashboardPeriod
 {
+    /**
+     * @param  ?int  $locationId  single-location filter (report pages); null = all
+     * @param  list<int>  $locationIds  multi-location filter (dashboard); empty = all
+     */
     public function __construct(
         public readonly CarbonImmutable $start,
         public readonly CarbonImmutable $end,
@@ -22,6 +26,7 @@ class DashboardPeriod
         public readonly bool $compare,
         public readonly ?int $locationId,
         public readonly string $preset,
+        public readonly array $locationIds = [],
     ) {}
 
     /**
@@ -77,9 +82,12 @@ class DashboardPeriod
             $prevStart = $start->subSeconds($lengthSeconds);
         }
 
-        $locationId = isset($filters['location_id']) && $filters['location_id'] !== null && $filters['location_id'] !== ''
-            ? (int) $filters['location_id']
-            : null;
+        // The dashboard sends an array (multi-select), report pages a scalar.
+        // Normalize both into a list of ids; a single id also fills locationId
+        // for consumers that only support one location.
+        $locationIds = array_values(array_filter(
+            array_map('intval', array_filter((array) ($filters['location_id'] ?? []), fn ($id): bool => $id !== null && $id !== '')),
+        ));
 
         return new self(
             start: $start,
@@ -87,8 +95,9 @@ class DashboardPeriod
             prevStart: $prevStart,
             prevEnd: $prevEnd,
             compare: $compareMode !== 'none',
-            locationId: $locationId,
+            locationId: count($locationIds) === 1 ? $locationIds[0] : null,
             preset: (string) $preset,
+            locationIds: $locationIds,
         );
     }
 

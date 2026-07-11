@@ -21,10 +21,12 @@ return [
 
     // Statuses
     'status_pending' => 'Ausstehend',
+    'status_scheduled' => 'Geplant',
     'status_published' => 'Veröffentlicht',
     'status_skipped' => 'Übersprungen',
     'status_failed' => 'Fehlgeschlagen',
     'status_indicator' => 'Status: :status',
+    'scheduled_for' => 'Geht raus: :time',
 
     // Actions
     'approve' => 'Freigeben & veröffentlichen',
@@ -53,4 +55,13 @@ return [
     'publish_not_found' => 'Google meldet, dass diese Bewertung nicht mehr existiert. Sie wurde eventuell vom Autor gelöscht, oder der Standort wurde unter einem neuen Konto neu verbunden. Der Entwurf wurde als fehlgeschlagen markiert.',
     'publish_error' => 'Die Antwort konnte nicht veröffentlicht werden. Der Entwurf wurde als fehlgeschlagen markiert: :message',
     'draft_rejected' => 'Entwurf abgelehnt',
+
+    // Scheduled items
+    'post_now' => 'Jetzt veröffentlichen',
+    'post_now_confirm' => 'Die geplante Zeit überspringen und diese Antwort so bald wie möglich veröffentlichen?',
+    'post_now_queued' => 'Antwort zur Veröffentlichung eingereiht',
+    'post_now_queued_body' => 'Sie geht in den nächsten Minuten raus.',
+    'cancel_scheduled' => 'Abbrechen',
+    'cancel_scheduled_confirm' => 'Diese geplante Antwort abbrechen? Sie wird nicht veröffentlicht.',
+    'schedule_cancelled' => 'Geplante Antwort abgebrochen',
 ];

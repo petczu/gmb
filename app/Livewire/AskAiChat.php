@@ -9,9 +9,9 @@ use App\Models\AiConversation;
 use App\Models\Location;
 use App\Models\Workspace;
 use App\Services\Ai\AiCreditService;
+use App\Support\AiRateLimit;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Throwable;
@@ -64,14 +64,12 @@ class AskAiChat extends Component
             return;
         }
 
-        $key = 'ask-ai:'.(auth()->id() ?? 'guest');
-        if (RateLimiter::tooManyAttempts($key, maxAttempts: 30)) {
+        if (AiRateLimit::hit('ask-ai')) {
             $this->messages[] = ['role' => 'assistant', 'content' => __('pages/ask_ai.rate_limited')];
             $this->persist();
 
             return;
         }
-        RateLimiter::hit($key, 3600);
 
         $this->messages[] = ['role' => 'user', 'content' => $question];
         $this->question = '';

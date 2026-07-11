@@ -28,6 +28,8 @@ return [
     'run_from' => 'Bewertungen ab',
     'run_until' => 'Bewertungen bis',
     'run_title' => '„:name“ ausgeführt',
+    'run_queued_title' => '„:name" eingereiht',
+    'run_queued_body' => 'Der Lauf passiert im Hintergrund. Neue Entwürfe landen in der Freigabe, automatisch veröffentlichte Antworten erscheinen in den nächsten Minuten an den Bewertungen.',
     'run_body' => ':generated generiert, :published veröffentlicht, :queued in Warteschlange, :skipped übersprungen.',
 
     // Form — Flow section

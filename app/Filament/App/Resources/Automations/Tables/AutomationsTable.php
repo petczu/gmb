@@ -3,10 +3,9 @@
 namespace App\Filament\App\Resources\Automations\Tables;
 
 use App\Filament\App\Resources\Automations\AutomationResource;
+use App\Jobs\RunAutomationBackfill;
 use App\Models\Automation;
 use App\Models\Workspace;
-use App\Services\Ai\AutomationService;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -96,21 +95,18 @@ class AutomationsTable
                         ->action(function (Automation $record, array $data): void {
                             $workspace = Workspace::findOrFail(session('current_workspace_id'));
 
-                            $stats = app(AutomationService::class)->processAutomation(
-                                $workspace,
-                                $record,
-                                filled($data['from'] ?? null) ? CarbonImmutable::parse($data['from'])->startOfDay() : null,
-                                filled($data['until'] ?? null) ? CarbonImmutable::parse($data['until'])->endOfDay() : null,
+                            // Queued: a backlog can mean hundreds of AI
+                            // generations, far beyond the request timeout.
+                            RunAutomationBackfill::dispatch(
+                                (string) $workspace->id,
+                                (int) $record->id,
+                                filled($data['from'] ?? null) ? (string) $data['from'] : null,
+                                filled($data['until'] ?? null) ? (string) $data['until'] : null,
                             );
 
                             Notification::make()
-                                ->title(__('resources/automations.run_title', ['name' => $record->name]))
-                                ->body(__('resources/automations.run_body', [
-                                    'generated' => $stats['generated'],
-                                    'published' => $stats['published'],
-                                    'queued' => $stats['queued'],
-                                    'skipped' => $stats['skipped'],
-                                ]))
+                                ->title(__('resources/automations.run_queued_title', ['name' => $record->name]))
+                                ->body(__('resources/automations.run_queued_body'))
                                 ->success()
                                 ->send();
                         }),

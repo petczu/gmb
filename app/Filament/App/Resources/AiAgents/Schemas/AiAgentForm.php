@@ -8,6 +8,7 @@ use App\Models\Workspace;
 use App\Services\Ai\AgentDescriptionGenerator;
 use App\Services\Ai\AiCreditService;
 use App\Services\Ai\ReplyGenerator;
+use App\Support\AiRateLimit;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -22,7 +23,6 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 class AiAgentForm
@@ -81,13 +81,11 @@ class AiAgentForm
                                     return;
                                 }
 
-                                $key = 'agent-desc-gen:'.(auth()->id() ?? 'guest');
-                                if (RateLimiter::tooManyAttempts($key, maxAttempts: 10)) {
+                                if (AiRateLimit::hit('agent-desc-gen')) {
                                     Notification::make()->title(__('resources/ai_agents.generate_rate_limited'))->warning()->send();
 
                                     return;
                                 }
-                                RateLimiter::hit($key, 3600);
 
                                 try {
                                     $text = app(AgentDescriptionGenerator::class)->generate(
@@ -186,13 +184,11 @@ class AiAgentForm
             return;
         }
 
-        $key = 'agent-test:'.(auth()->id() ?? 'guest');
-        if (RateLimiter::tooManyAttempts($key, maxAttempts: 20)) {
+        if (AiRateLimit::hit('agent-test')) {
             Notification::make()->title(__('resources/ai_agents.generate_rate_limited'))->warning()->send();
 
             return;
         }
-        RateLimiter::hit($key, 3600);
 
         $review = Review::find($reviewId);
         if ($review === null) {

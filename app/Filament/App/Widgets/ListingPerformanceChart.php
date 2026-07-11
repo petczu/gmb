@@ -61,7 +61,7 @@ class ListingPerformanceChart extends ChartWidget
                 : array_map(fn (int $v): int => max(0, (int) round($v / 8)), $demo['series']);
         } else {
             $period = DashboardPeriod::fromFilters($this->pageFilters);
-            $metrics = app(ListingPerformance::class)->metrics($period->locationId, $period->start, $period->end);
+            $metrics = app(ListingPerformance::class)->metrics($period->locationIds, $period->start, $period->end);
             $daily = ListingPerformance::dailySeries($metrics['series'], $period->start, $period->end, $metric);
 
             [$labels, $values] = $this->bucket($daily['labels'], $daily['values'], $period->days());

@@ -21,6 +21,7 @@ class ReportSchedule extends Model
         'period',
         'language',
         'location_id',
+        'location_ids',
         'compare',
         'blocks',
         'recipients',
@@ -31,6 +32,7 @@ class ReportSchedule extends Model
         'enabled' => 'boolean',
         'compare' => 'boolean',
         'blocks' => 'array',
+        'location_ids' => 'array',
         'send_day' => 'integer',
         'recipients' => 'array',
         'last_sent_at' => 'datetime',
@@ -38,6 +40,15 @@ class ReportSchedule extends Model
 
     protected static function booted(): void
     {
+        // location_ids (multi) is the source of truth; the legacy single
+        // location_id column mirrors a one-location selection so nothing that
+        // still reads it goes stale after an edit.
+        static::saving(function (ReportSchedule $schedule): void {
+            $ids = array_values(array_map('intval', (array) $schedule->location_ids));
+            $schedule->location_ids = $ids ?: null;
+            $schedule->location_id = count($ids) === 1 ? $ids[0] : null;
+        });
+
         // Deletion happens through Filament's stock DeleteAction (table + edit
         // page), so the activity feed hook lives on the model.
         static::deleted(function (ReportSchedule $schedule): void {

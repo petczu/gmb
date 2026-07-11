@@ -62,7 +62,7 @@ class ReportData
 
         return [
             'businessName' => $this->businessName($period),
-            'allLocations' => $period->locationId === null && Location::query()->count() > 1,
+            'allLocations' => count($period->locationIds) !== 1 && Location::query()->count() > 1,
             'periodLabel' => $period->label(),
             'previousLabel' => $period->previousLabel(),
             'compare' => $period->compare,
@@ -101,7 +101,7 @@ class ReportData
     protected function competitors(DashboardPeriod $period): array
     {
         $competitors = Competitor::query()
-            ->when($period->locationId !== null, fn ($q) => $q->where('location_id', $period->locationId))
+            ->when($period->locationIds !== [], fn ($q) => $q->whereIn('location_id', $period->locationIds))
             ->orderByDesc('rating')
             ->get();
 
@@ -113,7 +113,7 @@ class ReportData
         $start = $period->start;
 
         $locations = Location::query()
-            ->when($period->locationId !== null, fn ($q) => $q->whereKey($period->locationId))
+            ->when($period->locationIds !== [], fn ($q) => $q->whereIn('id', $period->locationIds))
             ->get();
 
         $ownRatings = $locations->pluck('rating')->filter();
@@ -150,14 +150,14 @@ class ReportData
             return [];
         }
 
-        $current = $service->metrics($period->locationId, $period->start, $period->end);
+        $current = $service->metrics($period->locationIds, $period->start, $period->end);
 
         if (! $current['available']) {
             return [];
         }
 
         $previous = $period->compare
-            ? $service->metrics($period->locationId, $period->prevStart, $period->prevEnd)
+            ? $service->metrics($period->locationIds, $period->prevStart, $period->prevEnd)
             : ['available' => false, 'views' => 0, 'totals' => []];
 
         $pct = function (int $value, ?int $prev) use ($previous): ?int {
@@ -181,14 +181,14 @@ class ReportData
             'kpis' => $kpis,
             'views' => $current['views'],
             'breakdown' => array_intersect_key($current['totals'], array_flip(ListingPerformance::VIEW_KEYS)),
-            'keywords' => $service->keywords($period->locationId, limit: 8),
+            'keywords' => $service->keywords($period->locationIds, limit: 8),
         ];
     }
 
     protected function window(DashboardPeriod $period, $from, $to): Builder
     {
         return Review::query()
-            ->when($period->locationId, fn (Builder $q, int $id): Builder => $q->where('location_id', $id))
+            ->when($period->locationIds !== [], fn (Builder $q): Builder => $q->whereIn('location_id', $period->locationIds))
             ->whereBetween('created_at_external', [$from, $to]);
     }
 
@@ -264,12 +264,21 @@ class ReportData
 
     protected function businessName(DashboardPeriod $period): string
     {
-        if ($period->locationId) {
-            return Location::query()->whereKey($period->locationId)->value('name') ?: 'All locations';
+        $names = Location::query()
+            ->when($period->locationIds !== [], fn ($q) => $q->whereIn('id', $period->locationIds))
+            ->orderBy('name')
+            ->pluck('name');
+
+        if ($names->count() === 1) {
+            return (string) $names->first();
         }
 
-        $names = Location::query()->orderBy('name')->pluck('name');
+        // A hand-picked subset gets named in the header (up to three); the
+        // whole-workspace report keeps the generic label.
+        if ($period->locationIds !== [] && $names->count() <= 3) {
+            return $names->implode(' · ');
+        }
 
-        return $names->count() === 1 ? (string) $names->first() : 'All locations';
+        return 'All locations';
     }
 }

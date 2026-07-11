@@ -90,11 +90,11 @@ class ReviewStatsOverview extends StatsOverviewWidget
         ];
     }
 
-    /** Base query scoped to the selected location (if any). */
+    /** Base query scoped to the selected locations (if any). */
     protected function scoped(DashboardPeriod $period): Builder
     {
         return Review::query()
-            ->when($period->locationId, fn (Builder $q, int $id): Builder => $q->where('location_id', $id));
+            ->when($period->locationIds !== [], fn (Builder $q): Builder => $q->whereIn('location_id', $period->locationIds));
     }
 
     private function stat(string $label, string $value, int|float|null $delta, string $fallback, bool $higherIsBetter, string $unit = '', ?string $icon = null): Stat

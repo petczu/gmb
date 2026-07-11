@@ -97,6 +97,11 @@ return [
         // super-admins get an email at 80% and 100%. Empty = no alerts.
         'monthly_budget_usd' => env('AI_MONTHLY_BUDGET_USD'),
 
+        // Per-user hourly cap on interactive UI generations (agent test runs,
+        // description drafts). Generous on purpose: it only exists to stop a
+        // runaway script or stuck retry loop, not to meter humans. 0 = off.
+        'ui_generation_rate_limit' => (int) env('AI_UI_GENERATION_RATE_LIMIT', 100),
+
         // List prices (USD per 1,000,000 tokens) used to compute the real cost
         // of each AI call for the usage ledger. VERIFY against current Anthropic
         // pricing; override per model via env if needed. 'default' is the

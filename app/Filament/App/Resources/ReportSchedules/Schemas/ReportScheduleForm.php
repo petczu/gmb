@@ -68,9 +68,10 @@ class ReportScheduleForm
                         ->selectablePlaceholder(false)
                         ->required(),
 
-                    Select::make('location_id')
+                    Select::make('location_ids')
                         ->label(__('resources/report_schedules.location'))
                         ->placeholder(__('common.all_locations'))
+                        ->multiple()
                         ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all()),
 
                     Select::make('language')

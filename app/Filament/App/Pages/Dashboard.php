@@ -77,6 +77,7 @@ class Dashboard extends BaseDashboard
                         Select::make('location_id')
                             ->label(__('common.location'))
                             ->placeholder(__('common.all_locations'))
+                            ->multiple()
                             ->options(fn (): array => tenancy()->initialized
                                 ? Location::query()->orderBy('name')->pluck('name', 'id')->all()
                                 : []),
@@ -121,7 +122,7 @@ class Dashboard extends BaseDashboard
     {
         return [
             'period' => 'last_7',
-            'location_id' => null,
+            'location_id' => [],
             'startDate' => null,
             'endDate' => null,
             'compare' => true,

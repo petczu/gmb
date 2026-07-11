@@ -115,7 +115,7 @@ class RatingTrendChart extends ChartWidget
         $to = $from->addDays($bucketCount * $bucketDays);
 
         $reviews = Review::query()
-            ->when($period->locationId, fn (Builder $q, int $id): Builder => $q->where('location_id', $id))
+            ->when($period->locationIds !== [], fn (Builder $q): Builder => $q->whereIn('location_id', $period->locationIds))
             ->whereBetween('created_at_external', [$from, $to])
             ->get(['rating', 'created_at_external']);
 

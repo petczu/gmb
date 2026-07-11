@@ -12,6 +12,12 @@ class CreateAiAgent extends CreateRecord
 
     protected static bool $canCreateAnother = false;
 
+    /** Back to the agents list after creating (instead of the edit page). */
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+
     protected function afterCreate(): void
     {
         // First agent becomes default automatically; otherwise honor the toggle.

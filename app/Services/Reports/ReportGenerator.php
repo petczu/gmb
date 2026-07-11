@@ -31,7 +31,7 @@ class ReportGenerator
             $period->end->toDateString(),
             $period->prevStart->toDateString(),
             $period->prevEnd->toDateString(),
-            $period->locationId ?? 'all',
+            $period->locationIds === [] ? 'all' : implode(',', $period->locationIds),
             $period->compare ? '1' : '0',
             $language,
             // Changed owner guidance must produce a fresh AI narrative.

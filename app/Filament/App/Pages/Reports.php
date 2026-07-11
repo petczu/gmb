@@ -15,6 +15,7 @@ use App\Services\Billing\AiUsageService;
 use App\Services\Reports\ReportBranding;
 use App\Services\Reports\ReportData;
 use App\Services\Reports\ReportGenerator;
+use App\Support\AiRateLimit;
 use App\Support\DashboardPeriod;
 use App\Support\ReportBlocks;
 use BackedEnum;
@@ -37,7 +38,6 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 
 class Reports extends Page implements HasForms
 {
@@ -79,7 +79,7 @@ class Reports extends Page implements HasForms
 
         $this->form->fill([
             'period' => 'last_30',
-            'location_id' => null,
+            'location_id' => [],
             'compareMode' => 'previous',
             'language' => 'en',
             'preset' => 'full',
@@ -110,6 +110,7 @@ class Reports extends Page implements HasForms
                             Select::make('location_id')
                                 ->label(__('pages/reports.location'))
                                 ->placeholder(__('common.all_locations'))
+                                ->multiple()
                                 ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
                                 ->live(),
 
@@ -189,13 +190,11 @@ class Reports extends Page implements HasForms
                                             return;
                                         }
 
-                                        $key = 'report-instr-improve:'.(auth()->id() ?? 'guest');
-                                        if (RateLimiter::tooManyAttempts($key, maxAttempts: 10)) {
+                                        if (AiRateLimit::hit('report-instr-improve')) {
                                             Notification::make()->title(__('pages/reports.ai_improve_rate_limited'))->warning()->send();
 
                                             return;
                                         }
-                                        RateLimiter::hit($key, 3600);
 
                                         try {
                                             $improved = app(InstructionImprover::class)->improve(
@@ -347,6 +346,8 @@ class Reports extends Page implements HasForms
                     ? $filters['period']
                     : 'last_month';
 
+                $locationIds = array_values(array_map('intval', array_filter((array) ($filters['location_id'] ?? []))));
+
                 ReportSchedule::create([
                     'name' => $data['name'],
                     'enabled' => true,
@@ -354,7 +355,10 @@ class Reports extends Page implements HasForms
                     'send_day' => (int) $data['send_day'],
                     'period' => $period,
                     'language' => in_array($filters['language'] ?? 'en', ['en', 'de'], true) ? $filters['language'] : 'en',
-                    'location_id' => $filters['location_id'],
+                    // location_id mirrors a single selection for backwards
+                    // compatibility; location_ids is the source of truth.
+                    'location_id' => count($locationIds) === 1 ? $locationIds[0] : null,
+                    'location_ids' => $locationIds ?: null,
                     'compare' => ($filters['compareMode'] ?? 'previous') !== 'none',
                     'blocks' => ReportBlocks::normalize($this->data['blocks'] ?? null),
                     'recipients' => array_values($data['recipients'] ?? []),

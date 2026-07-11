@@ -6,7 +6,9 @@ namespace App\Services\Reports;
 
 use App\Models\Review;
 use App\Support\DashboardPeriod;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 /**
  * "Collection cadence" analysis: are reviews spread out over time, or do they
@@ -53,7 +55,7 @@ class CadenceAnalyzer
 
         $daily = [];
         foreach ($counts as $date => $count) {
-            $d = \Carbon\CarbonImmutable::parse($date);
+            $d = CarbonImmutable::parse($date);
             $daily[] = [
                 'date' => $date,
                 'label' => $d->format('d'),
@@ -91,10 +93,10 @@ class CadenceAnalyzer
      * Find same-session bursts: runs of >= BURST_MIN reviews that all fall within
      * a BURST_WINDOW_MINUTES span (the tightest filtering risk).
      *
-     * @param  \Illuminate\Support\Collection<int, Review>  $reviews  ordered by time
+     * @param  Collection<int, Review>  $reviews  ordered by time
      * @return array<int, array{date: string, window: string, count: int, flag: string}>
      */
-    private function bursts(\Illuminate\Support\Collection $reviews): array
+    private function bursts(Collection $reviews): array
     {
         $times = $reviews->pluck('created_at_external')->all();
         $bursts = [];
@@ -137,7 +139,7 @@ class CadenceAnalyzer
     private function window(DashboardPeriod $period): Builder
     {
         return Review::query()
-            ->when($period->locationId, fn (Builder $q, int $id): Builder => $q->where('location_id', $id))
+            ->when($period->locationIds !== [], fn (Builder $q): Builder => $q->whereIn('location_id', $period->locationIds))
             ->whereBetween('created_at_external', [$period->start, $period->end]);
     }
 }

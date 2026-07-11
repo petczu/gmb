@@ -34,10 +34,36 @@ class ReplyScheduler
         $workingHours = $this->normalizeWorkingHours($automation->working_hours);
 
         if ($automation->respect_working_hours && $workingHours !== null && ! $this->isWithinWorkingHours($at, $workingHours, $tz)) {
-            $at = $this->nextWindowStart($at, $workingHours, $tz);
+            $at = $this->spreadIntoWindow($this->nextWindowStart($at, $workingHours, $tz), $workingHours);
         }
 
         return $at;
+    }
+
+    /**
+     * Deferred replies all land on the window's first second otherwise — a
+     * backlog would publish as one burst at opening time, which both hammers
+     * the provider and looks robotic on Google. Spread each reply to a random
+     * minute across the working window instead.
+     *
+     * @param  array{days:array<int,int>,start:string,end:string}  $wh
+     */
+    private function spreadIntoWindow(CarbonInterface $windowStart, array $wh): CarbonInterface
+    {
+        $local = Carbon::instance($windowStart->toDateTime());
+
+        // Only spread from the window's start; a same-day time already inside
+        // the window (nextWindowStart returns it unchanged) keeps its delay.
+        if ($local->hour * 60 + $local->minute !== $this->toMinutes($wh['start'])) {
+            return $local;
+        }
+
+        $windowMinutes = $this->toMinutes($wh['end']) - $this->toMinutes($wh['start']);
+        if ($windowMinutes <= 1) {
+            return $local;
+        }
+
+        return $local->addMinutes(mt_rand(0, $windowMinutes - 1))->addSeconds(mt_rand(0, 59));
     }
 
     /**

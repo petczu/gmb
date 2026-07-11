@@ -79,7 +79,7 @@ class ListingPerformanceOverview extends StatsOverviewWidget
         $period = DashboardPeriod::fromFilters($this->pageFilters);
         $performance = app(ListingPerformance::class);
 
-        $current = $performance->metrics($period->locationId, $period->start, $period->end);
+        $current = $performance->metrics($period->locationIds, $period->start, $period->end);
 
         if (! $current['available']) {
             return [
@@ -93,7 +93,7 @@ class ListingPerformanceOverview extends StatsOverviewWidget
         $prevTotals = [];
 
         if ($period->compare) {
-            $previous = $performance->metrics($period->locationId, $period->prevStart, $period->prevEnd);
+            $previous = $performance->metrics($period->locationIds, $period->prevStart, $period->prevEnd);
             if ($previous['available']) {
                 $prevViews = $previous['views'];
                 $prevTotals = $previous['totals'];

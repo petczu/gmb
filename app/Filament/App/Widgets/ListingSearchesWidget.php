@@ -51,12 +51,12 @@ class ListingSearchesWidget extends Widget
         $period = DashboardPeriod::fromFilters($this->pageFilters);
         $performance = app(ListingPerformance::class);
 
-        $metrics = $performance->metrics($period->locationId, $period->start, $period->end);
+        $metrics = $performance->metrics($period->locationIds, $period->start, $period->end);
 
         return [
             'views' => $metrics['views'],
             'breakdown' => $this->breakdown($metrics['totals'], $metrics['views']),
-            'keywords' => $performance->keywords($period->locationId),
+            'keywords' => $performance->keywords($period->locationIds),
         ];
     }
 

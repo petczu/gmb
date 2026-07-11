@@ -41,7 +41,7 @@ class LatestReviews extends TableWidget
         return $table
             ->heading(__('widgets.latest_reviews'))
             ->query(fn (): Builder => Review::query()
-                ->when($period->locationId, fn (Builder $q, int $id): Builder => $q->where('location_id', $id))
+                ->when($period->locationIds !== [], fn (Builder $q): Builder => $q->whereIn('location_id', $period->locationIds))
                 ->whereBetween('created_at_external', [$period->start, $period->end])
                 ->latest('created_at_external')
                 ->limit(10))

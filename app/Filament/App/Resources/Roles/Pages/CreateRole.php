@@ -15,6 +15,12 @@ class CreateRole extends CreateRecord
     /** @var list<string> */
     protected array $selectedPermissions = [];
 
+    /** Back to the roles list after creating (instead of the edit page). */
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+
     /** Normalize + stamp the guard; team_id is set by spatie from the current team. */
     protected function mutateFormDataBeforeCreate(array $data): array
     {

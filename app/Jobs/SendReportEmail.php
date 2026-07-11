@@ -64,7 +64,7 @@ class SendReportEmail implements ShouldQueue
 
             $period = DashboardPeriod::fromFilters([
                 'period' => $schedule->period,
-                'location_id' => $schedule->location_id,
+                'location_id' => $schedule->location_ids ?: $schedule->location_id,
                 'compare' => $schedule->compare,
             ]);
 

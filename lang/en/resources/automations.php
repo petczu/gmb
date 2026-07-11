@@ -28,6 +28,8 @@ return [
     'run_from' => 'Reviews from',
     'run_until' => 'Reviews until',
     'run_title' => 'Ran “:name”',
+    'run_queued_title' => '":name" queued',
+    'run_queued_body' => 'The run happens in the background. New drafts land in Approvals and auto-published replies appear on the reviews over the next minutes.',
     'run_body' => 'Generated :generated, published :published, queued :queued, skipped :skipped.',
 
     // Form — Flow section

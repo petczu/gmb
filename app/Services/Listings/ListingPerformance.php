@@ -53,10 +53,10 @@ class ListingPerformance
      *
      * totals: short key => sum; series: date (Y-m-d) => short key => value.
      *
-     * @param  ?int  $locationId  restrict to one location (null = all)
+     * @param  int|list<int>|null  $locationId  restrict to specific locations (null/empty = all)
      * @return array{totals: array<string, int>, views: int, series: array<string, array<string, int>>, available: bool}
      */
-    public function metrics(?int $locationId, CarbonImmutable $start, CarbonImmutable $end): array
+    public function metrics(int|array|null $locationId, CarbonImmutable $start, CarbonImmutable $end): array
     {
         $totals = array_fill_keys(array_values(self::METRICS), 0);
         $series = [];
@@ -106,7 +106,7 @@ class ListingPerformance
      *
      * @return list<array{keyword: string, impressions: int}>
      */
-    public function keywords(?int $locationId, ?string $startMonth = null, ?string $endMonth = null, int $limit = 10): array
+    public function keywords(int|array|null $locationId, ?string $startMonth = null, ?string $endMonth = null, int $limit = 10): array
     {
         $merged = [];
 
@@ -158,14 +158,19 @@ class ListingPerformance
      * Zernio account ids for the scope (locations without one are skipped).
      * Callers run in tenant context (dashboard widgets, reports).
      */
-    private function accounts(?int $locationId): Collection
+    /**
+     * @param  int|list<int>|null  $locationId
+     */
+    private function accounts(int|array|null $locationId): Collection
     {
         if (! $this->configured()) {
             return collect();
         }
 
+        $ids = array_values(array_filter(array_map('intval', (array) $locationId)));
+
         return Location::query()
-            ->when($locationId, fn ($q, int $id) => $q->whereKey($id))
+            ->when($ids !== [], fn ($q) => $q->whereIn('id', $ids))
             ->whereNotNull('zernio_account_id')
             ->pluck('zernio_account_id')
             ->unique()
