@@ -16,11 +16,14 @@ use App\Services\Reviews\FakeReviewProvider;
 use App\Services\Reviews\ReviewProvider;
 use App\Services\Reviews\ReviewProviderFactory;
 use App\Services\Reviews\ZernioProvider;
+use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
 use Laravel\Cashier\Events\WebhookReceived;
@@ -124,5 +127,31 @@ class AppServiceProvider extends ServiceProvider
         Livewire::addPersistentMiddleware([
             SetCurrentWorkspace::class,
         ]);
+
+        // Suppress the browser's native "Please fill out this field" bubbles so
+        // Filament's own inline validation (styled messages under each field)
+        // shows instead. Marks every form `novalidate`, re-applied across SPA
+        // navigations and Livewire DOM updates (modals, dynamically added forms).
+        // Global (via FilamentView) so it covers both the app and admin panels.
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            fn (): HtmlString => new HtmlString(<<<'HTML'
+                <script>
+                    (function () {
+                        const apply = () => document.querySelectorAll('form:not([novalidate])')
+                            .forEach((form) => form.setAttribute('novalidate', 'novalidate'));
+                        let queued = false;
+                        const schedule = () => {
+                            if (queued) { return; }
+                            queued = true;
+                            requestAnimationFrame(() => { queued = false; apply(); });
+                        };
+                        apply();
+                        document.addEventListener('livewire:navigated', apply);
+                        new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
+                    })();
+                </script>
+                HTML),
+        );
     }
 }

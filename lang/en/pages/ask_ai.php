@@ -25,4 +25,8 @@ return [
     'untitled' => 'Untitled chat',
     'no_history' => 'No saved chats yet.',
     'delete' => 'Delete',
+    'no_location_title' => 'Connect a location first',
+    'no_location_body' => 'The assistant answers from your Google reviews, and none are synced yet. Connect your Google Business Profile and its reviews start flowing in.',
+    'no_location_cta' => 'Connect a location',
+    'no_location_placeholder' => 'Connect a location to start',
 ];

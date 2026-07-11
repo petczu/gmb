@@ -319,6 +319,7 @@ class EmailTemplateCatalog
     private static function heroImage(string $key): string
     {
         $map = [
+            'signup_code' => 'inbox',
             'welcome' => 'welcome',
             'beta_received' => 'time',
             'beta_approved' => 'celebration',

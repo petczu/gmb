@@ -13,7 +13,7 @@ use App\Services\Workspaces\WorkspaceProvisioner;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
 use Filament\Auth\Pages\Register as BaseRegister;
-use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\OneTimeCodeInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
@@ -56,16 +56,14 @@ class Register extends BaseRegister
                             }),
                     ),
 
-                TextInput::make('code')
+                // Segmented one-time-code field, matching the 2FA challenge.
+                OneTimeCodeInput::make('code')
                     ->label(__('auth.code_label'))
                     ->helperText(fn (): string => __('auth.code_help', [
                         'email' => (string) data_get($this->form->getRawState(), 'email'),
                     ]))
                     ->required()
-                    ->numeric()
                     ->length(6)
-                    ->autocomplete('one-time-code')
-                    ->extraInputAttributes(['inputmode' => 'numeric'])
                     ->visible($onCodeStep)
                     ->hintAction(
                         Action::make('resendCode')
@@ -165,6 +163,9 @@ class Register extends BaseRegister
             // Password column is NOT NULL; set a random unusable one (hashed by
             // the model cast). The user can set a real one in the profile.
             'password' => Str::password(32),
+            // Remember the language they signed up in so the beta/welcome emails
+            // and the pending screen match it (defaults to 'en' otherwise).
+            'locale' => in_array(app()->getLocale(), ['en', 'de'], true) ? app()->getLocale() : 'en',
         ]);
 
         // The code proved mailbox ownership — mark verified, same as Google.

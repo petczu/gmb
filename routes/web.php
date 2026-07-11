@@ -132,6 +132,13 @@ Route::middleware(['web', SetLocale::class])->group(function (): void {
     Route::get('locale/{locale}', function (string $locale) {
         if (in_array($locale, ['en', 'de'], true)) {
             session(['locale' => $locale]);
+
+            // Persist to the signed-in user so SetLocale (which prefers the
+            // stored locale) reflects the choice everywhere, including the beta
+            // pending screen and future emails.
+            if (($user = auth()->user()) instanceof User) {
+                $user->forceFill(['locale' => $locale])->save();
+            }
         }
 
         return redirect(url()->previous('/'));

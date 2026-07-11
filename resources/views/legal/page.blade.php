@@ -27,7 +27,7 @@
 <body>
     <a class="corner-logo" href="{{ url('/') }}">{!! view('filament.logo', ['theme' => 'light'])->render() !!}</a>
     <div class="corner-lang">
-        @include('partials.locale-dropdown')
+        @include('partials.locale-switch')
     </div>
 
     <div class="wrap">

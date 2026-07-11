@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\App\Auth\Login;
 use App\Filament\App\Auth\Register;
 use App\Filament\App\Pages\Dashboard;
 use App\Filament\App\Pages\Profile;
@@ -20,7 +21,6 @@ use DutchCodingCompany\FilamentSocialite\FilamentSocialitePlugin;
 use DutchCodingCompany\FilamentSocialite\Provider;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
-use Filament\Auth\Pages\Login;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -49,7 +49,10 @@ class AppPanelProvider extends PanelProvider
             ->id('app')
             ->path('')
             ->default()
-            ->login()
+            ->login(Login::class)
+            // "Forgot password?" flow (email a reset link). Needed because
+            // email-code / Google sign-ups get a random password they never see.
+            ->passwordReset()
             // Self-service sign-up: creates the user + provisions their workspace,
             // then the onboarding guide walks them through setup. See Auth\Register.
             ->registration(Register::class)
@@ -163,7 +166,9 @@ class AppPanelProvider extends PanelProvider
                 fn (): string => view('filament.billing-gate')->render(),
             )
             // Floating "Ask AI" chat launcher (bottom-right, Intercom style).
-            // Hidden during first-run onboarding: there's no data to ask about yet.
+            // Hidden during first-run onboarding: there's no data to ask about
+            // yet. Once past onboarding it always shows; with no connected
+            // location the chat itself blocks input and prompts to connect.
             ->renderHook(
                 PanelsRenderHook::BODY_END,
                 fn (): string => tenancy()->initialized

@@ -13,9 +13,9 @@
     {!! view('filament.logo', ['theme' => 'light'])->render() !!}
 </a>
 
-{{-- Language dropdown, pinned top-right (shared with the legal pages). --}}
+{{-- Language switch, pinned top-right (shared with the legal pages). --}}
 <div style="position:fixed; top:1.25rem; right:1.5rem; z-index:20;">
-    @include('partials.locale-dropdown')
+    @include('partials.locale-switch')
 </div>
 
 {{-- Legal consent line under the auth card. --}}

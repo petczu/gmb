@@ -19,13 +19,35 @@
         .ask-ai-md a { color: #2d19ec; text-decoration: underline; }
     </style>
 
-    {{-- Chat window --}}
+    {{-- Backdrop: dims the app behind the slide-over (click to dismiss). --}}
     <div x-show="open" x-cloak
-         x-transition:enter="transition"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         x-on:click="open = false"
+         style="position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:41;"></div>
+
+    {{-- Slide-over panel from the right, like the review editor. The outer
+         element carries x-show + the slide transition; Alpine wipes the inline
+         `display` when it toggles, so the grid layout lives on the inner element
+         it never touches (otherwise the thread stops scrolling). --}}
+    <div x-show="open" x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="translate-x-full"
+         x-transition:enter-end="translate-x-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="translate-x-0"
+         x-transition:leave-end="translate-x-full"
          x-on:keydown.escape.window="open = false"
          x-effect="if (open) $nextTick(() => { if ($refs.thread) $refs.thread.scrollTop = $refs.thread.scrollHeight })"
-         style="position:absolute; right:0; bottom:4.4rem; width:24rem; max-width:calc(100vw - 2.8rem); height:31rem; max-height:calc(100vh - 8rem); background:#fff; border:1px solid #e5e7eb; border-radius:1rem; box-shadow:0 20px 50px rgba(0,0,0,.18); display:flex; flex-direction:column; overflow:hidden;">
+         style="position:fixed; top:0; right:0; bottom:0; width:30rem; max-width:100vw; z-index:42;">
+    <div style="height:100%; background:#fff; box-shadow:-24px 0 60px rgba(0,0,0,.18); display:grid; grid-template-rows:auto minmax(0,1fr) auto; overflow:hidden;">
 
+        {{-- Top: header + optional history dropdown (grid row 1, auto height). --}}
+        <div>
         {{-- Header --}}
         <div style="display:flex; align-items:center; gap:.6rem; padding:.85rem 1rem; border-bottom:1px solid #f3f4f6; background:#fafafa;">
             <span style="display:inline-flex; width:1.9rem; height:1.9rem; border-radius:999px; background:#2d19ec; color:#fff; align-items:center; justify-content:center;">
@@ -70,10 +92,22 @@
                 @endforelse
             </div>
         @endif
+        </div>{{-- /top --}}
 
-        {{-- Thread --}}
-        <div x-ref="thread" style="flex:1; min-height:0; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:.6rem; background:#fff;">
-            @if ($messages === [])
+        @php($noLocations = ! $this->hasLocations())
+
+        {{-- Thread (grid row 2: minmax(0,1fr) makes it the only scrolling area). --}}
+        <div x-ref="thread" style="min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:1rem; display:flex; flex-direction:column; gap:.6rem; background:#fff;">
+            @if ($noLocations)
+                {{-- No connected location: nothing to ask about yet. --}}
+                <div style="border:1px solid #eef2f7; background:#f9fafb; border-radius:.8rem; padding:1rem; color:#6b7280; font-size:.85rem; line-height:1.55;">
+                    <div style="font-weight:700; color:#111827; margin-bottom:.35rem;">{{ __('pages/ask_ai.no_location_title') }}</div>
+                    {{ __('pages/ask_ai.no_location_body') }}
+                    <a href="{{ url('/locations') }}" style="display:inline-flex; align-items:center; gap:.35rem; margin-top:.7rem; background:#2d19ec; color:#fff; border-radius:.6rem; padding:.45rem .8rem; font-size:.82rem; font-weight:600; text-decoration:none;">
+                        {{ __('pages/ask_ai.no_location_cta') }}
+                    </a>
+                </div>
+            @elseif ($messages === [])
                 <div style="color:#6b7280; font-size:.85rem; line-height:1.55;">
                     <div style="font-weight:700; color:#111827; margin-bottom:.3rem;">{{ __('pages/ask_ai.empty_title') }}</div>
                     {{ __('pages/ask_ai.empty_body') }}
@@ -105,18 +139,19 @@
             @endif
         </div>
 
-        {{-- Composer --}}
+        {{-- Composer (disabled until a location is connected) --}}
         <form wire:submit="send" style="display:flex; gap:.5rem; padding:.75rem; border-top:1px solid #f3f4f6; background:#fafafa;">
             <input type="text" wire:model="question"
-                   placeholder="{{ __('pages/ask_ai.placeholder') }}"
-                   @disabled($busy)
-                   style="flex:1; min-width:0; border:1px solid #e5e7eb; border-radius:.65rem; padding:.55rem .8rem; font-size:.86rem; background:#fff;">
-            <button type="submit" @disabled($busy)
-                    style="border:none; background:#2d19ec; color:#fff; border-radius:.65rem; padding:.55rem .8rem; cursor:pointer; display:inline-flex; align-items:center;">
+                   placeholder="{{ $noLocations ? __('pages/ask_ai.no_location_placeholder') : __('pages/ask_ai.placeholder') }}"
+                   @disabled($busy || $noLocations)
+                   style="flex:1; min-width:0; border:1px solid #e5e7eb; border-radius:.65rem; padding:.55rem .8rem; font-size:.86rem; background:{{ $noLocations ? '#f3f4f6' : '#fff' }};">
+            <button type="submit" @disabled($busy || $noLocations)
+                    style="border:none; background:{{ $noLocations ? '#c7c7d1' : '#2d19ec' }}; color:#fff; border-radius:.65rem; padding:.55rem .8rem; cursor:{{ $noLocations ? 'not-allowed' : 'pointer' }}; display:inline-flex; align-items:center;">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:1rem; height:1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/></svg>
             </button>
         </form>
-    </div>
+    </div>{{-- /grid --}}
+    </div>{{-- /window --}}
 
     {{-- Launcher --}}
     <button type="button" x-on:click="open = !open"

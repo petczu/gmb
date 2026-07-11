@@ -25,4 +25,8 @@ return [
     'untitled' => 'Chat ohne Titel',
     'no_history' => 'Noch keine gespeicherten Chats.',
     'delete' => 'Löschen',
+    'no_location_title' => 'Zuerst einen Standort verbinden',
+    'no_location_body' => 'Der Assistent antwortet aus deinen Google-Bewertungen, und es sind noch keine synchronisiert. Verbinde dein Google-Unternehmensprofil, dann laufen die Bewertungen ein.',
+    'no_location_cta' => 'Standort verbinden',
+    'no_location_placeholder' => 'Verbinde einen Standort zum Starten',
 ];

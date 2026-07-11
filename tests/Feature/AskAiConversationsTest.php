@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Livewire\AskAiChat;
 use App\Models\AiConversation;
+use App\Models\Location;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -19,6 +20,14 @@ class AskAiConversationsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The chat's send() is gated on having a connected location.
+        Schema::create('locations', function ($table): void {
+            $table->increments('id');
+            $table->string('name');
+            $table->timestamps();
+        });
+        Location::create(['name' => 'HQ']);
 
         // AskAiChat calls auth()->id(); a null id is fine for the query scope.
         Schema::create('ai_conversations', function ($table): void {
@@ -34,6 +43,7 @@ class AskAiConversationsTest extends TestCase
     protected function tearDown(): void
     {
         Schema::dropIfExists('ai_conversations');
+        Schema::dropIfExists('locations');
         parent::tearDown();
     }
 

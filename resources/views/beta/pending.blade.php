@@ -63,6 +63,7 @@
             box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
         }
         .btn-ghost:hover { background: rgba(255,255,255,.1); }
+        .lang { position: fixed; top: 1.75rem; right: 2rem; z-index: 20; }
     </style>
 </head>
 <body>
@@ -71,6 +72,10 @@
     <a class="logo" href="{{ url('/') }}">
         {!! view('filament.logo', ['theme' => 'dark'])->render() !!}
     </a>
+
+    <div class="lang">
+        @include('partials.locale-switch', ['dark' => true])
+    </div>
 
     <div class="wrap">
         <div class="badge"><span class="dot"></span>{{ __('beta.pending_badge') }}</div>

@@ -6,6 +6,7 @@ namespace App\Livewire;
 
 use App\Ai\Agents\WorkspaceAnalyst;
 use App\Models\AiConversation;
+use App\Models\Location;
 use App\Models\Workspace;
 use App\Services\Ai\AiCreditService;
 use Illuminate\Contracts\View\View;
@@ -44,12 +45,22 @@ class AskAiChat extends Component
         }
     }
 
+    /** Whether the workspace has a connected location to ask about. */
+    public function hasLocations(): bool
+    {
+        try {
+            return Location::query()->exists();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
     /** Two-phase send: render the user's bubble + spinner, then answer. */
     public function send(): void
     {
         $question = trim($this->question);
 
-        if ($question === '' || $this->busy) {
+        if ($question === '' || $this->busy || ! $this->hasLocations()) {
             return;
         }
 
