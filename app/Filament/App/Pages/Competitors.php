@@ -11,9 +11,11 @@ use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Competitors\CompetitorTrends;
 use App\Services\Competitors\PlacesClient;
 use App\Support\DashboardPeriod;
+use App\Support\Sparkline;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -153,35 +155,12 @@ class Competitors extends Page implements HasTable
     /** Tiny inline sparkline of the aggregated review-count snapshots. */
     protected function sparkSvg(array $values): ?HtmlString
     {
-        if (count($values) < 2) {
-            return null;
-        }
-
-        $min = min($values);
-        $max = max($values);
-        $range = max(1, $max - $min);
-        $step = 96 / (count($values) - 1);
-
-        $points = [];
-        foreach ($values as $i => $value) {
-            $x = round($i * $step, 1);
-            $y = round(22 - (($value - $min) / $range) * 18, 1);
-            $points[] = $x.','.$y;
-        }
-
-        return new HtmlString(
-            '<svg width="100" height="24" viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
-            .'<polyline points="'.implode(' ', $points).'" stroke="#2d19ec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
-            .'</svg>'
-        );
+        return Sparkline::svg($values);
     }
 
-    /** Display name: the battle name, or the first competitor's name. */
     protected function battleName(CompetitorBattle $battle): string
     {
-        return filled($battle->name)
-            ? (string) $battle->name
-            : (string) ($battle->competitors->first()?->name ?? __('pages/competitors.untitled_battle'));
+        return $battle->displayName();
     }
 
     public function table(Table $table): Table
@@ -291,30 +270,32 @@ class Competitors extends Page implements HasTable
                     ->tooltip(fn (CompetitorBattle $record): ?string => $record->ownLocations()->pluck('name')->implode(', ') ?: null),
             ])
             ->recordActions([
-                Action::make('edit')
-                    ->label(__('pages/competitors.edit'))
-                    ->icon(Heroicon::OutlinedPencilSquare)
-                    ->visible(fn (): bool => $this->isConfigured())
-                    ->modalHeading(__('pages/competitors.edit_heading'))
-                    ->fillForm(fn (CompetitorBattle $record): array => [
-                        'name' => $record->name,
-                        'own_location_ids' => $record->ownLocationIds(),
-                        'place_ids' => $record->competitors->pluck('place_id')->all(),
-                    ])
-                    ->schema($this->battleFormSchema())
-                    ->action(fn (array $data, CompetitorBattle $record) => $this->save($data, $record)),
+                ActionGroup::make([
+                    Action::make('edit')
+                        ->label(__('pages/competitors.edit'))
+                        ->icon(Heroicon::OutlinedPencilSquare)
+                        ->visible(fn (): bool => $this->isConfigured())
+                        ->modalHeading(__('pages/competitors.edit_heading'))
+                        ->fillForm(fn (CompetitorBattle $record): array => [
+                            'name' => $record->name,
+                            'own_location_ids' => $record->ownLocationIds(),
+                            'place_ids' => $record->competitors->pluck('place_id')->all(),
+                        ])
+                        ->schema($this->battleFormSchema())
+                        ->action(fn (array $data, CompetitorBattle $record) => $this->save($data, $record)),
 
-                Action::make('remove')
-                    ->label(__('pages/competitors.remove'))
-                    ->icon(Heroicon::OutlinedTrash)
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->action(function (CompetitorBattle $record): void {
-                        ActivityLogger::log('competitor.battle_removed', ['name' => $this->battleName($record)]);
-                        $record->competitors()->delete();
-                        $record->delete();
-                        Notification::make()->title(__('pages/competitors.removed'))->success()->send();
-                    }),
+                    Action::make('remove')
+                        ->label(__('pages/competitors.remove'))
+                        ->icon(Heroicon::OutlinedTrash)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(function (CompetitorBattle $record): void {
+                            ActivityLogger::log('competitor.battle_removed', ['name' => $this->battleName($record)]);
+                            $record->competitors()->delete();
+                            $record->delete();
+                            Notification::make()->title(__('pages/competitors.removed'))->success()->send();
+                        }),
+                ]),
             ])
             ->headerActions([
                 Action::make('add')

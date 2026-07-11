@@ -22,6 +22,8 @@ return [
     'col_checked' => 'Aktualisiert',
 
     'untitled_battle' => 'Vergleich ohne Namen',
+    'default_battle_name' => '{1} :location vs. 1 Mitbewerber|[2,*] :location vs. :count Mitbewerber',
+    'own_locations_count' => ':count Standorte',
     'rating_weighted_hint' => 'Bewertung über die Wettbewerber gemittelt, gewichtet nach ihrer Anzahl an Rezensionen.',
 
     'vs_ahead' => 'Du führst mit :delta ★',
@@ -34,7 +36,7 @@ return [
     'edit' => 'Bearbeiten',
     'edit_heading' => 'Vergleich bearbeiten',
     'field_name' => 'Name des Vergleichs',
-    'field_name_placeholder' => 'z. B. Dubai vs NoWayOut',
+    'field_name_placeholder' => 'z. B. Innenstadt vs. Umgebung',
     'field_your_locations' => 'Deine Standorte',
     'field_your_locations_helper' => 'Wähle einen oder mehrere deiner Standorte für deine Seite.',
     'field_places' => 'Wettbewerber',

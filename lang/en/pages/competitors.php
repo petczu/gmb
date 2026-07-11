@@ -22,6 +22,8 @@ return [
     'col_checked' => 'Updated',
 
     'untitled_battle' => 'Untitled competition',
+    'default_battle_name' => '{1} :location vs 1 competitor|[2,*] :location vs :count competitors',
+    'own_locations_count' => ':count locations',
     'rating_weighted_hint' => 'Rating averaged across the competitors, weighted by their review counts.',
 
     'vs_ahead' => 'You lead by :delta ★',
@@ -34,7 +36,7 @@ return [
     'edit' => 'Edit',
     'edit_heading' => 'Edit competition',
     'field_name' => 'Competition name',
-    'field_name_placeholder' => 'e.g. Dubai vs NoWayOut',
+    'field_name_placeholder' => 'e.g. Main Street vs the neighborhood',
     'field_your_locations' => 'Your locations',
     'field_your_locations_helper' => 'Pick one or more of your locations for your side.',
     'field_places' => 'Competitors',

@@ -84,6 +84,16 @@
     .trial-pill { display: inline-block; vertical-align: middle; margin-inline-start: .4rem; background: #eef2ff; color: #2d19ec; font-size: .68rem; font-weight: 700; padding: .18rem .55rem; border-radius: 999px; letter-spacing: .02em; }
     .dark .trial-pill { background: rgba(99,102,241,.18); color: #a5b4fc; }
 
+    /* Dashboard widgets that fetch external data (Zernio, Places): while a
+       Livewire update is in flight the old content stays visible, so a
+       wire:loading overlay signals that the block is refreshing. */
+    .wi-load-wrap { position: relative; }
+    .wi-load-overlay { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; border-radius: .75rem; background: rgba(255,255,255,.65); backdrop-filter: blur(1px); }
+    .dark .wi-load-overlay { background: rgba(24,24,27,.65); }
+    .wi-load-spinner { width: 1.75rem; height: 1.75rem; border-radius: 999px; border: 3px solid rgb(0 0 0 / .12); border-top-color: #2d19ec; animation: wi-spin .7s linear infinite; }
+    .dark .wi-load-spinner { border-color: rgb(255 255 255 / .15); border-top-color: #a5b4fc; }
+    @keyframes wi-spin { to { transform: rotate(360deg); } }
+
     /* Multi-select fields (location filters etc.): a long selection blows the
        field up to many rows. Collapse to the first three badges plus a "+N"
        counter; focusing the field reveals the full list for editing. The extra

@@ -46,4 +46,16 @@ return [
     'col_reply' => 'Antwort',
     'replied' => 'Beantwortet',
     'pending' => 'Ausstehend',
+
+    // Mitbewerber-Widget
+    'competitors_title' => 'Mitbewerber-Vergleich',
+    'competitors_view_all' => 'Alle ansehen',
+    'competitors_vs' => 'vs.',
+    'competitors_new_reviews' => 'Neue Bewertungen',
+    'competitors_you' => 'ihr',
+    'competitors_them' => 'sie',
+    'competitors_more' => '+ :count weitere auf der Mitbewerber-Seite.',
+    'competitors_empty_title' => 'Noch keine Mitbewerber hinterlegt',
+    'competitors_empty_body' => 'Wähle ein paar Mitbewerber aus der Umgebung und sieh direkt am Dashboard, wie sich Bewertung und Wachstum vergleichen.',
+    'competitors_empty_cta' => 'Mitbewerber hinzufügen',
 ];

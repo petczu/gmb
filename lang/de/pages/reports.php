@@ -26,6 +26,7 @@ return [
     'content_section_desc' => 'Wähle eine Vorlage und passe dann an, welche Blöcke im Bericht erscheinen.',
     'preset' => 'Vorlage',
     'blocks' => 'Blöcke',
+    'competitors_block_hint' => 'Noch keine Mitbewerber hinterlegt. Lege sie zuerst unter Einträge > Mitbewerber an.',
     'ai_instructions' => 'KI-Anweisungen',
     'ai_instructions_help' => 'Optionale Hinweise für den KI-Text. Besonders nützlich für Mitarbeiternamen: liste dein Team und Spitznamen auf, damit Erwähnungen der richtigen Person zugeordnet werden. Wird einmal gespeichert und gilt für alle künftigen Berichte, auch geplante.',
     'ai_instructions_placeholder' => 'Unser Team: Eva, Alette, Suleyman (auch Suly geschrieben), Lisa. Spitznamen dem vollen Namen zuordnen.',

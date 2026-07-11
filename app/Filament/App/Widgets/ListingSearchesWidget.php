@@ -25,6 +25,9 @@ class ListingSearchesWidget extends Widget
 
     protected string $view = 'filament.app.widgets.listing-searches';
 
+    /** Sized lazy-loading skeleton (the data comes from an external API). */
+    protected ?string $placeholderHeight = '20rem';
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool

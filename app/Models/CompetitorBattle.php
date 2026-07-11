@@ -40,4 +40,28 @@ class CompetitorBattle extends Model
     {
         return Location::query()->whereIn('id', $this->ownLocationIds())->get();
     }
+
+    /**
+     * Display name. Without an explicit name, describe the matchup ("Vienna vs
+     * 7 competitors") instead of echoing the first competitor's name — that
+     * would read as if the row were about the competitor.
+     */
+    public function displayName(): string
+    {
+        if (filled($this->name)) {
+            return (string) $this->name;
+        }
+
+        $own = $this->ownLocations()->sortBy('name')->pluck('name');
+        $competitorCount = $this->competitors->count();
+
+        if ($own->isEmpty() || $competitorCount === 0) {
+            return __('pages/competitors.untitled_battle');
+        }
+
+        return trans_choice('pages/competitors.default_battle_name', $competitorCount, [
+            'location' => $own->count() === 1 ? $own->first() : __('pages/competitors.own_locations_count', ['count' => $own->count()]),
+            'count' => $competitorCount,
+        ]);
+    }
 }

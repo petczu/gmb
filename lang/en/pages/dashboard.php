@@ -18,6 +18,7 @@ return [
     'widget_performance_chart' => 'Profile performance chart',
     'widget_searches' => 'Views breakdown & top search queries',
     'widget_latest_reviews' => 'Latest reviews',
+    'widget_competitors' => 'Competitor benchmark',
 
     // Connect-first empty state (no locations yet)
     'empty_title' => 'Connect your first location to bring this page to life',

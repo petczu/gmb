@@ -23,6 +23,11 @@
         .dark .perf-hint { color: #71717a; }
     </style>
 
+    {{-- Refresh indicator: filter changes re-fetch Google metrics server-side,
+         which can take a few seconds — show a spinner over the stale data. --}}
+    <div class="wi-load-wrap">
+        <div wire:loading.delay class="wi-load-overlay"><div class="wi-load-spinner"></div></div>
+
     <div class="perf-cols">
         <x-filament::section>
             <x-slot name="heading">{{ __('widgets.perf_breakdown_title') }}</x-slot>
@@ -78,5 +83,6 @@
 
             <div class="perf-hint" style="margin-top: .7rem;">{{ __('widgets.perf_searches_desc') }}</div>
         </x-filament::section>
+    </div>
     </div>
 </x-filament-widgets::widget>

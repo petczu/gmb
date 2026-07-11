@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Resources\ReportSchedules\Schemas;
 
+use App\Models\Competitor;
 use App\Models\Location;
 use App\Support\ReportBlocks;
 use Filament\Forms\Components\CheckboxList;
@@ -90,6 +91,10 @@ class ReportScheduleForm
                     ->label(__('pages/reports.blocks'))
                     ->options(ReportBlocks::labels())
                     ->default(ReportBlocks::default())
+                    // No competitors tracked → the block would render empty;
+                    // disable it and say where to set them up instead.
+                    ->disableOptionWhen(fn (string $value): bool => $value === 'competitors' && ! Competitor::query()->exists())
+                    ->descriptions(fn (): array => Competitor::query()->exists() ? [] : ['competitors' => __('pages/reports.competitors_block_hint')])
                     ->columns(2)
                     ->bulkToggleable(),
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\App\Pages;
 
 use App\Filament\App\Clusters\ReportsCluster;
+use App\Models\Competitor;
 use App\Models\GeneratedReport;
 use App\Models\Location;
 use App\Models\ReportSchedule;
@@ -83,7 +84,7 @@ class Reports extends Page implements HasForms
             'compareMode' => 'previous',
             'language' => 'en',
             'preset' => 'full',
-            'blocks' => ReportBlocks::normalize($savedBlocks),
+            'blocks' => $this->stripUnavailableBlocks(ReportBlocks::normalize($savedBlocks)),
             'ai_instructions' => (string) $workspace?->getAttribute('report_ai_instructions'),
         ]);
     }
@@ -158,12 +159,16 @@ class Reports extends Page implements HasForms
                             ->selectablePlaceholder(false)
                             ->live()
                             ->afterStateUpdated(function (?string $state, callable $set): void {
-                                $set('blocks', ReportBlocks::presets()[$state] ?? ReportBlocks::default());
+                                $set('blocks', $this->stripUnavailableBlocks(ReportBlocks::presets()[$state] ?? ReportBlocks::default()));
                             }),
 
                         CheckboxList::make('blocks')
                             ->label(__('pages/reports.blocks'))
                             ->options(ReportBlocks::labels())
+                            // No competitors tracked → the block would render empty;
+                            // disable it and say where to set them up instead.
+                            ->disableOptionWhen(fn (string $value): bool => $value === 'competitors' && ! $this->competitorsConfigured())
+                            ->descriptions($this->competitorsConfigured() ? [] : ['competitors' => __('pages/reports.competitors_block_hint')])
                             ->columns(2)
                             ->bulkToggleable()
                             ->live(),
@@ -215,6 +220,25 @@ class Reports extends Page implements HasForms
 
     /** Bumped after Generate to force the preview iframe to reload. */
     public int $generation = 0;
+
+    /** Any competitors tracked in this workspace? (Gates the benchmark block.) */
+    protected function competitorsConfigured(): bool
+    {
+        return once(fn (): bool => Competitor::query()->exists());
+    }
+
+    /**
+     * Drop blocks whose data source isn't set up (they'd render empty anyway).
+     *
+     * @param  array<int, string>  $blocks
+     * @return array<int, string>
+     */
+    protected function stripUnavailableBlocks(array $blocks): array
+    {
+        return $this->competitorsConfigured()
+            ? $blocks
+            : array_values(array_diff($blocks, ['competitors']));
+    }
 
     /** @return array<string, mixed> */
     protected function filterArray(): array

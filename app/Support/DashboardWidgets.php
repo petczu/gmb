@@ -21,6 +21,7 @@ class DashboardWidgets
         'performance_chart',
         'searches',
         'latest_reviews',
+        'competitors',
     ];
 
     /** @return array<string, string> key => translated label */

@@ -18,6 +18,7 @@ return [
     'widget_performance_chart' => 'Profil-Performance-Diagramm',
     'widget_searches' => 'Aufrufe im Detail & Top-Suchanfragen',
     'widget_latest_reviews' => 'Neueste Bewertungen',
+    'widget_competitors' => 'Mitbewerber-Vergleich',
 
     // Empty State: noch keine Standorte verbunden
     'empty_title' => 'Verbinde deinen ersten Standort und erwecke diese Seite zum Leben',
