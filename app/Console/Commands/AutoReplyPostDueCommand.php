@@ -6,12 +6,14 @@ namespace App\Console\Commands;
 
 use App\Mail\ReplyFailedMail;
 use App\Models\AutoReplyQueueItem;
+use App\Models\Review;
 use App\Models\Workspace;
 use App\Services\Ai\AutomationService;
 use App\Services\Ai\ReplyScheduler;
+use App\Services\Notifications\NotificationCategory;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -71,8 +73,10 @@ class AutoReplyPostDueCommand extends Command
 
                 // Re-check working hours: a window may have closed since scheduling
                 // (e.g. the poster ran late). If still constrained and outside,
-                // push to the next window instead of posting now.
-                $automation = $service->matching($review);
+                // push to the next window instead of posting now. Items with a
+                // decided_by were explicitly approved by a human (bulk approve
+                // queues them here), so they publish as soon as possible instead.
+                $automation = $item->decided_by === null ? $service->matching($review) : null;
                 if ($automation !== null && $automation->respect_working_hours && is_array($automation->working_hours)) {
                     if (! $scheduler->isWithinWorkingHours(now(), $automation->working_hours, $tz)) {
                         $next = $scheduler->nextWindowStart(now(), $automation->working_hours, $tz);
@@ -105,7 +109,7 @@ class AutoReplyPostDueCommand extends Command
      * Best-effort: email the workspace owner that a scheduled reply failed to post.
      * Only wired to the deferred post-due failure path. Never throws.
      */
-    private function notifyReplyFailed(Workspace $workspace, ?\App\Models\Review $review): void
+    private function notifyReplyFailed(Workspace $workspace, ?Review $review): void
     {
         try {
             $businessName = $review?->location?->name ?? $workspace->name;
@@ -113,9 +117,9 @@ class AutoReplyPostDueCommand extends Command
             $snippet = Str::limit((string) ($review?->text ?? ''), 160);
             $reviewsUrl = rtrim((string) config('app.url'), '/').'/reviews';
 
-            app(\App\Services\Notifications\NotificationDispatcher::class)->dispatch(
+            app(NotificationDispatcher::class)->dispatch(
                 $workspace,
-                \App\Services\Notifications\NotificationCategory::OPERATIONS,
+                NotificationCategory::OPERATIONS,
                 fn (string $name, string $lang) => new ReplyFailedMail(
                     name: $name,
                     businessName: $businessName,

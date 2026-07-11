@@ -11,12 +11,22 @@ use App\Models\Workspace;
 use App\Services\Ai\AiCreditService;
 use App\Services\Ai\ReplyGenerator;
 use App\Services\Billing\AiUsageService;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Facades\FilamentTimezone;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\HtmlString;
+use Laravel\Ai\Enums\Lab;
 use Throwable;
+
+use function Laravel\Ai\agent;
 
 /**
  * Shared building blocks for the "reply to a review" slide-over, used by both
@@ -82,6 +92,101 @@ class ReplyComposer
         return Placeholder::make('emoji_picker')
             ->hiddenLabel()
             ->content(new HtmlString(self::emojiPickerHtml()));
+    }
+
+    /** Human name of the current UI language (the translation target). */
+    private static function uiLanguageName(): string
+    {
+        return app()->getLocale() === 'de' ? 'Deutsch' : 'English';
+    }
+
+    /**
+     * "Show translation" under the reply field: replies are often drafted in
+     * the reviewer's language (Arabic, Italian, …), so a click renders a plain
+     * translation into the UI language below the textarea — mirroring the
+     * "Translated by Google" block the review preview already shows.
+     *
+     * @return array<int, Component|Actions>
+     */
+    public static function translationComponents(string $sourceField): array
+    {
+        $language = self::uiLanguageName();
+
+        return [
+            Hidden::make('reply_translation')->dehydrated(false),
+
+            Actions::make([
+                Action::make('translateReply')
+                    ->label(__('resources/reviews.show_translation', ['language' => $language]))
+                    ->icon(Heroicon::OutlinedLanguage)
+                    ->link()
+                    ->action(function (Get $get, Set $set) use ($sourceField): void {
+                        $text = trim((string) $get($sourceField));
+                        if ($text === '') {
+                            return;
+                        }
+
+                        if (($translated = self::translate($text)) !== null) {
+                            $set('reply_translation', $translated);
+                        }
+                    }),
+            ]),
+
+            Placeholder::make('reply_translation_view')
+                ->hiddenLabel()
+                ->visible(fn (Get $get): bool => filled($get('reply_translation')))
+                ->content(fn (Get $get): HtmlString => new HtmlString(
+                    '<div style="padding:10px 12px; background:#f9fafb; border:1px solid #eef2f7; border-radius:8px; color:#6b7280; font-size:12px; white-space:pre-wrap;">'
+                    .'<span style="display:block; text-transform:uppercase; letter-spacing:.04em; font-size:10px; color:#9ca3af; margin-bottom:2px;">'
+                    .e(__('resources/reviews.translation_label', ['language' => self::uiLanguageName()]))
+                    .'</span>'
+                    .e((string) $get('reply_translation'))
+                    .'</div>',
+                )),
+        ];
+    }
+
+    /**
+     * Translate text into the UI language with a small, cheap model. Returns
+     * null on failure (a notification explains). Logged in the AI usage log
+     * with zero credit cost: translations are a courtesy, not billed usage.
+     */
+    public static function translate(string $text): ?string
+    {
+        $target = self::uiLanguageName();
+
+        // Dev/fake driver: no external call, just a marked passthrough.
+        if (config('services.ai.driver') === 'fake') {
+            return '['.$target.'] '.$text;
+        }
+
+        try {
+            $model = (string) config('services.ai.translate_model', 'claude-haiku-4-5-20251001');
+
+            $response = agent(
+                instructions: "You are a translator. Translate the user's message into {$target}. Output ONLY the translation: no quotes, no commentary. Preserve emojis, personal names and line breaks.",
+            )->prompt($text, provider: Lab::Anthropic, model: $model);
+
+            if ($workspace = Workspace::find(session('current_workspace_id'))) {
+                app(AiCreditService::class)->logUsage(
+                    $workspace,
+                    'reply_translate',
+                    $model,
+                    (int) ($response->usage->promptTokens ?? 0),
+                    (int) ($response->usage->completionTokens ?? 0),
+                );
+            }
+
+            return trim((string) $response->text);
+        } catch (Throwable $e) {
+            Notification::make()
+                ->title(__('resources/reviews.translation_failed'))
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+
+            return null;
+        }
     }
 
     /** Cost line shown in the "Generate AI reply?" confirm modal. */

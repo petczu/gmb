@@ -185,40 +185,33 @@ class AutoReplyQueueItemsTable
                     ->modalDescription(__('resources/auto_reply.bulk_approve_confirm'))
                     ->deselectRecordsAfterCompletion()
                     ->action(function (Collection $records): void {
-                        $workspace = Workspace::find(session('current_workspace_id'));
-                        $service = app(AutoReplyService::class);
-                        $published = 0;
-                        $failed = 0;
+                        $queued = 0;
 
                         foreach ($records as $record) {
                             if ($record->status !== 'pending') {
                                 continue;
                             }
 
-                            // One rejected reply (review deleted on Google,
-                            // reconnected location) must not abort the batch:
-                            // approve() already parked it as failed.
-                            try {
-                                $service->approve($workspace, $record, Auth::id());
-                                $published++;
-                            } catch (\Throwable) {
-                                $failed++;
-                            }
-                        }
+                            // Queue instead of publishing inline: a big selection
+                            // would run into the request timeout and Zernio rate
+                            // limits. The post-due scheduler (auto-reply:post-due,
+                            // every 5 minutes) publishes these sequentially and
+                            // parks failures as `failed` with the reason. A small
+                            // stagger keeps large batches gentle on the API.
+                            $record->forceFill([
+                                'status' => 'scheduled',
+                                'post_at' => now()->addSeconds($queued * 15),
+                                'decided_by' => Auth::id(),
+                                'decided_at' => now(),
+                            ])->save();
 
-                        if ($failed === 0) {
-                            Notification::make()
-                                ->title(__('resources/auto_reply.bulk_approved', ['count' => $published]))
-                                ->success()
-                                ->send();
-
-                            return;
+                            $queued++;
                         }
 
                         Notification::make()
-                            ->title(__('resources/auto_reply.bulk_result', ['published' => $published, 'failed' => $failed]))
-                            ->warning()
-                            ->persistent()
+                            ->title(__('resources/auto_reply.bulk_queued', ['count' => $queued]))
+                            ->body(__('resources/auto_reply.bulk_queued_body'))
+                            ->success()
                             ->send();
                     }),
 
@@ -287,11 +280,15 @@ class AutoReplyQueueItemsTable
                                         $text = ReplyComposer::generateReply($record->review, $get('ai_agent_id') ? (int) $get('ai_agent_id') : null);
                                         if ($text !== null) {
                                             $set('generated_text', $text);
+                                            // The old translation no longer matches.
+                                            $set('reply_translation', null);
                                         }
                                         $livewire->dispatch('reply-generated');
                                     }),
                             )
                             ->extraInputAttributes(['data-emoji' => 'reply']),
+
+                        ...ReplyComposer::translationComponents('generated_text'),
 
                         ReplyComposer::emojiPickerPlaceholder(),
                     ])

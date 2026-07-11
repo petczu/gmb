@@ -182,6 +182,8 @@ class ReviewsTable
                                             $text = ReplyComposer::generateReply($record, $get('ai_agent_id') ? (int) $get('ai_agent_id') : null);
                                             if ($text !== null) {
                                                 $set('reply_text', $text);
+                                                // The old translation no longer matches.
+                                                $set('reply_translation', null);
                                             }
                                             // Tell the confirm popup the generation finished so it
                                             // can drop the spinner and close (success or no-op).
@@ -189,6 +191,8 @@ class ReviewsTable
                                         }),
                                 )
                                 ->extraInputAttributes(['data-emoji' => 'reply']),
+
+                            ...ReplyComposer::translationComponents('reply_text'),
 
                             ReplyComposer::emojiPickerPlaceholder(),
 
