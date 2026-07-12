@@ -17,7 +17,7 @@ return [
     'add_member_email_helper' => 'Wir senden ihnen per E-Mail eine Einladung zu diesem Workspace.',
     'add_guest' => 'Gast hinzufügen',
     'add_guest_helper' => 'Ein Gast erhält nur die Benachrichtigungen, die du an ihn weiterleitest. Kein Login, kein Zugriff auf den Workspace.',
-    'guest_language' => 'E-Mail-Sprache',
+    'guest_language' => 'Sprache',
     'guest_language_helper' => 'Benachrichtigungen und Berichte an diesen Kontakt werden in dieser Sprache versendet.',
     'name' => 'Name',
 

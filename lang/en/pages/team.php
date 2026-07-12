@@ -17,7 +17,7 @@ return [
     'add_member_email_helper' => 'We will email them an invitation to join this workspace.',
     'add_guest' => 'Add guest',
     'add_guest_helper' => 'A guest only receives the notifications you route to them. No login, no access to the workspace.',
-    'guest_language' => 'Email language',
+    'guest_language' => 'Language',
     'guest_language_helper' => 'Notifications and reports for this contact are sent in this language.',
     'name' => 'Name',
 

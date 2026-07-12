@@ -164,16 +164,27 @@ class Team extends Page implements HasTable
                             ->helperText(__('pages/team.add_member_email_helper')),
                         // Guests are added through their own action (no login invite).
                         Select::make('role')->options(collect($this->roleOptions())->except('guest')->all())->default('member')->required(),
+                        // The invite email goes out in this language and the
+                        // account adopts it on accept (notifications, reports).
+                        Select::make('locale')
+                            ->label(__('pages/team.guest_language'))
+                            ->options(['en' => 'English', 'de' => 'Deutsch'])
+                            ->default(fn (): string => in_array(app()->getLocale(), ['en', 'de'], true) ? app()->getLocale() : 'en')
+                            ->selectablePlaceholder(false)
+                            ->helperText(__('pages/team.guest_language_helper')),
                     ])
                     ->action(function (array $data): void {
                         $workspace = $this->workspace();
                         $email = mb_strtolower(trim($data['email']));
+
+                        $locale = in_array($data['locale'] ?? null, ['en', 'de'], true) ? $data['locale'] : 'en';
 
                         $invitation = Invitation::updateOrCreate(
                             ['workspace_id' => $workspace->id, 'email' => $email],
                             [
                                 'token' => Invitation::makeToken(),
                                 'role' => $data['role'],
+                                'locale' => $locale,
                                 'invited_by' => auth()->id(),
                                 'expires_at' => now()->addDays(14),
                                 'accepted_at' => null,
@@ -185,6 +196,7 @@ class Team extends Page implements HasTable
                             workspaceName: $workspace->name,
                             acceptUrl: route('invite.show', $invitation->token),
                             role: $data['role'],
+                            lang: $locale,
                         ));
 
                         ActivityLogger::log('team.member_invited', ['email' => $email, 'role' => $data['role']]);

@@ -21,6 +21,7 @@ class Invitation extends Model
         'workspace_id',
         'email',
         'role',
+        'locale',
         'invited_by',
         'accepted_at',
         'expires_at',

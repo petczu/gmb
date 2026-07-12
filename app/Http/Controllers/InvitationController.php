@@ -78,6 +78,12 @@ class InvitationController extends Controller
         $user->unsetRelation('roles');
         $user->syncRoles([$invitation->role]);
 
+        // Adopt the language the inviter picked (notifications, reports). The
+        // member can switch it anytime via the UI language switcher.
+        if (in_array($invitation->locale, ['en', 'de'], true) && $user->getAttribute('locale') !== $invitation->locale) {
+            $user->forceFill(['locale' => $invitation->locale])->save();
+        }
+
         $invitation->forceFill(['accepted_at' => now()])->save();
 
         session(['current_workspace_id' => $workspace->id]);

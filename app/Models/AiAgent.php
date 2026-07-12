@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * TENANT model — a reusable AI reply agent (persona + tone).
@@ -29,19 +30,43 @@ class AiAgent extends Model
         return self::buildInstructions((string) $this->description, $this->knowledge);
     }
 
-    /** Compose persona + (truncated) knowledge base into one instruction string. */
-    public static function buildInstructions(string $description, ?string $knowledge): string
+    /**
+     * Compose persona + (truncated) knowledge base + the workspace's shared
+     * reply rules into one instruction string. Shared rules apply to EVERY
+     * agent (style corrections like "say 'Raum', never 'Room' inside a German
+     * sentence"), so a fix never has to be copied into each agent.
+     */
+    public static function buildInstructions(string $description, ?string $knowledge, ?string $sharedRules = null): string
     {
         $description = trim($description);
         $knowledge = trim((string) $knowledge);
+        $sharedRules = trim($sharedRules ?? self::sharedRules());
 
-        if ($knowledge === '') {
-            return $description;
+        $out = $description;
+
+        if ($knowledge !== '') {
+            $out .= "\n\n"
+                ."Business knowledge base — use these facts when relevant, never contradict or invent beyond them:\n"
+                .Str::limit($knowledge, 6000, '');
         }
 
-        return $description."\n\n"
-            ."Business knowledge base — use these facts when relevant, never contradict or invent beyond them:\n"
-            .\Illuminate\Support\Str::limit($knowledge, 6000, '');
+        if ($sharedRules !== '') {
+            $out .= "\n\n"
+                ."Workspace-wide reply rules set by the owner — follow them strictly in every reply:\n"
+                .Str::limit($sharedRules, 2000, '');
+        }
+
+        return $out;
+    }
+
+    /** The workspace's shared reply rules (empty outside tenant context). */
+    public static function sharedRules(): string
+    {
+        $tenant = tenant();
+
+        return $tenant instanceof Workspace
+            ? trim((string) $tenant->getAttribute('reply_guidelines'))
+            : '';
     }
 
     protected $casts = [

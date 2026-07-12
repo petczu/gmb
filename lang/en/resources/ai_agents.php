@@ -33,7 +33,7 @@ return [
     // Knowledge base
     'knowledge' => 'Knowledge base (optional)',
     'knowledge_helper' => 'Business facts the agent can use in replies: opening hours, policies, room/service names, offers, FAQs. Kept factual, never invented beyond this.',
-    'knowledge_ph' => "e.g. Open Mon–Sun 10:00–22:00. Rooms: The Heist, Prison Break, Haunted Manor. Groups of 2–6. Booking at example.com or +43 ...",
+    'knowledge_ph' => 'e.g. Open Mon–Sun 10:00–22:00. Rooms: The Heist, Prison Break, Haunted Manor. Groups of 2–6. Booking at example.com or +43 ...',
 
     // Test panel
     'test_section' => 'Test on a review',
@@ -57,4 +57,12 @@ return [
     'generate_rate_limited' => 'Too many generations. Please wait a bit and try again.',
     'generate_done' => 'Description generated, review and tweak it as needed.',
     'generate_failed' => 'Could not generate the description. Please try again or write it manually.',
+
+    // Shared reply rules (workspace-wide, applied to every agent)
+    'shared_rules' => 'Shared rules',
+    'shared_rules_heading' => 'Shared reply rules',
+    'shared_rules_desc' => 'These rules apply on top of every agent, in every AI reply. Perfect for style corrections you never want to repeat per agent.',
+    'shared_rules_placeholder' => "e.g.\nIn German replies say \"Raum\" or \"Escape Room\", never \"Room\" as a German noun.\nNever promise discounts or refunds.\nSign replies without a name.",
+    'shared_rules_save' => 'Save rules',
+    'shared_rules_saved' => 'Shared rules saved',
 ];

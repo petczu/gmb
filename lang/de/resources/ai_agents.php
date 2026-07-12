@@ -57,4 +57,12 @@ return [
     'generate_rate_limited' => 'Zu viele Generierungen. Bitte warte kurz und versuche es erneut.',
     'generate_done' => 'Beschreibung generiert – prüfe und passe sie bei Bedarf an.',
     'generate_failed' => 'Beschreibung konnte nicht generiert werden. Bitte erneut versuchen oder manuell schreiben.',
+
+    // Gemeinsame Antwort-Regeln (Workspace-weit, gelten für jeden Agenten)
+    'shared_rules' => 'Gemeinsame Regeln',
+    'shared_rules_heading' => 'Gemeinsame Antwort-Regeln',
+    'shared_rules_desc' => 'Diese Regeln gelten zusätzlich zu jedem Agenten, in jeder KI-Antwort. Ideal für Stil-Korrekturen, die du nicht pro Agent wiederholen willst.',
+    'shared_rules_placeholder' => "z. B.\nIn deutschen Antworten \"Raum\" oder \"Escape Room\" sagen, nie \"Room\" als deutsches Substantiv.\nNie Rabatte oder Erstattungen versprechen.\nAntworten ohne Namen unterschreiben.",
+    'shared_rules_save' => 'Regeln speichern',
+    'shared_rules_saved' => 'Gemeinsame Regeln gespeichert',
 ];
