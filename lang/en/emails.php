@@ -143,7 +143,8 @@ return [
         'col_author' => 'Author',
         'col_review' => 'Review',
         'detail' => 'Please try posting the reply again from the app.',
-        'cta' => 'Open reviews',
+        'detail_not_found' => 'Google says this review no longer exists. It may have been deleted by its author or filtered by Google. Nothing to do: the draft was parked and will not be retried.',
+        'cta' => 'Open approvals',
     ],
 
     'approvals_pending' => [

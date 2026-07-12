@@ -208,4 +208,89 @@ class CompetitorTrends
 
         return $weight > 0 ? round($sum / $weight, 2) : null;
     }
+
+    /**
+     * Daily review GROWTH lines for a battle chart: one series per competitor
+     * place plus the own side, all rebased to 0 at the window start so a
+     * 7,000-review incumbent and a 300-review own profile share one scale.
+     * Competitor values carry forward over snapshot gaps and are null before
+     * the first known snapshot; the own line is exact (reviews table).
+     *
+     * @param  list<string>  $placeIds
+     * @param  list<int>  $ownLocationIds
+     * @return array{labels: list<string>, own: list<int>, places: array<string, list<int|null>>}
+     */
+    public function growthSeries(array $placeIds, array $ownLocationIds, CarbonImmutable $start, CarbonImmutable $end): array
+    {
+        $end = $end->min(CarbonImmutable::today()->endOfDay());
+        $days = [];
+        for ($d = $start->startOfDay(); $d->lte($end); $d = $d->addDay()) {
+            $days[] = $d;
+        }
+        if ($days === []) {
+            return ['labels' => [], 'own' => [], 'places' => []];
+        }
+
+        // Thin long windows so the chart stays readable (~90 points max).
+        $step = (int) max(1, ceil(count($days) / 90));
+        if ($step > 1) {
+            $lastIndex = count($days) - 1;
+            $days = array_values(array_filter(
+                $days,
+                fn ($d, $i): bool => $i % $step === 0 || $i === $lastIndex,
+                ARRAY_FILTER_USE_BOTH,
+            ));
+        }
+
+        $labels = array_map(fn (CarbonImmutable $d): string => $d->format('M j'), $days);
+
+        // Own side: exact cumulative new reviews per day.
+        $ownLocationIds = array_values(array_filter(array_map('intval', $ownLocationIds)));
+        $perDay = $ownLocationIds === [] ? collect() : Review::query()
+            ->whereIn('location_id', $ownLocationIds)
+            ->whereBetween('created_at_external', [$start, $end])
+            ->get(['created_at_external'])
+            ->groupBy(fn (Review $r): string => optional($r->created_at_external)->format('Y-m-d') ?? '')
+            ->map->count();
+
+        $own = [];
+        $running = 0;
+        $cursor = $start->startOfDay();
+        foreach ($days as $day) {
+            // Sum every real day up to this (possibly thinned) point.
+            while ($cursor->lte($day)) {
+                $running += (int) ($perDay[$cursor->format('Y-m-d')] ?? 0);
+                $cursor = $cursor->addDay();
+            }
+            $own[] = $running;
+        }
+
+        // Competitors: snapshot growth vs the window baseline, carried forward.
+        $placeIds = array_values(array_unique(array_filter($placeIds)));
+        $snapshots = PlaceSnapshot::query()
+            ->whereIn('place_id', $placeIds)
+            ->where('day', '<=', $end)
+            ->orderBy('day')
+            ->get()
+            ->groupBy('place_id');
+
+        $places = [];
+        foreach ($placeIds as $placeId) {
+            /** @var Collection<int, PlaceSnapshot> $rows */
+            $rows = $snapshots->get($placeId, collect());
+            $baseline = $rows->last(fn (PlaceSnapshot $sn): bool => $sn->day->lte($start))
+                ?? $rows->first(fn (PlaceSnapshot $sn): bool => $sn->day->lte($end));
+
+            $series = [];
+            foreach ($days as $day) {
+                $latest = $rows->last(fn (PlaceSnapshot $sn): bool => $sn->day->lte($day->endOfDay()));
+                $series[] = ($latest !== null && $baseline !== null)
+                    ? max(0, $latest->reviews_count - $baseline->reviews_count)
+                    : null;
+            }
+            $places[$placeId] = $series;
+        }
+
+        return ['labels' => $labels, 'own' => $own, 'places' => $places];
+    }
 }

@@ -148,4 +148,54 @@ class AutomationRunWindowTest extends TestCase
         $this->assertSame(1, $stats['generated']);
         $this->assertSame(1, AutoReplyQueueItem::query()->where('review_id', $backlog->id)->where('status', 'pending')->count());
     }
+
+    /**
+     * A review whose publish FAILED (e.g. deleted on Google → 404) must be
+     * parked, not regenerated on every pass — that would burn the AI allowance
+     * in a loop (observed in production: six drafts for one dead review).
+     */
+    public function test_a_failed_publish_parks_the_review_instead_of_regenerating(): void
+    {
+        Automation::create([
+            'name' => 'Sara',
+            'enabled' => true,
+            'trigger' => 'new_review',
+            'all_locations' => true,
+            'approve_before_posting' => true,
+            'content_type' => 'default',
+            'default_message' => 'Thank you for visiting us!',
+        ]);
+
+        Location::create(['name' => 'City Walk']);
+
+        $review = Review::create([
+            'location_id' => 1, 'rating' => 5, 'text' => 'Gone on Google',
+            'external_review_id' => 'r-deleted', 'created_at_external' => now()->subHours(2),
+        ]);
+
+        AutoReplyQueueItem::create([
+            'review_id' => $review->id,
+            'generated_text' => 'Draft that could not be posted',
+            'status' => 'failed',
+            'mode' => 'auto',
+            'error' => '[404] GBP resource not found',
+        ]);
+
+        $workspace = new Workspace;
+        $workspace->id = 'ws-test';
+
+        $service = Mockery::mock(AutomationService::class, [
+            app(ReplyGenerator::class),
+            app(AiCreditService::class),
+            app(ReviewProviderFactory::class),
+            app(AiUsageService::class),
+            app(ReplyScheduler::class),
+        ])->makePartial();
+        $service->shouldReceive('notifyPendingApprovals')->andReturnNull();
+
+        $stats = $service->processWorkspace($workspace);
+
+        $this->assertSame(0, $stats['generated']);
+        $this->assertSame(1, AutoReplyQueueItem::query()->where('review_id', $review->id)->count());
+    }
 }

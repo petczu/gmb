@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ReviewStatsOverview extends StatsOverviewWidget
 {
+    use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 

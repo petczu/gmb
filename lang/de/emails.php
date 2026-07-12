@@ -143,7 +143,8 @@ return [
         'col_author' => 'Autor',
         'col_review' => 'Bewertung',
         'detail' => 'Bitte versuche, die Antwort erneut über die App zu veröffentlichen.',
-        'cta' => 'Bewertungen öffnen',
+        'detail_not_found' => 'Google meldet, dass diese Bewertung nicht mehr existiert. Sie wurde vermutlich vom Autor gelöscht oder von Google gefiltert. Nichts zu tun: der Entwurf wurde geparkt und wird nicht erneut versucht.',
+        'cta' => 'Freigaben öffnen',
     ],
 
     'approvals_pending' => [

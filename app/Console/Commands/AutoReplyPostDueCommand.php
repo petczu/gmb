@@ -98,7 +98,7 @@ class AutoReplyPostDueCommand extends Command
                         'error' => $e->getMessage(),
                     ]);
 
-                    $this->notifyReplyFailed($workspace, $review);
+                    $this->notifyReplyFailed($workspace, $review, $e->getMessage());
                 }
             });
 
@@ -109,13 +109,18 @@ class AutoReplyPostDueCommand extends Command
      * Best-effort: email the workspace owner that a scheduled reply failed to post.
      * Only wired to the deferred post-due failure path. Never throws.
      */
-    private function notifyReplyFailed(Workspace $workspace, ?Review $review): void
+    private function notifyReplyFailed(Workspace $workspace, ?Review $review, string $error = ''): void
     {
         try {
             $businessName = $review?->location?->name ?? $workspace->name;
             $authorName = (string) ($review?->author_name ?? 'A customer');
             $snippet = Str::limit((string) ($review?->text ?? ''), 160);
-            $reviewsUrl = rtrim((string) config('app.url'), '/').'/reviews';
+            // The failed draft lives on the Approvals page (Failed filter).
+            $reviewsUrl = rtrim((string) config('app.url'), '/').'/approvals';
+
+            // A 404 means the review is gone on Google (deleted by its author or
+            // filtered) — "try again" would be misleading advice.
+            $notFound = str_contains($error, '404') || str_contains(strtolower($error), 'not found');
 
             app(NotificationDispatcher::class)->dispatch(
                 $workspace,
@@ -127,6 +132,7 @@ class AutoReplyPostDueCommand extends Command
                     snippet: $snippet,
                     reviewsUrl: $reviewsUrl,
                     lang: $lang,
+                    reason: $notFound ? 'not_found' : 'error',
                 ),
             );
         } catch (Throwable $e) {

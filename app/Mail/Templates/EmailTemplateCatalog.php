@@ -48,7 +48,7 @@ class EmailTemplateCatalog
 
             'new_reviews' => ['title' => 'New reviews digest', 'category' => 'Reputation', 'sample' => ['name' => 'Peter', 'count' => '3', 'location' => 'GAME OVER Vienna', 'url' => self::url('reviews')]],
             'negative_review' => ['title' => 'Negative review', 'category' => 'Reputation', 'sample' => ['name' => 'Peter', 'business' => 'GAME OVER Vienna', 'rating' => '2', 'url' => self::url('reviews')]],
-            'reply_failed' => ['title' => 'Reply failed', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'business' => 'GAME OVER Vienna', 'url' => self::url('reviews')]],
+            'reply_failed' => ['title' => 'Reply failed', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'business' => 'GAME OVER Vienna', 'url' => self::url('approvals'), 'detail' => 'Please try posting the reply again from the app.']],
             'review_anomaly' => ['title' => 'Anomaly alert', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'count' => '3', 'url' => self::url('reviews')]],
             'review_goal_mid' => ['title' => 'Goal progress (mid-month)', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'intro' => 'Great pace! You have 18 new reviews this month, ahead of the 14 expected by now (goal 30). Keep it up.', 'url' => self::url('reviews')]],
             'review_goal_recap' => ['title' => 'Goal recap (month end)', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'month' => 'May 2026', 'intro' => 'Here is how May 2026 finished: 28 new reviews against a goal of 30.', 'url' => self::url('reviews')]],
@@ -261,7 +261,7 @@ class EmailTemplateCatalog
             'reply_failed' => self::shell($locale, self::greeting($locale), [
                 __('emails.reply_failed.intro', ['business' => ':business'], $locale),
                 '{{ table }}',
-                __('emails.reply_failed.detail', [], $locale),
+                ':detail',
             ], __('emails.reply_failed.cta', [], $locale)),
 
             'review_anomaly' => self::shell($locale, self::greeting($locale), [

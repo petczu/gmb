@@ -257,8 +257,11 @@ class AutomationService
     }
 
     /**
-     * Unreplied reviews without an active (pending/published) queue item,
-     * optionally limited to a review-date window.
+     * Unreplied reviews without an active (pending/scheduled/published) queue
+     * item, optionally limited to a review-date window. `failed` also blocks:
+     * a failed publish (e.g. the review was deleted on Google) must park the
+     * review for a human decision, not regenerate a fresh AI draft on every
+     * pass and burn the allowance in a loop.
      */
     private function eligibleReviews(?CarbonInterface $from = null, ?CarbonInterface $until = null): Builder
     {
@@ -266,7 +269,7 @@ class AutomationService
             ->whereNull('reply_text')
             ->when($from, fn ($q) => $q->where('created_at_external', '>=', $from))
             ->when($until, fn ($q) => $q->where('created_at_external', '<=', $until))
-            ->whereDoesntHave('queueItems', fn ($q) => $q->whereIn('status', ['pending', 'published', 'scheduled']))
+            ->whereDoesntHave('queueItems', fn ($q) => $q->whereIn('status', ['pending', 'published', 'scheduled', 'failed']))
             ->with('location');
     }
 

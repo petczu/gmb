@@ -20,6 +20,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class ListingPerformanceOverview extends StatsOverviewWidget
 {
+    use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 

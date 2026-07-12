@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class LatestReviews extends TableWidget
 {
+    use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
@@ -48,8 +49,7 @@ class LatestReviews extends TableWidget
             ->paginated(false)
             ->columns([
                 TextColumn::make('location.name')
-                    ->label(__('widgets.col_location'))
-                    ->toggleable(),
+                    ->label(__('widgets.col_location')),
 
                 TextColumn::make('rating')
                     ->badge()

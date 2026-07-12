@@ -153,7 +153,9 @@ class AutoReplyService
 
         Review::query()
             ->whereNull('reply_text')
-            ->whereDoesntHave('queueItems', fn ($q) => $q->whereIn('status', ['pending', 'published']))
+            // `failed` blocks too: a failed publish (review deleted on Google)
+            // parks the review for a human instead of regenerating in a loop.
+            ->whereDoesntHave('queueItems', fn ($q) => $q->whereIn('status', ['pending', 'published', 'scheduled', 'failed']))
             ->with('location')
             ->each(function (Review $review) use ($workspace, &$stats): void {
                 $item = $this->generateForReview($workspace, $review);

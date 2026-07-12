@@ -19,6 +19,18 @@ return [
     'widget_searches' => 'Aufrufe im Detail & Top-Suchanfragen',
     'widget_latest_reviews' => 'Neueste Bewertungen',
     'widget_competitors' => 'Mitbewerber-Vergleich',
+    'widget_competitors_chart' => 'Mitbewerber-Wachstumsdiagramm',
+    'drag_to_move' => 'Ziehen zum Anordnen',
+    'hide_widget' => 'Widget ausblenden',
+    'hide_widget_confirm' => 'Dieses Widget vom Dashboard ausblenden? Über „Widget hinzufügen" holst du es zurück.',
+    'toggle_width' => 'Breite umschalten (voll / halb)',
+    'customize_done' => 'Fertig',
+    'add_widget' => 'Widget hinzufügen',
+    'add_widget_heading' => 'Widgets hinzufügen',
+    'add_widget_desc' => 'Wähle die ausgeblendeten Widgets, die zurück aufs Dashboard sollen.',
+    'widgets_restored' => 'Widgets wieder hinzugefügt',
+    'widget_hidden' => 'Widget ausgeblendet',
+    'widget_hidden_body' => 'Jederzeit zurückholbar: Anpassen, dann „Widget hinzufügen".',
 
     // Empty State: noch keine Standorte verbunden
     'empty_title' => 'Verbinde deinen ersten Standort und erwecke diese Seite zum Leben',

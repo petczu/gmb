@@ -15,6 +15,7 @@ class ReplyFailedMail extends TemplatedMailable
         public string $snippet,
         public string $reviewsUrl,
         public string $lang = 'en',
+        public string $reason = 'error',
     ) {
         $this->locale($lang);
     }
@@ -26,7 +27,13 @@ class ReplyFailedMail extends TemplatedMailable
 
     protected function templateData(): array
     {
-        return ['name' => $this->name, 'business' => $this->businessName, 'url' => $this->reviewsUrl];
+        // 'not_found' = the review is gone on Google; suggesting a retry
+        // would be misleading, so the detail line explains it instead.
+        $detail = $this->reason === 'not_found'
+            ? __('emails.reply_failed.detail_not_found', [], $this->lang)
+            : __('emails.reply_failed.detail', [], $this->lang);
+
+        return ['name' => $this->name, 'business' => $this->businessName, 'url' => $this->reviewsUrl, 'detail' => $detail];
     }
 
     protected function blocks(): array

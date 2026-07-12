@@ -19,6 +19,18 @@ return [
     'widget_searches' => 'Views breakdown & top search queries',
     'widget_latest_reviews' => 'Latest reviews',
     'widget_competitors' => 'Competitor benchmark',
+    'widget_competitors_chart' => 'Competitor review growth chart',
+    'drag_to_move' => 'Drag to rearrange',
+    'hide_widget' => 'Hide this widget',
+    'hide_widget_confirm' => 'Hide this widget from your dashboard? You can bring it back via Add widget.',
+    'toggle_width' => 'Toggle width (full / half)',
+    'customize_done' => 'Done',
+    'add_widget' => 'Add widget',
+    'add_widget_heading' => 'Add widgets',
+    'add_widget_desc' => 'Pick the hidden widgets to bring back to your dashboard.',
+    'widgets_restored' => 'Widgets added back',
+    'widget_hidden' => 'Widget hidden',
+    'widget_hidden_body' => 'Bring it back anytime: Customize, then Add widget.',
 
     // Connect-first empty state (no locations yet)
     'empty_title' => 'Connect your first location to bring this page to life',

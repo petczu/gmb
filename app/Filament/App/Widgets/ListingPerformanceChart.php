@@ -18,6 +18,7 @@ use Filament\Widgets\Concerns\InteractsWithPageFilters;
  */
 class ListingPerformanceChart extends ChartWidget
 {
+    use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 

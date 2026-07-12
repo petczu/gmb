@@ -32,11 +32,6 @@
 
     <x-filament::section>
         <x-slot name="heading">{{ __('widgets.competitors_title') }}</x-slot>
-        <x-slot name="afterHeader">
-            <x-filament::link :href="\App\Filament\App\Pages\Competitors::getUrl()" size="sm">
-                {{ __('widgets.competitors_view_all') }}
-            </x-filament::link>
-        </x-slot>
 
         @if ($rows === [])
             {{-- Nothing tracked yet: invite instead of an empty box. --}}

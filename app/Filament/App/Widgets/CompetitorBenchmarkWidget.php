@@ -24,6 +24,7 @@ use Filament\Widgets\Widget;
  */
 class CompetitorBenchmarkWidget extends Widget
 {
+    use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 

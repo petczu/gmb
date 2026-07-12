@@ -210,6 +210,14 @@ class AppPanelProvider extends PanelProvider
                     : '',
                 scopes: Dashboard::class,
             )
+            // Drag-and-drop reordering of the dashboard widgets (per user).
+            ->renderHook(
+                PanelsRenderHook::PAGE_END,
+                fn (): string => tenancy()->initialized && ! DemoDashboard::active()
+                    ? view('filament.app.dashboard-sortable', ['orderKeys' => Dashboard::visibleWidgetOrderKeys()])->render()
+                    : '',
+                scopes: Dashboard::class,
+            )
             // Language switcher + legal links under the auth (login/register) card.
             ->renderHook(
                 PanelsRenderHook::SIMPLE_PAGE_END,

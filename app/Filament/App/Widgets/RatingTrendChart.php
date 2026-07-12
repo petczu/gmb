@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class RatingTrendChart extends ChartWidget
 {
+    use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 

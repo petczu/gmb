@@ -265,7 +265,7 @@ class AutoReplyQueueItemsTable
                     ->slideOver()
                     ->modalWidth(Width::Large)
                     ->modalHeading(__('resources/auto_reply.review_reply'))
-                    ->visible(fn (AutoReplyQueueItem $record): bool => in_array($record->status, ['pending', 'scheduled'], true) && $record->review !== null)
+                    ->visible(fn (AutoReplyQueueItem $record): bool => in_array($record->status, ['pending', 'scheduled', 'failed'], true) && $record->review !== null)
                     ->fillForm(fn (AutoReplyQueueItem $record): array => [
                         'generated_text' => $record->generated_text,
                         // Preselect the agent that actually generated this draft.
@@ -341,7 +341,8 @@ class AutoReplyQueueItemsTable
                     ->color('success')
                     ->iconButton()
                     ->tooltip(__('resources/auto_reply.approve'))
-                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
+                    // Failed items may be retried (e.g. after a transient error).
+                    ->visible(fn (AutoReplyQueueItem $record): bool => in_array($record->status, ['pending', 'failed'], true))
                     ->requiresConfirmation()
                     ->action(function (AutoReplyQueueItem $record): void {
                         $workspace = Workspace::find(session('current_workspace_id'));
@@ -363,7 +364,7 @@ class AutoReplyQueueItemsTable
                     ->color('danger')
                     ->iconButton()
                     ->tooltip(__('resources/auto_reply.reject'))
-                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
+                    ->visible(fn (AutoReplyQueueItem $record): bool => in_array($record->status, ['pending', 'failed'], true))
                     ->requiresConfirmation()
                     ->action(function (AutoReplyQueueItem $record): void {
                         app(AutoReplyService::class)->reject($record, Auth::id());

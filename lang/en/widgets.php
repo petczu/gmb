@@ -49,7 +49,6 @@ return [
 
     // Competitor benchmark widget
     'competitors_title' => 'Competitor benchmark',
-    'competitors_view_all' => 'View all',
     'competitors_vs' => 'vs',
     'competitors_new_reviews' => 'New reviews',
     'competitors_you' => 'you',
@@ -58,4 +57,9 @@ return [
     'competitors_empty_title' => 'No competitors tracked yet',
     'competitors_empty_body' => 'Pick a few nearby rivals and see how your rating and review growth stack up, right here on the dashboard.',
     'competitors_empty_cta' => 'Add competitors',
+
+    // Competitor growth chart
+    'competitor_chart_title' => 'Competitor review growth',
+    'competitor_chart_desc' => 'New reviews since the start of the period. Click a name in the legend to show or hide its line.',
+    'competitor_chart_you' => 'You',
 ];

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StarDistributionChart extends ChartWidget
 {
+    use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 

@@ -18,6 +18,7 @@ use Filament\Widgets\Widget;
  */
 class ListingSearchesWidget extends Widget
 {
+    use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 

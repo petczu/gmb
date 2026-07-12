@@ -15,7 +15,7 @@ use Illuminate\Console\Command;
  */
 class EmailTemplatesSyncCommand extends Command
 {
-    protected $signature = 'email-templates:sync {--force : Overwrite existing rows with catalogue defaults}';
+    protected $signature = 'email-templates:sync {--force : Overwrite existing rows with catalogue defaults} {--key= : Limit the sync to one template key}';
 
     protected $description = 'Seed editable email templates from the catalogue defaults';
 
@@ -25,7 +25,13 @@ class EmailTemplatesSyncCommand extends Command
         $created = 0;
         $reset = 0;
 
+        $onlyKey = (string) $this->option('key');
+
         foreach (EmailTemplateCatalog::keys() as $key) {
+            if ($onlyKey !== '' && $key !== $onlyKey) {
+                continue;
+            }
+
             foreach (EmailTemplateCatalog::LOCALES as $locale) {
                 $defaults = [
                     'subject' => EmailTemplateCatalog::defaultSubject($key, $locale),

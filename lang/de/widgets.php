@@ -49,7 +49,6 @@ return [
 
     // Mitbewerber-Widget
     'competitors_title' => 'Mitbewerber-Vergleich',
-    'competitors_view_all' => 'Alle ansehen',
     'competitors_vs' => 'vs.',
     'competitors_new_reviews' => 'Neue Bewertungen',
     'competitors_you' => 'ihr',
@@ -58,4 +57,9 @@ return [
     'competitors_empty_title' => 'Noch keine Mitbewerber hinterlegt',
     'competitors_empty_body' => 'Wähle ein paar Mitbewerber aus der Umgebung und sieh direkt am Dashboard, wie sich Bewertung und Wachstum vergleichen.',
     'competitors_empty_cta' => 'Mitbewerber hinzufügen',
+
+    // Mitbewerber-Wachstumsdiagramm
+    'competitor_chart_title' => 'Bewertungszuwachs im Vergleich',
+    'competitor_chart_desc' => 'Neue Bewertungen seit Beginn des Zeitraums. Klick auf einen Namen in der Legende blendet die Linie ein oder aus.',
+    'competitor_chart_you' => 'Ihr',
 ];

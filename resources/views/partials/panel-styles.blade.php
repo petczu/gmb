@@ -84,6 +84,14 @@
     .trial-pill { display: inline-block; vertical-align: middle; margin-inline-start: .4rem; background: #eef2ff; color: #2d19ec; font-size: .68rem; font-weight: 700; padding: .18rem .55rem; border-radius: 999px; letter-spacing: .02em; }
     .dark .trial-pill { background: rgba(99,102,241,.18); color: #a5b4fc; }
 
+    /* Chart widgets: keep the metric/battle dropdown right NEXT TO the heading
+       instead of the far right corner, where it collides with the arrange
+       controls (drag/width/hide) in Customize mode. */
+    .fi-wi-chart .fi-section-header { justify-content: flex-start; gap: .9rem; }
+    /* Default is flex:1 (grow, basis 0) — shrink-wrap the heading instead. */
+    .fi-wi-chart .fi-section-header .fi-section-header-text-ctn { flex: 0 1 auto; }
+    .fi-wi-chart .fi-section-header-after-ctn { margin-inline-start: 0; margin-inline-end: auto; }
+
     /* Dashboard widgets that fetch external data (Zernio, Places): while a
        Livewire update is in flight the old content stays visible, so a
        wire:loading overlay signals that the block is refreshing. */
