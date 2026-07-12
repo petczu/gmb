@@ -87,13 +87,6 @@ class ReplyComposer
             ->placeholder(__('resources/reviews.default_agent'));
     }
 
-    public static function emojiPickerPlaceholder(): Placeholder
-    {
-        return Placeholder::make('emoji_picker')
-            ->hiddenLabel()
-            ->content(new HtmlString(self::emojiPickerHtml()));
-    }
-
     /** Human name of the current UI language (the translation target). */
     private static function uiLanguageName(): string
     {
@@ -220,6 +213,15 @@ class ReplyComposer
      */
     public static function generateHintHtml(): string
     {
+        // Emoji picker sits right next to the Generate button in the hint row.
+        return '<span style="display:inline-flex;align-items:center;gap:6px;">'
+            .self::emojiPickerHtml()
+            .self::generateButtonHtml()
+            .'</span>';
+    }
+
+    private static function generateButtonHtml(): string
+    {
         $cost = e(self::aiReplyCostHint());
 
         $html = <<<'HTML'
@@ -276,8 +278,8 @@ class ReplyComposer
 
         $html = <<<'HTML'
             <style>[x-cloak]{display:none!important}</style>
-            <div x-data="{ open:false, x:0, y:0, place(){ const r=this.$refs.btn.getBoundingClientRect(); this.x=Math.round(r.left); this.y=Math.round(r.bottom+6); }, toggle(){ if(!this.open){ this.place(); } this.open=!this.open; }, insert(em){ const ta=document.querySelector('[data-emoji=reply]'); if(ta){ const s=ta.selectionStart??ta.value.length, en=ta.selectionEnd??ta.value.length; ta.value=ta.value.slice(0,s)+em+ta.value.slice(en); ta.dispatchEvent(new Event('input',{bubbles:true})); ta.focus(); ta.selectionStart=ta.selectionEnd=s+em.length; } } }" @keydown.escape.window="open=false" style="display:inline-block;">
-                <button type="button" x-ref="btn" @click.stop="toggle()" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; cursor:pointer; font-size:13px;">😊 <span x-text="open ? '%HIDE_EMOJI%' : '%ADD_EMOJI%'">%ADD_EMOJI%</span></button>
+            <div x-data="{ open:false, x:0, y:0, place(){ const r=this.$refs.btn.getBoundingClientRect(); const w=Math.min(340, window.innerWidth*0.9); this.x=Math.round(Math.max(8, Math.min(r.left, window.innerWidth - w - 8))); this.y=Math.round(r.bottom+6); }, toggle(){ if(!this.open){ this.place(); } this.open=!this.open; }, insert(em){ const ta=document.querySelector('[data-emoji=reply]'); if(ta){ const s=ta.selectionStart??ta.value.length, en=ta.selectionEnd??ta.value.length; ta.value=ta.value.slice(0,s)+em+ta.value.slice(en); ta.dispatchEvent(new Event('input',{bubbles:true})); ta.focus(); ta.selectionStart=ta.selectionEnd=s+em.length; } } }" @keydown.escape.window="open=false" style="display:inline-block;">
+                <button type="button" x-ref="btn" @click.stop="toggle()" style="display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; color:#374151; cursor:pointer; font-weight:600; font-size:.72rem; line-height:1.3;">😊 <span x-text="open ? '%HIDE_EMOJI%' : '%ADD_EMOJI%'">%ADD_EMOJI%</span></button>
                 <template x-teleport="body">
                     <div x-show="open" x-cloak @click.outside="open=false" :style="`position:fixed; top:${y}px; left:${x}px; z-index:9999; width:340px; max-width:90vw; background:#fff; border:1px solid #e5e7eb; border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.18); padding:8px; display:flex; flex-wrap:wrap; gap:2px;`">%BUTTONS%</div>
                 </template>

@@ -149,7 +149,7 @@ class ZernioWebhookHandler
             // rating <= 2. Best-effort — never let a mail failure break ingest.
             $rating = $attributes['rating'];
             if ($event === 'review.new' && $existing === null && $rating !== null && $rating <= 2) {
-                $this->notifyNegativeReview($workspace, $location, $review, $rating);
+                $this->notifyNegativeReview($workspace, $location, $review, $rating, (int) $stored->id);
             }
         } finally {
             if ($previous !== null) {
@@ -165,13 +165,14 @@ class ZernioWebhookHandler
      *
      * @param  array<string, mixed>  $review
      */
-    private function notifyNegativeReview(Workspace $workspace, Location $location, array $review, int $rating): void
+    private function notifyNegativeReview(Workspace $workspace, Location $location, array $review, int $rating, int $reviewId): void
     {
         try {
             $businessName = $location->name ?? $workspace->name;
             $authorName = (string) ($review['reviewer']['name'] ?? 'A customer');
             $snippet = Str::limit((string) ($review['text'] ?? ''), 160);
-            $reviewsUrl = rtrim((string) config('app.url'), '/').'/reviews';
+            // Deep link: ?review={id} opens the reply slide-over (ListReviews).
+            $reviewsUrl = rtrim((string) config('app.url'), '/').'/reviews?review='.$reviewId;
 
             app(NotificationDispatcher::class)->dispatch(
                 $workspace,

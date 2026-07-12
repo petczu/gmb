@@ -25,6 +25,7 @@ return [
 
     // Reply action
     'edit_reply' => 'Edit reply',
+    'save_reply' => 'Save',
     'reply' => 'Reply',
     'reply_to_review' => 'Reply to review',
     'no_written_review' => 'No written review, rating only.',

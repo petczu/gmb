@@ -305,7 +305,6 @@ class AutoReplyQueueItemsTable
 
                         ...ReplyComposer::translationComponents('generated_text'),
 
-                        ReplyComposer::emojiPickerPlaceholder(),
                     ])
                     ->modalSubmitActionLabel(__('resources/auto_reply.approve_publish'))
                     ->extraModalFooterActions([

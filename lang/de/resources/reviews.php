@@ -25,6 +25,7 @@ return [
 
     // Reply action
     'edit_reply' => 'Antwort bearbeiten',
+    'save_reply' => 'Speichern',
     'reply' => 'Antworten',
     'reply_to_review' => 'Auf Bewertung antworten',
     'no_written_review' => 'Keine schriftliche Bewertung, nur Sterne.',

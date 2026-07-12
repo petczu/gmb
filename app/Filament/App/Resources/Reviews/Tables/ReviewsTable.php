@@ -42,6 +42,7 @@ class ReviewsTable
                     ->label(__('resources/reviews.col_location'))
                     ->wrap()
                     ->sortable()
+                    ->searchable()
                     ->toggleable()
                     ->visibleFrom('md'),
 
@@ -76,6 +77,7 @@ class ReviewsTable
                     ->limit(70)
                     ->placeholder(__('resources/reviews.no_reply'))
                     ->tooltip(fn (Review $record): ?string => $record->reply_text)
+                    ->searchable()
                     ->toggleable()
                     ->visibleFrom('lg'),
 
@@ -155,6 +157,7 @@ class ReviewsTable
                         ->slideOver()
                         ->modalWidth(Width::Large)
                         ->modalHeading(fn (Review $record): string => $record->reply_text ? __('resources/reviews.edit_reply') : __('resources/reviews.reply_to_review'))
+                        ->modalSubmitActionLabel(fn (Review $record): string => $record->reply_text ? __('resources/reviews.save_reply') : __('resources/reviews.reply'))
                         ->fillForm(fn (Review $record): array => ['reply_text' => $record->reply_text])
                         // Tag the Submit button so the client-side guard can find it.
                         ->modalSubmitAction(fn (Action $action) => $action->extraAttributes(['data-reply-submit' => '1']))
@@ -193,8 +196,6 @@ class ReviewsTable
                                 ->extraInputAttributes(['data-emoji' => 'reply']),
 
                             ...ReplyComposer::translationComponents('reply_text'),
-
-                            ReplyComposer::emojiPickerPlaceholder(),
 
                             // Client-side guard: keep Submit disabled until the reply
                             // text differs from the original (handles typing AND AI fills).
