@@ -18,7 +18,11 @@ class ListRoles extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()->label(__('resources/roles.new_role')),
+            CreateAction::make()
+                ->label(__('resources/roles.new_role'))
+                // CreateAction consults policies, not the resource's canCreate()
+                // (the Pro gate) — hide it explicitly when custom roles are locked.
+                ->visible(fn (): bool => RoleResource::canCreate()),
 
             // Custom roles are a Pro capability: instead of the create button
             // silently disappearing on lower plans, show a locked one that
