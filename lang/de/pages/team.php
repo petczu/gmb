@@ -10,6 +10,7 @@ return [
     'edit' => 'Bearbeiten',
     'location_access' => 'Standort-Zugriff',
     'location_access_helper' => 'Leer lassen für Zugriff auf alle Standorte.',
+    'guest_location_helper' => 'Leer lassen für alle Standorte oder gezielt auswählen.',
 
     'change_role' => 'Rolle ändern',
     'remove' => 'Entfernen',

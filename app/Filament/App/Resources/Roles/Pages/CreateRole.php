@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Resources\Roles\Pages;
 
+use App\Filament\App\Pages\Billing;
 use App\Filament\App\Resources\Roles\RolePermissions;
 use App\Filament\App\Resources\Roles\RoleResource;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class CreateRole extends CreateRecord
 {
@@ -14,6 +17,28 @@ class CreateRole extends CreateRecord
 
     /** @var list<string> */
     protected array $selectedPermissions = [];
+
+    /**
+     * Custom roles are a Pro capability. A team manager landing here on a
+     * lower plan is sent to Billing with an upgrade hint instead of
+     * Filament's bare 403 page.
+     */
+    protected function authorizeAccess(): void
+    {
+        abort_unless(auth()->user()?->can('manage_roles') ?? false, 403);
+
+        if (RoleResource::canCreate()) {
+            return;
+        }
+
+        Notification::make()
+            ->title(__('resources/roles.pro_locked'))
+            ->body(__('resources/roles.pro_locked_body'))
+            ->warning()
+            ->send();
+
+        throw new HttpResponseException(redirect(Billing::getUrl()));
+    }
 
     /** Back to the roles list after creating (instead of the edit page). */
     protected function getRedirectUrl(): string

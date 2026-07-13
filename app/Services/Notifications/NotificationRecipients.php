@@ -14,6 +14,12 @@ use Illuminate\Support\Collection;
  * on the Notifications settings page and stored as a category => [user ids] map
  * in the workspace `data` JSON. When a category has no explicit routing, it
  * falls back to the workspace owner so nothing silently goes undelivered.
+ *
+ * Location scoping: a member/guest whose pivot `permissions.allowed_locations`
+ * is non-empty only receives notifications about those locations. A
+ * location-specific notification passes its `$locationId` here; recipients
+ * restricted to other locations are dropped. Empty restriction = all locations
+ * (unchanged behaviour). The owner-fallback always delivers.
  */
 class NotificationRecipients
 {
@@ -27,20 +33,55 @@ class NotificationRecipients
     /**
      * @return Collection<int, User> members with a deliverable email
      */
-    public function for(Workspace $workspace, string $category): Collection
+    public function for(Workspace $workspace, string $category, ?int $locationId = null): Collection
     {
         $selected = $this->routes($workspace)[$category] ?? null;
 
         if (! is_array($selected) || $selected === []) {
+            // No explicit routing → the owner gets it, for every location.
             $owner = $workspace->owner();
             $recipients = $owner !== null ? collect([$owner]) : collect();
         } else {
             $members = $workspace->users()->get();
             $ids = $this->expandSelection($selected, $members);
-            $recipients = $members->whereIn('id', $ids)->values();
+            $recipients = $members
+                ->whereIn('id', $ids)
+                ->filter(fn (User $user): bool => $this->coversLocation($user, $locationId))
+                ->values();
         }
 
         return $recipients->filter(fn (User $user): bool => filled($user->email))->values();
+    }
+
+    /**
+     * Does this member's location restriction cover the given location? True
+     * when there is no location context, no restriction (empty = all), or the
+     * location is in the member's allowed list.
+     */
+    private function coversLocation(User $member, ?int $locationId): bool
+    {
+        return self::locationAllowed($member->pivot->permissions ?? null, $locationId);
+    }
+
+    /**
+     * Pure rule for whether a member's pivot `permissions` cover a location.
+     * Null location = no context (all pass); empty allowed_locations = all
+     * locations; otherwise the location must be in the allowed list.
+     */
+    public static function locationAllowed(mixed $permissions, ?int $locationId): bool
+    {
+        if ($locationId === null) {
+            return true;
+        }
+
+        if (is_string($permissions)) {
+            $permissions = json_decode($permissions, true);
+        }
+
+        $allowed = is_array($permissions) ? ($permissions['allowed_locations'] ?? []) : [];
+        $allowed = is_array($allowed) ? array_map('intval', $allowed) : [];
+
+        return $allowed === [] || in_array($locationId, $allowed, true);
     }
 
     /**

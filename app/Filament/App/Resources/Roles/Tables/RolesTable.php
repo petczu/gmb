@@ -23,9 +23,12 @@ class RolesTable
             ->emptyStateHeading(__('resources/roles.empty_heading'))
             ->emptyStateDescription(__('resources/roles.empty_desc'))
             ->emptyStateActions([
+                // Only link to the create screen when custom roles are actually
+                // creatable (a Pro capability) — otherwise it dead-ends in a 403.
                 Action::make('create')
                     ->label(__('resources/roles.empty_cta'))
                     ->icon(Heroicon::OutlinedPlus)
+                    ->visible(fn (): bool => RoleResource::canCreate())
                     ->url(fn (): string => RoleResource::getUrl('create')),
             ])
             ->columns([

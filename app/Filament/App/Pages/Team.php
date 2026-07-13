@@ -164,6 +164,12 @@ class Team extends Page implements HasTable
                             ->helperText(__('pages/team.add_member_email_helper')),
                         // Guests are added through their own action (no login invite).
                         Select::make('role')->options(collect($this->roleOptions())->except('guest')->all())->default('member')->required(),
+                        Select::make('allowed_locations')
+                            ->label(__('pages/team.location_access'))
+                            ->multiple()
+                            ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
+                            ->placeholder(__('common.all_locations'))
+                            ->helperText(__('pages/team.location_access_helper')),
                         // The invite email goes out in this language and the
                         // account adopts it on accept (notifications, reports).
                         Select::make('locale')
@@ -178,6 +184,7 @@ class Team extends Page implements HasTable
                         $email = mb_strtolower(trim($data['email']));
 
                         $locale = in_array($data['locale'] ?? null, ['en', 'de'], true) ? $data['locale'] : 'en';
+                        $locationIds = array_values(array_map('intval', $data['allowed_locations'] ?? []));
 
                         $invitation = Invitation::updateOrCreate(
                             ['workspace_id' => $workspace->id, 'email' => $email],
@@ -185,6 +192,7 @@ class Team extends Page implements HasTable
                                 'token' => Invitation::makeToken(),
                                 'role' => $data['role'],
                                 'locale' => $locale,
+                                'location_ids' => $locationIds ?: null,
                                 'invited_by' => auth()->id(),
                                 'expires_at' => now()->addDays(14),
                                 'accepted_at' => null,
@@ -213,6 +221,12 @@ class Team extends Page implements HasTable
                         TextInput::make('name')->label(__('pages/team.name'))->required()->maxLength(120),
                         TextInput::make('email')->email()->required()
                             ->helperText(__('pages/team.add_guest_helper')),
+                        Select::make('allowed_locations')
+                            ->label(__('pages/team.location_access'))
+                            ->multiple()
+                            ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
+                            ->placeholder(__('common.all_locations'))
+                            ->helperText(__('pages/team.guest_location_helper')),
                         Select::make('locale')
                             ->label(__('pages/team.guest_language'))
                             ->options(['en' => 'English', 'de' => 'Deutsch'])
@@ -225,6 +239,7 @@ class Team extends Page implements HasTable
                         $email = mb_strtolower(trim($data['email']));
 
                         $locale = in_array($data['locale'] ?? null, ['en', 'de'], true) ? $data['locale'] : app()->getLocale();
+                        $locationIds = array_values(array_map('intval', $data['allowed_locations'] ?? []));
 
                         $user = User::firstOrCreate(
                             ['email' => $email],
@@ -246,7 +261,11 @@ class Team extends Page implements HasTable
                         }
 
                         $workspace->users()->syncWithoutDetaching([
-                            $user->id => ['role' => 'guest', 'membership_type' => 'guest'],
+                            $user->id => [
+                                'role' => 'guest',
+                                'membership_type' => 'guest',
+                                'permissions' => json_encode(['allowed_locations' => $locationIds]),
+                            ],
                         ]);
 
                         $this->applyTeamScope();

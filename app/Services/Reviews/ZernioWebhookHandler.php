@@ -186,6 +186,7 @@ class ZernioWebhookHandler
                     reviewsUrl: $reviewsUrl,
                     lang: $lang,
                 ),
+                locationId: (int) $location->id,
             );
         } catch (Throwable $e) {
             Log::warning('Negative review email failed', [

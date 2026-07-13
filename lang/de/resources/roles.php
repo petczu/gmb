@@ -9,6 +9,8 @@ return [
     'col_permissions' => 'Berechtigungen',
     'col_members' => 'Mitglieder',
     'new_role' => 'Neue Rolle',
+    'pro_locked' => 'Eigene Rollen sind eine Pro-Funktion',
+    'pro_locked_body' => 'Wechsle auf den Pro-Plan, um eigene Rollen mit individuellen Berechtigungen anzulegen.',
 
     // Form
     'section' => 'Rolle',

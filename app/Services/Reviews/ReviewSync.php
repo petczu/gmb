@@ -49,6 +49,8 @@ class ReviewSync
         $samples = [];
         /** @var array<string, bool> $newLocations distinct location names with new reviews */
         $newLocations = [];
+        /** @var array<int, bool> $newLocationIds distinct location ids with new reviews (for location-scoped routing) */
+        $newLocationIds = [];
         $firstReviewId = null; // for the single-review deep-link in the digest
 
         /** @var list<array{name: string, count: int, rating: ?float}> $firstSynced locations whose FIRST import finished this run */
@@ -126,6 +128,7 @@ class ReviewSync
                     if ($review->wasRecentlyCreated && ! $firstSyncForLocation) {
                         $newCount++;
                         $newLocations[$location->name] = true;
+                        $newLocationIds[(int) $location->id] = true;
                         $firstReviewId ??= $review->id;
 
                         $review->setRelation('location', $location);
@@ -201,6 +204,10 @@ class ReviewSync
             $reviewsUrl = rtrim((string) config('app.url'), '/').'/reviews'
                 .($newCount === 1 && $firstReviewId !== null ? '?review='.$firstReviewId : '');
 
+            // When the digest is about a single location, route it to that
+            // location's people; a multi-location digest goes to everyone.
+            $digestLocationId = count($newLocationIds) === 1 ? (int) array_key_first($newLocationIds) : null;
+
             try {
                 app(NotificationDispatcher::class)->dispatch(
                     $workspace,
@@ -213,6 +220,7 @@ class ReviewSync
                         reviewsUrl: $reviewsUrl,
                         lang: $lang,
                     ),
+                    locationId: $digestLocationId,
                 );
             } catch (Throwable $e) {
                 Log::warning('New reviews email failed', [

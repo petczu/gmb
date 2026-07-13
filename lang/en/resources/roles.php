@@ -9,6 +9,8 @@ return [
     'col_permissions' => 'Permissions',
     'col_members' => 'Members',
     'new_role' => 'New role',
+    'pro_locked' => 'Custom roles are a Pro feature',
+    'pro_locked_body' => 'Upgrade to the Pro plan to create your own roles with custom permissions.',
 
     // Form
     'section' => 'Role',

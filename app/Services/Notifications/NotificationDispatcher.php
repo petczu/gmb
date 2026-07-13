@@ -22,10 +22,11 @@ class NotificationDispatcher
 
     /**
      * @param  Closure(string $name, string $lang): Mailable  $build
+     * @param  ?int  $locationId  restrict to recipients covering this location (null = all)
      */
-    public function dispatch(Workspace $workspace, string $category, Closure $build): void
+    public function dispatch(Workspace $workspace, string $category, Closure $build, ?int $locationId = null): void
     {
-        foreach ($this->recipients->for($workspace, $category) as $user) {
+        foreach ($this->recipients->for($workspace, $category, $locationId) as $user) {
             $lang = $user->locale ?? 'en';
 
             try {

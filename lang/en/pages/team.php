@@ -10,6 +10,7 @@ return [
     'edit' => 'Edit',
     'location_access' => 'Location access',
     'location_access_helper' => 'Leave empty for access to all locations.',
+    'guest_location_helper' => 'Leave empty to notify about all locations, or pick specific ones.',
 
     'change_role' => 'Change role',
     'remove' => 'Remove',

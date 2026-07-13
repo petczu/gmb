@@ -22,6 +22,7 @@ class Invitation extends Model
         'email',
         'role',
         'locale',
+        'location_ids',
         'invited_by',
         'accepted_at',
         'expires_at',
@@ -30,6 +31,7 @@ class Invitation extends Model
     protected $casts = [
         'accepted_at' => 'datetime',
         'expires_at' => 'datetime',
+        'location_ids' => 'array',
     ];
 
     public function workspace(): BelongsTo

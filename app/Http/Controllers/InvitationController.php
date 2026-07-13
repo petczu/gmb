@@ -70,8 +70,16 @@ class InvitationController extends Controller
             return response()->view('invitations.invalid', [], 410);
         }
 
+        // The inviter's location scope drives both access and location-scoped
+        // notification routing; empty = all locations.
+        $locationIds = array_values(array_map('intval', (array) ($invitation->location_ids ?? [])));
+
         $workspace->users()->syncWithoutDetaching([
-            $user->id => ['role' => $invitation->role, 'membership_type' => 'internal'],
+            $user->id => [
+                'role' => $invitation->role,
+                'membership_type' => 'internal',
+                'permissions' => json_encode(['allowed_locations' => $locationIds]),
+            ],
         ]);
 
         app(PermissionRegistrar::class)->setPermissionsTeamId($workspace->id);
