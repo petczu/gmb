@@ -34,10 +34,14 @@
         <h1>{{ __('legal.'.$page.'.title') }}</h1>
         <div class="updated">{{ __('legal.updated', ['date' => __('legal.updated_date')]) }}</div>
 
-        @foreach ($sections as $section)
-            @if (! empty($section['h']))<h2>{{ $section['h'] }}</h2>@endif
-            <p>{{ $section['p'] }}</p>
-        @endforeach
+        @if (! empty($bodyHtml))
+            {!! $bodyHtml !!}
+        @else
+            @foreach ($sections as $section)
+                @if (! empty($section['h']))<h2>{{ $section['h'] }}</h2>@endif
+                <p>{{ $section['p'] }}</p>
+            @endforeach
+        @endif
 
         <a class="back" href="{{ url('/') }}">← {{ __('legal.back') }}</a>
     </div>

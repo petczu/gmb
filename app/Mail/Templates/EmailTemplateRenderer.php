@@ -29,9 +29,9 @@ class EmailTemplateRenderer
      * @param  array<string, string|int|null>  $data
      * @param  array<string, string>  $blocks  token => pre-rendered HTML
      */
-    public function render(string $key, string $locale, array $data = [], array $blocks = []): string
+    public function render(string $key, string $locale, array $data = [], array $blocks = [], bool $hideButtons = false): string
     {
-        return $this->preview($this->template($key, $locale)->body, $data, $blocks);
+        return $this->preview($this->template($key, $locale)->body, $data, $blocks, $hideButtons);
     }
 
     /**
@@ -41,13 +41,16 @@ class EmailTemplateRenderer
      * @param  array<string, string|int|null>  $data
      * @param  array<string, string>  $blocks
      */
-    public function preview(string $body, array $data = [], array $blocks = []): string
+    public function preview(string $body, array $data = [], array $blocks = [], bool $hideButtons = false): string
     {
         $body = $this->substitute($body, $data);
 
         $html = Str::markdown($body);
         $html = $this->injectImages($html);
-        $html = $this->injectButtons($html, (string) ($data['url'] ?? '#'));
+        // No-login recipients (guests) get the body without the app CTA.
+        $html = $hideButtons
+            ? preg_replace('/\{\{\s*button:(.+?)\s*\}\}/u', '', $html)
+            : $this->injectButtons($html, (string) ($data['url'] ?? '#'));
         $html = $this->injectBlocks($html, $blocks);
 
         return (string) $this->markdown->render('mail.templated', ['slotHtml' => new HtmlString($html)]);

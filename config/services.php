@@ -121,6 +121,11 @@ return [
         'chrome_path' => env('PDF_CHROME_PATH'),
     ],
 
+    'marketing' => [
+        // The marketing site — canonical home of the legal pages.
+        'url' => env('MARKETING_URL', 'https://repunio.com'),
+    ],
+
     'billing' => [
         // Stripe recurring prices per LOCATION/month for each plan. The location
         // subscription's quantity tracks the number of connected locations; the

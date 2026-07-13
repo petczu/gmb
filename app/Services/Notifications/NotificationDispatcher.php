@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Notifications;
 
+use App\Mail\TemplatedMailable;
 use App\Models\Workspace;
 use Closure;
 use Illuminate\Mail\Mailable;
@@ -30,7 +31,16 @@ class NotificationDispatcher
             $lang = $user->locale ?? 'en';
 
             try {
-                Mail::to($user->email)->send($build($user->name, $lang));
+                $mailable = $build($user->name, $lang);
+
+                // Guests have no login — drop the app CTA button so the email
+                // doesn't dead-end them on the sign-in page.
+                if ($mailable instanceof TemplatedMailable
+                    && ($user->pivot->membership_type ?? null) === 'guest') {
+                    $mailable->withoutCta();
+                }
+
+                Mail::to($user->email)->send($mailable);
             } catch (Throwable $e) {
                 Log::warning('Notification dispatch failed', [
                     'workspace' => $workspace->id,

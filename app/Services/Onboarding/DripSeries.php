@@ -64,12 +64,17 @@ class DripSeries
         return $roles->contains('owner') ? 'owner' : 'member';
     }
 
-    /** Guests (notification-only contacts everywhere) get no product education. */
+    /**
+     * Excluded from product education: guests (notification-only contacts,
+     * no login) and users without any workspace membership at all (a removed
+     * guest, or an invitee who has not accepted yet) — there is nothing to
+     * onboard either of them into.
+     */
     public function isGuestOnly(User $user): bool
     {
         $types = $user->workspaces()->pluck('workspace_user.membership_type');
 
-        return $types->isNotEmpty() && $types->every(fn ($t): bool => $t === 'guest');
+        return $types->isEmpty() || $types->every(fn ($t): bool => $t === 'guest');
     }
 
     /**

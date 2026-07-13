@@ -61,4 +61,10 @@ return [
             ['h' => 'Contact', 'p' => 'Questions about cookies can be sent to privacy@repunio.com.'],
         ],
     ],
+
+    // Re-acceptance interstitial
+    'accept_title' => 'Our Terms have changed',
+    'accept_lead' => 'Please review the updated Terms of Service and accept them to continue using Repunio.',
+    'accept_button' => 'Accept and continue',
+    'accept_logout' => 'Log out',
 ];

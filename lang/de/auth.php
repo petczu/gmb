@@ -38,4 +38,9 @@ return [
     'resend_code' => 'Neuen Code senden',
     'code_resent' => 'Ein neuer Code ist unterwegs in dein Postfach.',
     'create_account' => 'Konto erstellen',
+
+    // Nutzungsbedingungen (Registrierung, Schritt 3: Lese-Box)
+    'terms_step_label' => 'Noch eine Sache: unsere Nutzungsbedingungen',
+    'terms_scroll_hint' => 'Scrolle die Bedingungen bis zum Ende, um fortzufahren.',
+    'agree_continue' => 'Zustimmen und fortfahren',
 ];

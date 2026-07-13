@@ -61,4 +61,10 @@ return [
             ['h' => 'Kontakt', 'p' => 'Fragen zu Cookies kannst du an privacy@repunio.com senden.'],
         ],
     ],
+
+    // Erneute Zustimmung
+    'accept_title' => 'Unsere Nutzungsbedingungen haben sich geändert',
+    'accept_lead' => 'Bitte lies die aktualisierten Nutzungsbedingungen und akzeptiere sie, um Repunio weiter zu nutzen.',
+    'accept_button' => 'Akzeptieren und fortfahren',
+    'accept_logout' => 'Abmelden',
 ];

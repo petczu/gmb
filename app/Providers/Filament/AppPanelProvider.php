@@ -8,6 +8,7 @@ use App\Filament\App\Pages\Dashboard;
 use App\Filament\App\Pages\Profile;
 use App\Http\Middleware\ApplyUserPreferences;
 use App\Http\Middleware\EnsureBetaApproved;
+use App\Http\Middleware\EnsureTermsAccepted;
 use App\Http\Middleware\MarkOnboardingComplete;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Http\Middleware\SetLocale;
@@ -261,6 +262,7 @@ class AppPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
                 EnsureBetaApproved::class,
+                EnsureTermsAccepted::class,
                 ApplyUserPreferences::class,
                 MarkOnboardingComplete::class,
             ]);

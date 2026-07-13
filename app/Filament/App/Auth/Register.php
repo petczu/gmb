@@ -7,6 +7,7 @@ namespace App\Filament\App\Auth;
 use App\Billing\Plans;
 use App\Mail\WelcomeMail;
 use App\Models\Invitation;
+use App\Models\LegalDocument;
 use App\Services\Auth\BetaAccess;
 use App\Services\Auth\EmailOtp;
 use App\Services\Auth\TooManyCodeRequests;
@@ -14,13 +15,16 @@ use App\Services\Workspaces\WorkspaceProvisioner;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
 use Filament\Auth\Pages\Register as BaseRegister;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\OneTimeCodeInput;
+use Filament\Forms\Components\Placeholder;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -28,12 +32,13 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Passwordless sign-up, matching the Google flow: step 1 asks only for the
- * email (or a social login), step 2 verifies a 6-digit code sent to that email.
- * The account is created right after the code checks out (email-verified, random
- * unusable password, name derived from the address). Everything else happens
- * later: company/plan/location in the onboarding wizard, name + password in the
- * profile. Invited users are attached to the inviter's workspace instead of
- * getting their own.
+ * email (or a social login), step 2 verifies a 6-digit code sent to that email,
+ * step 3 shows the Terms of Service in a scroll box — the button unlocks after
+ * reading to the end, and accepting it creates the account (email-verified,
+ * random unusable password, name derived from the address). Everything else
+ * happens later: company/plan/location in the onboarding wizard, name +
+ * password in the profile. Invited users are attached to the inviter's
+ * workspace instead of getting their own.
  */
 class Register extends BaseRegister
 {
@@ -71,14 +76,16 @@ class Register extends BaseRegister
         return $schema
             ->components([
                 $this->getEmailFormComponent()
-                    ->readOnly($onCodeStep)
+                    ->readOnly(fn (): bool => $this->step >= 2)
                     ->hintAction(
                         Action::make('changeEmail')
                             ->label(__('auth.change_email'))
-                            ->visible($onCodeStep)
+                            ->visible(fn (): bool => $this->step >= 2)
                             ->action(function (): void {
                                 $this->step = 1;
                                 $this->data['code'] = null;
+                                $this->data['terms_read'] = false;
+                                session()->forget('register_otp_email');
                             }),
                     ),
 
@@ -97,10 +104,24 @@ class Register extends BaseRegister
                             ->visible($onCodeStep)
                             ->action('resendCode'),
                     ),
+
+                // Step 3: the Terms in a scroll box; reaching the end sets
+                // terms_read (see resources/views/auth/terms-box.blade.php),
+                // which unlocks the register button.
+                Hidden::make('terms_read')->dehydrated(false),
+
+                Placeholder::make('terms_box')
+                    ->label(__('auth.terms_step_label'))
+                    ->visible(fn (): bool => $this->step === 3)
+                    ->content(fn (): HtmlString => new HtmlString(
+                        view('auth.terms-box', [
+                            'html' => Str::markdown((string) LegalDocument::bodyFor(LegalDocument::TERMS, app()->getLocale())),
+                        ])->render(),
+                    )),
             ]);
     }
 
-    /** Step 1 sends the code; step 2 verifies it and creates the account. */
+    /** Step 1 sends the code, step 2 verifies it, step 3 accepts the Terms and creates the account. */
     public function register(): ?RegistrationResponse
     {
         if ($this->step === 1) {
@@ -111,7 +132,32 @@ class Register extends BaseRegister
             return null;
         }
 
-        $this->validateCode();
+        if ($this->step === 2) {
+            $this->validateCode();
+
+            // Server-side proof the OTP passed: $step is client-visible Livewire
+            // state, so the final step re-checks this session flag instead.
+            session(['register_otp_email' => mb_strtolower(trim((string) data_get($this->form->getRawState(), 'email')))]);
+            $this->step = 3;
+
+            return null;
+        }
+
+        $email = mb_strtolower(trim((string) data_get($this->form->getRawState(), 'email')));
+        if (session('register_otp_email') !== $email || $email === '') {
+            // Never verified (or the email was swapped afterwards) → start over.
+            $this->step = 1;
+
+            throw ValidationException::withMessages(['data.email' => __('auth.code_invalid')]);
+        }
+
+        if (! (bool) data_get($this->data, 'terms_read')) {
+            Notification::make()->title(__('auth.terms_scroll_hint'))->warning()->send();
+
+            return null;
+        }
+
+        session()->forget('register_otp_email');
 
         return parent::register();
     }
@@ -126,9 +172,14 @@ class Register extends BaseRegister
     public function getRegisterFormAction(): Action
     {
         return parent::getRegisterFormAction()
-            ->label(fn (): string => $this->step === 1
-                ? __('auth.continue_with_email')
-                : __('auth.create_account'));
+            ->label(fn (): string => match ($this->step) {
+                1 => __('auth.continue_with_email'),
+                2 => __('auth.create_account'),
+                default => __('auth.agree_continue'),
+            })
+            // Step 3: locked until the Terms were scrolled to the end (the
+            // scroll box flips terms_read via $wire.set, re-rendering this).
+            ->disabled(fn (): bool => $this->step === 3 && ! (bool) data_get($this->data, 'terms_read'));
     }
 
     /** Early email validation so step 1 fails fast on typos/taken addresses. */
@@ -195,7 +246,12 @@ class Register extends BaseRegister
         ]);
 
         // The code proved mailbox ownership — mark verified, same as Google.
-        $user->forceFill(['email_verified_at' => now()])->save();
+        // Step 3 read + accepted the current Terms — stamp the version.
+        $user->forceFill([
+            'email_verified_at' => now(),
+            'terms_version' => LegalDocument::currentVersion(LegalDocument::TERMS),
+            'terms_accepted_at' => now(),
+        ])->save();
 
         // Invited sign-up: attach to the inviter's workspace instead of
         // provisioning an empty one of their own. The invitation also vouches

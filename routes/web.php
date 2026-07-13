@@ -6,6 +6,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PostmarkWebhookController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewPageController;
+use App\Http\Controllers\TermsController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceSwitchController;
 use App\Http\Controllers\ZernioConnectController;
@@ -14,6 +15,7 @@ use App\Http\Middleware\EnsureBetaApproved;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Http\Middleware\SetLocale;
 use App\Models\User;
+use App\Support\MarketingSite;
 use Illuminate\Support\Facades\Route;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
 
@@ -144,9 +146,19 @@ Route::middleware(['web', SetLocale::class])->group(function (): void {
         return redirect(url()->previous('/'));
     })->name('locale.switch');
 
-    Route::view('terms', 'legal.page', ['page' => 'terms'])->name('legal.terms');
-    Route::view('privacy', 'legal.page', ['page' => 'privacy'])->name('legal.privacy');
-    Route::view('cookies', 'legal.page', ['page' => 'cookies'])->name('legal.cookies');
+    // The legal pages moved to the marketing site — keep the old app URLs
+    // alive as redirects (bookmarks, old emails). The in-app acceptance flows
+    // (registration scroll box, /terms/review) keep rendering the DB copy.
+    Route::get('terms', fn () => redirect(MarketingSite::legal('terms'), 301))->name('legal.terms');
+    Route::get('privacy', fn () => redirect(MarketingSite::legal('privacy'), 301))->name('legal.privacy');
+    Route::get('cookies', fn () => redirect(MarketingSite::legal('cookies'), 301))->name('legal.cookies');
+});
+
+// Terms re-acceptance interstitial: EnsureTermsAccepted redirects here after a
+// new Terms version is published; accepting stamps the user and unblocks the app.
+Route::middleware(['web', 'auth'])->group(function (): void {
+    Route::get('terms/review', [TermsController::class, 'review'])->name('terms.review');
+    Route::post('terms/accept', [TermsController::class, 'accept'])->name('terms.accept');
 });
 
 // Local-only previews of the error pages (in production they render on real errors).

@@ -22,6 +22,19 @@ abstract class TemplatedMailable extends Mailable
     use Queueable;
     use SerializesModels;
 
+    /**
+     * Skip the CTA button(s). Guests have no login, so an "Open Repunio"
+     * button would only dead-end them on the sign-in page.
+     */
+    public bool $hideCta = false;
+
+    public function withoutCta(): static
+    {
+        $this->hideCta = true;
+
+        return $this;
+    }
+
     /** Catalogue key of the template to render. */
     abstract protected function templateKey(): string;
 
@@ -52,7 +65,7 @@ abstract class TemplatedMailable extends Mailable
     public function content(): Content
     {
         return new Content(
-            htmlString: app(EmailTemplateRenderer::class)->render($this->templateKey(), $this->lang, $this->templateData(), $this->blocks()),
+            htmlString: app(EmailTemplateRenderer::class)->render($this->templateKey(), $this->lang, $this->templateData(), $this->blocks(), hideButtons: $this->hideCta),
         );
     }
 }

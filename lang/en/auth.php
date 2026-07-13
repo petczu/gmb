@@ -38,4 +38,9 @@ return [
     'resend_code' => 'Send a new code',
     'code_resent' => 'A new code is on its way to your inbox.',
     'create_account' => 'Create account',
+
+    // Terms acceptance (registration step 3: scroll-to-read box)
+    'terms_step_label' => 'One last thing: our Terms of Service',
+    'terms_scroll_hint' => 'Scroll to the end of the Terms to continue.',
+    'agree_continue' => 'Agree and continue',
 ];

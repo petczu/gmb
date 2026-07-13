@@ -106,6 +106,21 @@ class DripSeriesTest extends TestCase
         $this->assertNull($series->dueStep($this->user('guest', 'guest', 1), []));
     }
 
+    public function test_user_without_any_membership_gets_nothing(): void
+    {
+        // A removed guest / not-yet-accepted invitee: nothing to onboard into.
+        $relation = Mockery::mock(BelongsToMany::class);
+        $relation->shouldReceive('pluck')->with('workspace_user.role')->andReturn(collect());
+        $relation->shouldReceive('pluck')->with('workspace_user.membership_type')->andReturn(collect());
+
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('workspaces')->andReturn($relation);
+        $user->shouldReceive('getAttribute')->with('product_emails')->andReturn(true);
+        $user->shouldReceive('getAttribute')->with('created_at')->andReturn(CarbonImmutable::now()->subDays(1));
+
+        $this->assertNull((new DripSeries)->dueStep($user, []));
+    }
+
     public function test_opt_out_stops_everything(): void
     {
         $this->assertNull((new DripSeries)->dueStep($this->user('owner', 'internal', 1, optIn: false), []));

@@ -33,6 +33,22 @@ class EmailTemplateRendererTest extends TestCase
         $this->assertStringNotContainsString('{{', $html);
     }
 
+    public function test_hidden_buttons_leave_no_cta_or_token_behind(): void
+    {
+        // Guest recipients (no login): the CTA is dropped entirely.
+        $html = $this->renderer()->preview(
+            "Intro line.\n\n{{ button:Open Repunio }}\n\nOutro line.",
+            ['url' => 'https://example.test/go'],
+            hideButtons: true,
+        );
+
+        $this->assertStringContainsString('Intro line.', $html);
+        $this->assertStringContainsString('Outro line.', $html);
+        $this->assertStringNotContainsString('Open Repunio', $html);
+        $this->assertStringNotContainsString('https://example.test/go', $html);
+        $this->assertStringNotContainsString('{{', $html);
+    }
+
     public function test_injects_named_blocks(): void
     {
         $html = $this->renderer()->preview('Before {{ table }} after', [], ['table' => '<div id="injected">ROWS</div>']);
