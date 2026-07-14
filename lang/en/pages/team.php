@@ -28,4 +28,14 @@ return [
     'member_removed' => 'Member removed',
     'invitation_sent' => 'Invitation sent',
     'guest_added' => 'Guest added',
+
+    // Pending invitations
+    'pending_title' => 'Pending invitations',
+    'pending_hint' => 'Sent but not accepted yet. Resend the email or revoke the invitation if it went to the wrong address.',
+    'pending_sent' => 'Sent :ago',
+    'pending_expired' => 'Expired, resend to renew',
+    'invite_resend' => 'Resend',
+    'invite_revoke' => 'Revoke',
+    'invite_revoke_desc' => 'The invitation link stops working immediately. The person is not notified.',
+    'invite_revoked' => 'Invitation revoked',
 ];

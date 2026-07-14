@@ -23,6 +23,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -279,6 +280,77 @@ class Team extends Page implements HasTable
     }
 
     /** @return array<int, int> location ids the user is limited to ([] = all). */
+    // ── Pending invitations ─────────────────────────────────────────────────
+
+    /** Sent but not yet accepted invitations of this workspace. */
+    public function pendingInvitations(): Collection
+    {
+        return Invitation::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->whereNull('accepted_at')
+            ->latest('created_at')
+            ->get();
+    }
+
+    /** Send the invite email again and extend its validity window. */
+    public function resendInvitation(int $invitationId): void
+    {
+        $invitation = Invitation::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->whereNull('accepted_at')
+            ->find($invitationId);
+
+        if ($invitation === null) {
+            return;
+        }
+
+        $invitation->forceFill(['expires_at' => now()->addDays(14)])->save();
+
+        Mail::to($invitation->email)->send(new InviteMail(
+            inviterName: (string) auth()->user()?->name,
+            workspaceName: $this->workspace()->name,
+            acceptUrl: route('invite.show', $invitation->token),
+            role: (string) $invitation->role,
+            lang: in_array($invitation->locale, ['en', 'de'], true) ? $invitation->locale : 'en',
+        ));
+
+        ActivityLogger::log('team.invite_resent', ['email' => $invitation->email]);
+        Notification::make()->title(__('pages/team.invitation_sent'))->success()->send();
+    }
+
+    /** The invitation whose revoke-confirmation modal is open. */
+    public ?int $revokingInvitationId = null;
+
+    public function confirmRevokeInvitation(int $invitationId): void
+    {
+        $this->revokingInvitationId = $invitationId;
+        $this->mountAction('revokeInvitation');
+    }
+
+    public function revokeInvitationAction(): Action
+    {
+        return Action::make('revokeInvitation')
+            ->requiresConfirmation()
+            ->modalHeading(__('pages/team.invite_revoke'))
+            ->modalDescription(__('pages/team.invite_revoke_desc'))
+            ->modalSubmitActionLabel(__('pages/team.invite_revoke'))
+            ->color('danger')
+            ->action(function (): void {
+                $invitation = Invitation::query()
+                    ->where('workspace_id', $this->workspace()->id)
+                    ->whereNull('accepted_at')
+                    ->find($this->revokingInvitationId);
+
+                if ($invitation === null) {
+                    return;
+                }
+
+                ActivityLogger::log('team.invite_revoked', ['email' => $invitation->email]);
+                $invitation->delete();
+                Notification::make()->title(__('pages/team.invite_revoked'))->success()->send();
+            });
+    }
+
     protected function allowedLocationsOf(User $user): array
     {
         $perms = $this->workspace()->users()->where('users.id', $user->id)->first()?->pivot->permissions;
