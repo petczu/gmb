@@ -6,6 +6,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BetaRequestResource\Pages;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Services\Account\UserDeletionService;
 use App\Services\Auth\BetaAccess;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -73,6 +75,36 @@ class BetaRequestResource extends Resource
                         Notification::make()
                             ->title('Access activated')
                             ->body('Email sent to '.$record->email)
+                            ->success()
+                            ->send();
+                    }),
+
+                Action::make('deleteUser')
+                    ->label('Delete')
+                    ->icon(Heroicon::OutlinedTrash)
+                    ->color('danger')
+                    // Never the operator accounts, never yourself.
+                    ->visible(fn (User $record): bool => ! $record->isSuperAdmin() && $record->id !== auth()->id())
+                    ->requiresConfirmation()
+                    ->modalHeading(fn (User $record): string => 'Delete '.$record->email.'?')
+                    ->modalDescription(function (User $record): string {
+                        $sole = app(UserDeletionService::class)->soleWorkspaces($record);
+
+                        $text = 'The account and all its data are removed permanently. No email is sent.';
+                        if ($sole !== []) {
+                            $names = implode(', ', array_map(fn (Workspace $w): string => (string) $w->name, $sole));
+                            $text .= ' Their workspace(s) with no other members are purged too (database dropped): '.$names.'.';
+                        }
+
+                        return $text;
+                    })
+                    ->modalSubmitActionLabel('Delete permanently')
+                    ->action(function (User $record): void {
+                        app(UserDeletionService::class)->delete($record);
+
+                        Notification::make()
+                            ->title('User deleted')
+                            ->body($record->email.' and their orphaned workspaces are gone.')
                             ->success()
                             ->send();
                     }),
