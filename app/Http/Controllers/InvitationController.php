@@ -31,6 +31,13 @@ class InvitationController extends Controller
             return response()->view('invitations.invalid', [], 410);
         }
 
+        // Park the token for the WHOLE auth surface, not only the brand-new-
+        // invitee branch: with it in session, registration (email + Google) is
+        // locked to the invited address everywhere. Without this, an invitee
+        // whose address already had an account could wander from the login
+        // page to sign-up and register a third, unrelated account.
+        session(['pending_invite' => $invitation->token]);
+
         $user = auth()->user();
 
         // Already signed in as the invited person → show the accept button.
@@ -56,8 +63,6 @@ class InvitationController extends Controller
         }
 
         // Brand-new invitee → registration will attach them on sign-up.
-        session(['pending_invite' => $invitation->token]);
-
         return redirect('/register');
     }
 
@@ -79,6 +84,8 @@ class InvitationController extends Controller
             return redirect()->route('invite.show', $token);
         }
 
+        session()->forget('pending_invite');
+
         return redirect('/');
     }
 
@@ -89,14 +96,18 @@ class InvitationController extends Controller
 
     /**
      * These pages have no tenant/session context, so the app locale defaults to
-     * English. Prefer the language the invitation was sent in; fall back to the
-     * visitor's browser preference (used when the token is unknown).
+     * English. An explicit choice via the language switcher (session) wins,
+     * then the language the invitation was sent in, then the visitor's browser
+     * preference (used when the token is unknown).
      */
     private function applyInvitationLocale(?Invitation $invitation): void
     {
         $supported = ['en', 'de'];
 
-        $locale = $invitation?->locale;
+        $locale = session('locale');
+        if (! in_array($locale, $supported, true)) {
+            $locale = $invitation?->locale;
+        }
         if (! in_array($locale, $supported, true)) {
             $locale = request()->getPreferredLanguage($supported);
         }

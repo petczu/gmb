@@ -104,4 +104,28 @@ class InvitationShowTest extends TestCase
             ->assertSee(__('invitations.invalid_title', [], 'de'))
             ->assertDontSee(__('invitations.invalid_title', [], 'en'));
     }
+
+    public function test_the_invite_token_is_parked_even_when_the_invitee_already_has_an_account(): void
+    {
+        // The invited address already has an account → show() sends the guest
+        // to the login page. The token must STILL land in the session: from
+        // there the visitor can reach sign-up (or Google), and without the
+        // token those paths would happily register an unrelated third email.
+        User::create(['name' => 'Invitee', 'email' => 'invitee@example.com', 'password' => 'secret-secret-1']);
+        $invite = $this->invitation();
+
+        $this->get(route('invite.show', $invite->token))
+            ->assertRedirect('/login')
+            ->assertSessionHas('pending_invite', $invite->token);
+    }
+
+    public function test_the_language_switcher_choice_beats_the_invitation_locale(): void
+    {
+        $invite = $this->invitation(['locale' => 'de', 'expires_at' => now()->subDay()]);
+
+        $this->withSession(['locale' => 'en'])
+            ->get(route('invite.show', $invite->token))
+            ->assertStatus(410)
+            ->assertSee(__('invitations.invalid_title', [], 'en'));
+    }
 }

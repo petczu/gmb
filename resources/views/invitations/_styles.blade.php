@@ -16,6 +16,7 @@
         background: #2d19ec; opacity: .08; filter: blur(90px);
     }
     .logo { position: fixed; top: 1.75rem; left: 2rem; height: 2rem; display: inline-flex; }
+    .lang { position: fixed; top: 1.75rem; right: 2rem; z-index: 20; }
     .wrap { position: relative; width: 26rem; max-width: 92vw; }
     .card {
         background: #fff; border: 1px solid #e5e7eb;

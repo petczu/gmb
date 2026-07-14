@@ -11,6 +11,10 @@
     <div class="glow"></div>
     <a class="logo" href="{{ url('/') }}">{!! view('filament.logo', ['theme' => 'light'])->render() !!}</a>
 
+    <div class="lang">
+        @include('partials.locale-switch')
+    </div>
+
     <div class="wrap">
         <div class="card">
             <span class="badge badge-muted">{{ __('invitations.badge') }}</span>
