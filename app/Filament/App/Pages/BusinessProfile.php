@@ -97,15 +97,29 @@ class BusinessProfile extends Page implements HasForms
         $this->fillFromLocation();
     }
 
+    /** True while the live Google values are still being fetched. */
+    public bool $liveLoading = false;
+
     public function updatedLocationId(): void
     {
         $this->fillFromLocation();
+
+        // Fetch the live values in a follow-up request so the switch is instant.
+        if ($this->liveLoading) {
+            $this->js('$wire.loadLiveDetails()');
+        }
     }
 
+    /**
+     * Instant fill from the locally stored copy. The slow Google round-trip
+     * happens afterwards in loadLiveDetails() (wire:init), so the page renders
+     * immediately with a loading banner instead of blocking.
+     */
     protected function fillFromLocation(): void
     {
         $location = $this->location();
         $this->listingStatus = null;
+        $this->liveLoading = false;
 
         if ($location === null) {
             $this->form->fill([]);
@@ -113,8 +127,32 @@ class BusinessProfile extends Page implements HasForms
             return;
         }
 
-        // Prefer LIVE values from Google (via Zernio gmb-location-details);
-        // fall back to the last locally saved copy when the API is unreachable.
+        $stored = $location->listing_data ?? [];
+
+        $this->form->fill([
+            'description' => $stored['description'] ?? null,
+            'phone' => $location->phone,
+            'additional_phones' => $stored['additional_phones'] ?? [],
+            'website' => $location->website_url,
+            'opening_hours' => $stored['opening_hours'] ?? [],
+            'special_hours' => $stored['special_hours'] ?? [],
+            'socials' => array_fill_keys(array_keys(ListingUpdater::SOCIAL_ATTRIBUTES), null),
+        ]);
+
+        $this->liveLoading = $this->isConfigured() && filled($location->zernio_account_id);
+    }
+
+    /** Deferred: pull the current values from Google and overlay them. */
+    public function loadLiveDetails(): void
+    {
+        $location = $this->location();
+
+        if ($location === null || ! $this->liveLoading) {
+            $this->liveLoading = false;
+
+            return;
+        }
+
         $live = $this->fetchLiveDetails($location);
         $stored = $location->listing_data ?? [];
 
@@ -127,6 +165,8 @@ class BusinessProfile extends Page implements HasForms
             'special_hours' => $live['special_hours'] ?? $stored['special_hours'] ?? [],
             'socials' => $this->fetchSocialUrls($location),
         ]);
+
+        $this->liveLoading = false;
     }
 
     /**
@@ -362,6 +402,7 @@ class BusinessProfile extends Page implements HasForms
             Action::make('save')
                 ->label(__('pages/business_profile.save'))
                 ->visible(fn (): bool => $this->isConfigured() && $this->locationId !== null)
+                ->disabled(fn (): bool => $this->liveLoading)
                 ->action(fn () => $this->save()),
         ];
     }

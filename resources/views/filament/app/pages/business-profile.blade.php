@@ -32,7 +32,16 @@
             @endif
         </div>
 
-        <form wire:submit="save">
+        @if ($this->liveLoading)
+            {{-- Kicks off the deferred Google fetch and shows progress meanwhile. --}}
+            <div wire:init="loadLiveDetails" class="hint-box" style="display:flex; align-items:center; gap:.65rem; margin-bottom:.25rem;">
+                <svg style="width:1.1rem; height:1.1rem; flex:none; animation:bp-spin 1s linear infinite; color:#2d19ec;" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" d="M12 3a9 9 0 1 0 9 9"/></svg>
+                <style>@keyframes bp-spin { to { transform: rotate(360deg); } }</style>
+                {{ __('pages/business_profile.loading_live') }}
+            </div>
+        @endif
+
+        <form wire:submit="save" @if ($this->liveLoading) style="opacity:.45; pointer-events:none;" @endif>
             {{ $this->form }}
         </form>
     @endif

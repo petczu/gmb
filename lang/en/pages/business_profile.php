@@ -54,4 +54,5 @@ return [
     'field_additional_phones' => 'Additional phone numbers',
     'field_additional_phones_placeholder' => 'add number + Enter',
     'field_additional_phones_help' => 'Up to two extra numbers shown on the profile.',
+    'loading_live' => 'Loading the current profile data from Google…',
 ];

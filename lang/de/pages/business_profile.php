@@ -54,4 +54,5 @@ return [
     'field_additional_phones' => 'Weitere Telefonnummern',
     'field_additional_phones_placeholder' => 'Nummer eingeben + Enter',
     'field_additional_phones_help' => 'Bis zu zwei zusätzliche Nummern auf dem Profil.',
+    'loading_live' => 'Aktuelle Profildaten werden von Google geladen…',
 ];
