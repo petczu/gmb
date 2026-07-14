@@ -193,7 +193,9 @@ class PostsCalendarTest extends TestCase
         $component->call('updateNote', $note->id, 'date', '2000-01-01');
         $this->assertSame('teal', $note->refresh()->color);
 
-        $component->call('deleteNote', $note->id);
+        // Deletion goes through the Filament confirmation modal.
+        $component->set('deletingNoteId', $note->id);
+        $component->callAction('deleteNote');
         $this->assertSame(0, PostNote::query()->count());
     }
 

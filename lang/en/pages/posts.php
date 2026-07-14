@@ -66,7 +66,7 @@ return [
     'scheduled_ok' => 'Post scheduled',
 
     'delete' => 'Remove',
-    'delete_desc' => 'This only removes the entry from this list — it does not delete the post from Google.',
+    'delete_desc' => 'This only removes the entry from this list, it does not delete the post from Google.',
     'deleted' => 'Entry removed',
 
     // Calendar view

@@ -315,11 +315,42 @@ class Posts extends Page implements HasTable
         PostNote::query()->whereKey($noteId)->update([
             $field => filled($value) ? mb_substr($value, 0, $field === 'body' ? 2000 : 60) : null,
         ]);
+
+        // Body/tag saves fire on BLUR, typically right before a click lands
+        // somewhere else; re-rendering would morph the DOM mid-click and
+        // swallow that click. Only a color change needs a repaint.
+        if ($field !== 'color') {
+            $this->skipRender();
+        }
     }
 
     public function deleteNote(int $noteId): void
     {
         PostNote::query()->whereKey($noteId)->delete();
+    }
+
+    /** The note whose delete-confirmation modal is open. */
+    public ?int $deletingNoteId = null;
+
+    public function confirmDeleteNote(int $noteId): void
+    {
+        $this->deletingNoteId = $noteId;
+        $this->mountAction('deleteNote');
+    }
+
+    public function deleteNoteAction(): Action
+    {
+        return Action::make('deleteNote')
+            ->requiresConfirmation()
+            ->modalHeading(__('pages/posts.note_delete'))
+            ->modalDescription(__('pages/posts.note_delete_confirm'))
+            ->modalSubmitActionLabel(__('pages/posts.note_delete'))
+            ->color('danger')
+            ->action(function (): void {
+                if ($this->deletingNoteId !== null) {
+                    $this->deleteNote($this->deletingNoteId);
+                }
+            });
     }
 
     /** Existing tags for the pick-or-create tag input. @return list<string> */
@@ -376,6 +407,30 @@ class Posts extends Page implements HasTable
     public function deleteCalendar(int $calendarId): void
     {
         ExternalCalendar::query()->whereKey($calendarId)->delete();
+    }
+
+    /** The external calendar whose delete-confirmation modal is open. */
+    public ?int $deletingCalendarId = null;
+
+    public function confirmDeleteCalendar(int $calendarId): void
+    {
+        $this->deletingCalendarId = $calendarId;
+        $this->mountAction('deleteCalendar');
+    }
+
+    public function deleteCalendarAction(): Action
+    {
+        return Action::make('deleteCalendar')
+            ->requiresConfirmation()
+            ->modalHeading(__('pages/posts.calendar_delete'))
+            ->modalDescription(__('pages/posts.calendar_delete_confirm'))
+            ->modalSubmitActionLabel(__('pages/posts.calendar_delete'))
+            ->color('danger')
+            ->action(function (): void {
+                if ($this->deletingCalendarId !== null) {
+                    $this->deleteCalendar($this->deletingCalendarId);
+                }
+            });
     }
 
     /** "Add external calendar" modal (name + public ICS URL + color). */
