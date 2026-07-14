@@ -24,4 +24,22 @@ return [
     'add_demo_data' => 'Demodaten hinzufügen',
     'demo_added' => 'Demodaten hinzugefügt',
     'edit_info' => 'Info bearbeiten',
+
+    // Massenbearbeitung der Öffnungszeiten
+    'bulk_hours' => 'Zeiten bearbeiten',
+    'bulk_hours_heading' => 'Zeiten für ausgewählte Standorte bearbeiten',
+    'bulk_hours_desc' => 'Die unten aktivierten Bereiche werden auf jedes ausgewählte Google-Profil übertragen. Ein übertragener Bereich ersetzt die dort hinterlegten Zeiten, deaktivierte Bereiche bleiben unberührt.',
+    'bulk_hours_submit' => 'Auf Auswahl anwenden',
+    'bulk_hours_apply' => 'Diesen Bereich anwenden',
+    'bulk_hours_regular' => 'Öffnungszeiten',
+    'bulk_hours_regular_desc' => 'Der Wochenplan. Tage ohne Eintrag erscheinen auf Google als geschlossen.',
+    'bulk_hours_special' => 'Spezielle Öffnungszeiten',
+    'bulk_hours_special_desc' => 'Ausnahmen für bestimmte Tage: Feiertage, verkürzte Tage oder zusätzliche Schließtage.',
+    'bulk_hours_add_row' => 'Tag hinzufügen',
+    'bulk_hours_holidays' => 'Aus deinen externen Kalendern übernehmen',
+    'bulk_hours_holidays_help' => 'Wähle Termine aus den auf der Posts-Seite verbundenen Kalendern, jeder wird zum Schließtag.',
+    'bulk_hours_nothing' => 'Nichts anzuwenden: aktiviere mindestens einen Bereich und füge Einträge hinzu.',
+    'bulk_hours_unmatched' => 'keinem Google-Eintrag zugeordnet',
+    'bulk_hours_done' => '{1} Zeiten bei 1 Standort aktualisiert.|[2,*] Zeiten bei :count Standorten aktualisiert.',
+    'bulk_hours_partial' => '{0} Zeiten konnten nicht aktualisiert werden.|{1} Zeiten bei 1 Standort aktualisiert, mit Problemen:|[2,*] Zeiten bei :count Standorten aktualisiert, mit Problemen:',
 ];

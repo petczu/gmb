@@ -24,4 +24,22 @@ return [
     'add_demo_data' => 'Add demo data',
     'demo_added' => 'Demo data added',
     'edit_info' => 'Edit info',
+
+    // Bulk hours editing
+    'bulk_hours' => 'Edit hours',
+    'bulk_hours_heading' => 'Edit hours on selected locations',
+    'bulk_hours_desc' => 'The sections you switch on below are pushed to every selected Google profile. A pushed section replaces that profile\'s current set, sections left off stay untouched.',
+    'bulk_hours_submit' => 'Apply to selected',
+    'bulk_hours_apply' => 'Apply this section',
+    'bulk_hours_regular' => 'Opening hours',
+    'bulk_hours_regular_desc' => 'The weekly schedule. Days without a row show as closed on Google.',
+    'bulk_hours_special' => 'Special hours',
+    'bulk_hours_special_desc' => 'Exceptions for specific dates: holidays, shortened days or extra closures.',
+    'bulk_hours_add_row' => 'Add day',
+    'bulk_hours_holidays' => 'Add from your external calendars',
+    'bulk_hours_holidays_help' => 'Pick dates from the calendars connected on the Posts page, each becomes a closed day.',
+    'bulk_hours_nothing' => 'Nothing to apply: switch on at least one section and add rows.',
+    'bulk_hours_unmatched' => 'not matched to a Google listing',
+    'bulk_hours_done' => '{1} Hours updated on 1 location.|[2,*] Hours updated on :count locations.',
+    'bulk_hours_partial' => '{0} Hours could not be updated.|{1} Hours updated on 1 location, with problems:|[2,*] Hours updated on :count locations, with problems:',
 ];

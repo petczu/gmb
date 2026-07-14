@@ -73,6 +73,42 @@ class ListingUpdater
     }
 
     /**
+     * Bulk-edit path: push ONLY hours (regular and/or special), leaving the
+     * rest of the profile and the stored listing_data copy untouched. A null
+     * section means "don't change it".
+     *
+     * @param  ?array<int, array<string, mixed>>  $openingHours
+     * @param  ?array<int, array<string, mixed>>  $specialHours
+     */
+    public function pushHours(Location $location, ?array $openingHours, ?array $specialHours): void
+    {
+        $payload = $this->buildPayload([
+            'opening_hours' => $openingHours ?? [],
+            'special_hours' => $specialHours ?? [],
+        ]);
+
+        if (! array_key_exists('updateMask', $payload)) {
+            return;
+        }
+
+        $this->client->updateLocationDetails(
+            (string) $location->zernio_account_id,
+            (string) $location->external_id,
+            $payload,
+        );
+
+        $stored = (array) ($location->listing_data ?? []);
+        if ($openingHours !== null) {
+            $stored['opening_hours'] = array_values($openingHours);
+        }
+        if ($specialHours !== null) {
+            $stored['special_hours'] = array_values($specialHours);
+        }
+
+        $location->forceFill(['listing_data' => $stored])->save();
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
