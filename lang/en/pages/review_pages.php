@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'nav' => 'Review page',
-    'title' => 'Review collection page',
+    'title' => 'Review page',
 
     'section_page' => 'Page',
     'slug' => 'Address',
@@ -54,7 +54,8 @@ return [
     'copy_link' => 'Copy link',
     'copied' => 'Copied!',
     'back_to_list' => 'All pages',
-    'empty_list' => 'No review pages yet. Click \"New page\" to create the first one.',
+    'empty_title' => 'Collect more Google reviews',
+    'empty_list' => 'A small public page with your review link and QR code: print it, put it on the counter or add it to emails, and happy guests land right on your Google review form.',
     'status_active' => 'Active',
     'status_inactive' => 'Off',
     'stat_views_short' => 'views · 30d',

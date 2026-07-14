@@ -4,8 +4,28 @@
         @php $list = $this->pagesList(); @endphp
 
         @if ($list === [])
-            <div style="border:1px dashed #d1d5db; border-radius:1rem; padding:2rem; text-align:center; color:#6b7280;">
-                {{ __('pages/review_pages.empty_list') }}
+            {{-- Friendly first-run invite instead of a bare dashed box. --}}
+            <style>
+                .rp-empty { text-align:center; padding:3.5rem 1.5rem; border:1px solid rgb(0 0 0 / .08); border-radius:1rem; background:#fff; position:relative; overflow:hidden; }
+                .dark .rp-empty { background:#18181b; border-color: rgb(255 255 255 / .1); }
+                .rp-empty::before { content:''; position:absolute; inset:-40% -20% auto; height:70%; background:radial-gradient(ellipse at top, rgb(45 25 236 / .07), transparent 65%); pointer-events:none; }
+                .rp-empty .ring { display:inline-flex; align-items:center; justify-content:center; width:4.5rem; height:4.5rem; border-radius:999px; background:linear-gradient(135deg, #eef2ff, #e0e7ff); margin-bottom:1rem; }
+                .dark .rp-empty .ring { background:linear-gradient(135deg, rgb(255 255 255 / .06), rgb(45 25 236 / .25)); }
+                .rp-empty .ring svg { width:2.1rem; height:2.1rem; color:#2d19ec; }
+                .dark .rp-empty .ring svg { color:#a5b4fc; }
+                .rp-empty h2 { font-size:1.15rem; font-weight:700; margin-bottom:.45rem; }
+                .rp-empty p { max-width:34rem; margin:0 auto 1.4rem; font-size:.92rem; line-height:1.6; color:#6b7280; }
+                .dark .rp-empty p { color:#a1a1aa; }
+            </style>
+            <div class="rp-empty">
+                <span class="ring">
+                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z"/></svg>
+                </span>
+                <h2>{{ __('pages/review_pages.empty_title') }}</h2>
+                <p>{{ __('pages/review_pages.empty_list') }}</p>
+                <x-filament::button wire:click="newPage" size="lg" icon="heroicon-o-plus">
+                    {{ __('pages/review_pages.new_page') }}
+                </x-filament::button>
             </div>
         @else
             <div style="display:flex; flex-direction:column; gap:.75rem;">

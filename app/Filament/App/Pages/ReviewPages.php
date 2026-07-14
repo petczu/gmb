@@ -115,13 +115,8 @@ class ReviewPages extends Page implements HasForms
             $this->editing = false;
         }
 
-        $hasPages = ReviewPage::query()->where('workspace_id', $this->workspace()->id)->exists();
-
-        // First run: no pages yet → jump straight into the editor.
-        if (! $hasPages) {
-            $this->editing = true;
-        }
-
+        // The nav item always lands on the LIST (even when empty); the
+        // editor opens explicitly via New page / Edit / the ?page deep link.
         $this->form->fill($this->defaultState());
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'nav' => 'Bewertungsseite',
-    'title' => 'Seite zum Sammeln von Bewertungen',
+    'title' => 'Bewertungsseite',
 
     'section_page' => 'Seite',
     'slug' => 'Adresse',
@@ -54,7 +54,8 @@ return [
     'copy_link' => 'Link kopieren',
     'copied' => 'Kopiert!',
     'back_to_list' => 'Alle Seiten',
-    'empty_list' => 'Noch keine Bewertungsseiten. Klicke auf \"Neue Seite\", um die erste anzulegen.',
+    'empty_title' => 'Sammle mehr Google-Bewertungen',
+    'empty_list' => 'Eine kleine öffentliche Seite mit deinem Bewertungslink und QR-Code: ausdrucken, an die Theke stellen oder in E-Mails einbauen, und zufriedene Gäste landen direkt auf deinem Google-Bewertungsformular.',
     'status_active' => 'Aktiv',
     'status_inactive' => 'Aus',
     'stat_views_short' => 'Aufrufe · 30 T',
