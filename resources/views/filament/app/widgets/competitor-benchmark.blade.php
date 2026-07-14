@@ -20,9 +20,13 @@
         .cmp-spark { flex: 0 0 auto; }
         .cmp-hint { font-size: .78rem; color: rgb(107 114 128); margin-top: .6rem; }
         .dark .cmp-hint { color: #71717a; }
-        .cmp-empty { text-align: center; padding: 1.4rem 1rem; }
+        .cmp-empty { text-align: center; padding: 1.8rem 1rem; }
+        .cmp-empty-ring { display: inline-flex; align-items: center; justify-content: center; width: 3.6rem; height: 3.6rem; border-radius: 999px; background: linear-gradient(135deg, #eef2ff, #e0e7ff); margin-bottom: .8rem; }
+        .dark .cmp-empty-ring { background: linear-gradient(135deg, rgb(255 255 255 / .06), rgb(45 25 236 / .25)); }
+        .cmp-empty-ring svg { width: 1.7rem; height: 1.7rem; color: #2d19ec; }
+        .dark .cmp-empty-ring svg { color: #a5b4fc; }
         .cmp-empty-title { font-weight: 600; margin-bottom: .3rem; }
-        .cmp-empty-body { font-size: .85rem; color: rgb(107 114 128); margin-bottom: .9rem; }
+        .cmp-empty-body { font-size: .85rem; color: rgb(107 114 128); max-width: 26rem; margin: 0 auto .9rem; }
         .dark .cmp-empty-body { color: #a1a1aa; }
         @media (max-width: 700px) { .cmp-spark { display: none; } .cmp-new { display: none; } }
     </style>
@@ -36,6 +40,9 @@
         @if ($rows === [])
             {{-- Nothing tracked yet: invite instead of an empty box. --}}
             <div class="cmp-empty">
+                <span class="cmp-empty-ring">
+                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-3.044 0"/></svg>
+                </span>
                 <div class="cmp-empty-title">{{ __('widgets.competitors_empty_title') }}</div>
                 <div class="cmp-empty-body">{{ __('widgets.competitors_empty_body') }}</div>
                 <x-filament::button tag="a" :href="\App\Filament\App\Pages\Competitors::getUrl()" size="sm">
