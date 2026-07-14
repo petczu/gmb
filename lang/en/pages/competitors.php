@@ -62,4 +62,11 @@ return [
     'period_6m' => '6 months',
     'no_change' => 'no change',
     'search_failed' => 'Competitor search is temporarily unavailable',
+
+    // Competitor detail modal
+    'view' => 'View details',
+    'close' => 'Close',
+    'you' => 'You',
+    'reviews_count' => '{1} 1 review|[2,*] :count reviews',
+    'no_distribution' => 'Star breakdown not available yet (updates on the next refresh).',
 ];

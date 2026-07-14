@@ -62,4 +62,11 @@ return [
     'period_6m' => '6 Monate',
     'no_change' => 'unverändert',
     'search_failed' => 'Die Konkurrenzsuche ist vorübergehend nicht verfügbar',
+
+    // Competitor detail modal
+    'view' => 'Details ansehen',
+    'close' => 'Schließen',
+    'you' => 'Du',
+    'reviews_count' => '{1} 1 Bewertung|[2,*] :count Bewertungen',
+    'no_distribution' => 'Sternverteilung noch nicht verfügbar (kommt mit der nächsten Aktualisierung).',
 ];

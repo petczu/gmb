@@ -17,12 +17,13 @@ class Competitor extends Model
 {
     protected $fillable = [
         'battle_id', 'location_id', 'place_id', 'name', 'address',
-        'rating', 'reviews_count', 'last_checked_at',
+        'rating', 'reviews_count', 'rating_distribution', 'last_checked_at',
     ];
 
     protected $casts = [
         'rating' => 'decimal:2',
         'reviews_count' => 'integer',
+        'rating_distribution' => 'array',
         'last_checked_at' => 'datetime',
     ];
 

@@ -101,7 +101,7 @@ class PlacesClient
 
     /**
      * @param  array<string, mixed>  $place
-     * @return array{place_id: string, name: string, address: ?string, rating: ?float, reviews_count: int}
+     * @return array{place_id: string, name: string, address: ?string, rating: ?float, reviews_count: int, rating_distribution: null}
      */
     protected function normalize(array $place): array
     {
@@ -111,6 +111,8 @@ class PlacesClient
             'address' => $place['formattedAddress'] ?? null,
             'rating' => isset($place['rating']) ? (float) $place['rating'] : null,
             'reviews_count' => (int) ($place['userRatingCount'] ?? 0),
+            // The Places API has no star breakdown; only DataForSEO does.
+            'rating_distribution' => null,
         ];
     }
 

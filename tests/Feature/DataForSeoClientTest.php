@@ -34,6 +34,7 @@ class DataForSeoClientTest extends TestCase
                             'title' => 'Rival Escape',
                             'address' => 'Main St 5, Wien',
                             'rating' => ['value' => 4.6, 'votes_count' => 321, 'rating_type' => 'Max5'],
+                            'rating_distribution' => ['1' => 3, '2' => 1, '3' => 5, '4' => 40, '5' => 272],
                         ]],
                     ]],
                 ]],
@@ -57,6 +58,7 @@ class DataForSeoClientTest extends TestCase
             'address' => 'Main St 5, Wien',
             'rating' => 4.6,
             'reviews_count' => 321,
+            'rating_distribution' => [1 => 3, 2 => 1, 3 => 5, 4 => 40, 5 => 272],
         ], $details);
     }
 

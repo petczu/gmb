@@ -107,6 +107,7 @@ class RefreshCompetitorsCommand extends Command
                     'address' => $details['address'] ?? null,
                     'rating' => $details['rating'] !== null ? (float) $details['rating'] : null,
                     'reviews_count' => (int) ($details['reviews_count'] ?? 0),
+                    'rating_distribution' => $details['rating_distribution'] ?? null,
                 ];
 
                 CompetitorTrends::recordPlace($placeId, $fresh[$placeId]['rating'], $fresh[$placeId]['reviews_count']);
@@ -130,6 +131,9 @@ class RefreshCompetitorsCommand extends Command
                         'address' => $values['address'] ?? $competitor->address,
                         'rating' => $values['rating'],
                         'reviews_count' => $values['reviews_count'],
+                        // Keep the last known breakdown if this refresh had none
+                        // (e.g. the fallback Places snapshot).
+                        'rating_distribution' => $values['rating_distribution'] ?? $competitor->rating_distribution,
                         'last_checked_at' => now(),
                     ])->save();
                 }

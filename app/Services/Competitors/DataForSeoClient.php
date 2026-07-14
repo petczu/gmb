@@ -24,9 +24,10 @@ class DataForSeoClient
 
     /**
      * Current rating snapshot of a Google place, shaped exactly like
-     * PlacesClient::details() so the refresh command can use either.
+     * PlacesClient::details() so the refresh command can use either. Unlike
+     * Places, DataForSEO also returns the 1-5 star distribution.
      *
-     * @return array{place_id: string, name: ?string, address: ?string, rating: ?float, reviews_count: int}
+     * @return array{place_id: string, name: ?string, address: ?string, rating: ?float, reviews_count: int, rating_distribution: ?array<int, int>}
      */
     public function details(string $placeId): array
     {
@@ -58,12 +59,23 @@ class DataForSeoClient
             throw new \RuntimeException('DataForSEO returned no business item for '.$placeId);
         }
 
+        // {1..5 => count}, integer-keyed and only kept when it looks valid.
+        $distribution = null;
+        if (is_array($item['rating_distribution'] ?? null)) {
+            $distribution = collect($item['rating_distribution'])
+                ->mapWithKeys(fn ($count, $star): array => [(int) $star => (int) $count])
+                ->filter(fn ($count, $star): bool => $star >= 1 && $star <= 5)
+                ->all();
+            $distribution = $distribution === [] ? null : $distribution;
+        }
+
         return [
             'place_id' => (string) ($item['place_id'] ?? $placeId),
             'name' => $item['title'] ?? null,
             'address' => $item['address'] ?? null,
             'rating' => isset($item['rating']['value']) ? (float) $item['rating']['value'] : null,
             'reviews_count' => (int) ($item['rating']['votes_count'] ?? 0),
+            'rating_distribution' => $distribution,
         ];
     }
 

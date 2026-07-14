@@ -16,6 +16,7 @@ use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -164,6 +165,58 @@ class Competitors extends Page implements HasTable
         return $battle->displayName();
     }
 
+    /**
+     * Per-competitor detail: rating, review count and (when DataForSEO
+     * supplied it) the 1-5 star distribution as horizontal bars, alongside
+     * the own side's rating for reference.
+     */
+    protected function competitorDetailsHtml(CompetitorBattle $battle): string
+    {
+        $ownRating = $this->ownRating($battle);
+        $html = '<div style="display:flex; flex-direction:column; gap:1rem;">';
+
+        // Own side header row.
+        $html .= '<div style="display:flex; align-items:center; justify-content:space-between; padding:.6rem .8rem; border-radius:.6rem; background:rgb(45 25 236 / .06);">'
+            .'<span style="font-weight:700;">'.e($battle->ownLocations()->pluck('name')->implode(', ') ?: __('pages/competitors.you')).'</span>'
+            .'<span style="font-weight:700;">'.($ownRating !== null ? number_format($ownRating, 1).' ★' : '—').'</span>'
+            .'</div>';
+
+        foreach ($battle->competitors as $competitor) {
+            $rating = $competitor->rating !== null ? number_format((float) $competitor->rating, 1).' ★' : '—';
+            $reviews = trans_choice('pages/competitors.reviews_count', (int) $competitor->reviews_count, ['count' => number_format((int) $competitor->reviews_count)]);
+
+            $html .= '<div style="border:1px solid rgb(0 0 0 / .08); border-radius:.6rem; padding:.7rem .85rem;">';
+            $html .= '<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.5rem;">'
+                .'<span style="font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'.e((string) $competitor->name).'</span>'
+                .'<span style="white-space:nowrap; color:#6b7280; font-size:.85rem;">'.e($rating).' · '.e($reviews).'</span>'
+                .'</div>';
+
+            $dist = $competitor->rating_distribution;
+            if (is_array($dist) && array_sum($dist) > 0) {
+                $max = max($dist);
+                $colors = [5 => '#16a34a', 4 => '#84cc16', 3 => '#eab308', 2 => '#f97316', 1 => '#dc2626'];
+                for ($star = 5; $star >= 1; $star--) {
+                    $count = (int) ($dist[$star] ?? 0);
+                    $pct = $max > 0 ? round($count / $max * 100) : 0;
+                    $html .= '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.25rem;">'
+                        .'<span style="width:1.6rem; font-size:.75rem; color:#6b7280; text-align:right;">'.$star.'★</span>'
+                        .'<span style="flex:1; height:.55rem; border-radius:999px; background:rgb(0 0 0 / .06); overflow:hidden;">'
+                        .'<span style="display:block; height:100%; width:'.$pct.'%; background:'.$colors[$star].';"></span></span>'
+                        .'<span style="width:3rem; font-size:.75rem; color:#6b7280;">'.number_format($count).'</span>'
+                        .'</div>';
+                }
+            } else {
+                $html .= '<div style="font-size:.8rem; color:#9ca3af;">'.e(__('pages/competitors.no_distribution')).'</div>';
+            }
+
+            $html .= '</div>';
+        }
+
+        $html .= '</div>';
+
+        return $html;
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -272,6 +325,18 @@ class Competitors extends Page implements HasTable
             ])
             ->recordActions([
                 ActionGroup::make([
+                    Action::make('view')
+                        ->label(__('pages/competitors.view'))
+                        ->icon(Heroicon::OutlinedChartBar)
+                        ->modalHeading(fn (CompetitorBattle $record): string => $this->battleName($record))
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel(__('pages/competitors.close'))
+                        ->schema(fn (CompetitorBattle $record): array => [
+                            Placeholder::make('competitor_details')
+                                ->hiddenLabel()
+                                ->content(new HtmlString($this->competitorDetailsHtml($record))),
+                        ]),
+
                     Action::make('edit')
                         ->label(__('pages/competitors.edit'))
                         ->icon(Heroicon::OutlinedPencilSquare)
