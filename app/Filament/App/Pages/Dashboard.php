@@ -65,6 +65,26 @@ class Dashboard extends BaseDashboard
                     Notification::make()->title(__('pages/dashboard.widgets_restored'))->success()->send();
                 }),
 
+            Action::make('resetLayout')
+                ->label(__('pages/dashboard.reset_layout'))
+                ->icon(Heroicon::OutlinedArrowUturnLeft)
+                ->color('gray')
+                ->visible(fn (): bool => $this->arranging)
+                ->requiresConfirmation()
+                ->modalDescription(__('pages/dashboard.reset_layout_desc'))
+                ->action(function (): void {
+                    auth()->user()?->forceFill([
+                        'dashboard_widgets' => null,
+                        'dashboard_widget_order' => null,
+                        'dashboard_widget_spans' => null,
+                    ])->save();
+
+                    Notification::make()->title(__('pages/dashboard.reset_layout_done'))->success()->send();
+
+                    // Widgets render server-side; a reload applies the defaults.
+                    $this->js('window.location.reload()');
+                }),
+
             Action::make('customize')
                 ->label(fn (): string => $this->arranging ? __('pages/dashboard.customize_done') : __('pages/dashboard.customize'))
                 ->icon(fn (): Heroicon => $this->arranging ? Heroicon::OutlinedCheck : Heroicon::OutlinedAdjustmentsHorizontal)

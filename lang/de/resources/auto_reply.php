@@ -58,7 +58,7 @@ return [
 
     // Scheduled items
     'post_now' => 'Jetzt veröffentlichen',
-    'post_now_confirm' => 'Die geplante Zeit überspringen und diese Antwort so bald wie möglich veröffentlichen?',
+    'post_now_confirm' => 'Die Antwort wird sofort auf Google veröffentlicht und überspringt ihre geplante Zeit.',
     'post_now_queued' => 'Antwort zur Veröffentlichung eingereiht',
     'post_now_queued_body' => 'Sie geht in den nächsten Minuten raus.',
     'cancel_scheduled' => 'Abbrechen',

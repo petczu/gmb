@@ -49,4 +49,7 @@ return [
     'demo_title' => 'You are looking at sample data',
     'demo_text' => 'This is how it will look with real data. Connect your Google Business Profile and the sample numbers are replaced by your reviews.',
     'demo_note' => 'Takes about two minutes.',
+    'reset_layout' => 'Reset layout',
+    'reset_layout_desc' => 'Widget order, sizes and hidden widgets go back to the defaults. Filters are not touched.',
+    'reset_layout_done' => 'Dashboard layout reset',
 ];

@@ -361,18 +361,21 @@ class AutoReplyQueueItemsTable
                     ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'scheduled')
                     ->requiresConfirmation()
                     ->modalDescription(__('resources/auto_reply.post_now_confirm'))
+                    // A single item publishes INLINE (one API call), so the row
+                    // leaves the Scheduled tab immediately; only bulk approvals
+                    // go through the queued fast-track.
                     ->action(function (AutoReplyQueueItem $record): void {
-                        $record->forceFill([
-                            'post_at' => now(),
-                            'decided_by' => Auth::id(),
-                            'decided_at' => now(),
-                        ])->save();
+                        $workspace = Workspace::findOrFail(session('current_workspace_id'));
 
-                        Notification::make()
-                            ->title(__('resources/auto_reply.post_now_queued'))
-                            ->body(__('resources/auto_reply.post_now_queued_body'))
-                            ->success()
-                            ->send();
+                        try {
+                            app(AutoReplyService::class)->approve($workspace, $record, Auth::id());
+                        } catch (\Throwable $e) {
+                            self::notifyPublishFailure($e);
+
+                            return;
+                        }
+
+                        Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
                     }),
 
                 Action::make('cancelScheduled')

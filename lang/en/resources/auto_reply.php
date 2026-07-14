@@ -58,7 +58,7 @@ return [
 
     // Scheduled items
     'post_now' => 'Post now',
-    'post_now_confirm' => 'Skip the scheduled time and publish this reply as soon as possible?',
+    'post_now_confirm' => 'The reply is published to Google immediately, skipping its scheduled time.',
     'post_now_queued' => 'Reply queued for publishing',
     'post_now_queued_body' => 'It goes out within the next few minutes.',
     'cancel_scheduled' => 'Cancel',

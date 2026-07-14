@@ -49,4 +49,7 @@ return [
     'demo_title' => 'Du siehst Beispieldaten',
     'demo_text' => 'So sieht es mit echten Daten aus. Verbinde dein Google Business-Profil und die Beispielzahlen werden durch deine Bewertungen ersetzt.',
     'demo_note' => 'Dauert etwa zwei Minuten.',
+    'reset_layout' => 'Layout zurücksetzen',
+    'reset_layout_desc' => 'Reihenfolge, Größen und ausgeblendete Widgets kehren zu den Standardwerten zurück. Filter bleiben unberührt.',
+    'reset_layout_done' => 'Dashboard-Layout zurückgesetzt',
 ];
