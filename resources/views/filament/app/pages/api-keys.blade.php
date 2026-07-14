@@ -1,13 +1,11 @@
 <x-filament-panels::page>
     @if (! $this->isPro())
-        <div class="warn-box">
-            <div style="font-weight:700; margin-bottom:.25rem;">{{ __('pages/api_keys.pro_only_title') }}</div>
-            <div style="font-size:.92rem;">{{ __('pages/api_keys.pro_only_body') }}</div>
-            <a href="{{ \App\Filament\App\Pages\Billing::getUrl() }}"
-               style="display:inline-block; margin-top:.9rem; background:#1800ff; color:#fff; font-weight:600; padding:.55rem 1.1rem; border-radius:.6rem; text-decoration:none;">
-                {{ __('pages/api_keys.see_plans') }}
-            </a>
-        </div>
+        <x-pro-gate
+            icon="key"
+            :title="__('pages/api_keys.pro_only_title')"
+            :body="__('pages/api_keys.pro_only_body')"
+            :cta="__('pages/api_keys.see_plans')"
+        />
     @else
         @if ($this->plainKey)
             <div class="ok-box">
