@@ -30,6 +30,11 @@ return [
     'continue_with_email' => 'Continue with email',
     'change_email' => 'Change',
 
+    // Invitation-bound sign-up (email locked to the invited address)
+    'invite_join_title' => "You're joining :workspace",
+    'invite_join_title_generic' => "You're accepting an invitation",
+    'invite_email_locked' => 'Sign up with :email to accept it. To use a different address, ask for a new invitation.',
+
     // Sign-up code (passwordless email registration)
     'code_label' => 'Verification code',
     'code_help' => 'We emailed a 6-digit code to :email. Enter it below.',

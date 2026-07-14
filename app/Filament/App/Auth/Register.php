@@ -45,6 +45,16 @@ class Register extends BaseRegister
     public int $step = 1;
 
     /**
+     * When arriving from an invitation link, sign-up is bound to the invited
+     * address: the email field is prefilled + locked so the account that gets
+     * created is the one the workspace owner invited. Otherwise a mismatched
+     * email would silently spin up a fresh solo workspace instead of joining.
+     */
+    public ?string $invitedEmail = null;
+
+    public ?string $invitedWorkspaceName = null;
+
+    /**
      * Deep link from the marketing site's pricing cards:
      * /register?plan=pro&interval=year. The choice is parked in the session so
      * it survives the OTP steps (and social login) and preselects the plan step
@@ -53,6 +63,14 @@ class Register extends BaseRegister
     public function mount(): void
     {
         parent::mount();
+
+        // Invitation-bound sign-up: lock the form to the invited address.
+        $invitation = $this->pendingInvitation();
+        if ($invitation !== null) {
+            $this->invitedEmail = mb_strtolower(trim((string) $invitation->email));
+            $this->invitedWorkspaceName = (string) ($invitation->workspace?->name ?? '');
+            $this->data['email'] = $this->invitedEmail;
+        }
 
         $plan = strtolower((string) request()->query('plan'));
         if (Plans::find($plan) !== null) {
@@ -75,12 +93,24 @@ class Register extends BaseRegister
 
         return $schema
             ->components([
+                // Invitation banner: explains the locked email up front.
+                Placeholder::make('invite_banner')
+                    ->hiddenLabel()
+                    ->visible(fn (): bool => $this->invitedEmail !== null)
+                    ->content(fn (): HtmlString => new HtmlString(
+                        view('auth.invite-banner', [
+                            'workspace' => $this->invitedWorkspaceName,
+                            'email' => (string) $this->invitedEmail,
+                        ])->render(),
+                    )),
+
                 $this->getEmailFormComponent()
-                    ->readOnly(fn (): bool => $this->step >= 2)
+                    // Locked once past step 1, and always when invitation-bound.
+                    ->readOnly(fn (): bool => $this->step >= 2 || $this->invitedEmail !== null)
                     ->hintAction(
                         Action::make('changeEmail')
                             ->label(__('auth.change_email'))
-                            ->visible(fn (): bool => $this->step >= 2)
+                            ->visible(fn (): bool => $this->step >= 2 && $this->invitedEmail === null)
                             ->action(function (): void {
                                 $this->step = 1;
                                 $this->data['code'] = null;
@@ -124,6 +154,14 @@ class Register extends BaseRegister
     /** Step 1 sends the code, step 2 verifies it, step 3 accepts the Terms and creates the account. */
     public function register(): ?RegistrationResponse
     {
+        // Invitation-bound sign-up: force the email from the (untamperable)
+        // session token, so a crafted client request can't swap in a different
+        // address than the one that was invited.
+        $invitation = $this->pendingInvitation();
+        if ($invitation !== null) {
+            $this->data['email'] = mb_strtolower(trim((string) $invitation->email));
+        }
+
         if ($this->step === 1) {
             $this->validateEmailStep();
             $this->sendCode();
@@ -282,6 +320,23 @@ class Register extends BaseRegister
         $this->sendWelcomeEmail($user);
 
         return $user;
+    }
+
+    /**
+     * The pending invitation for this sign-up, resolved fresh from the session
+     * token (server-side, so it can't be tampered via Livewire state). Null when
+     * there is no token, or it no longer points at a pending invitation.
+     */
+    protected function pendingInvitation(): ?Invitation
+    {
+        $token = session('pending_invite');
+        if (! is_string($token) || $token === '') {
+            return null;
+        }
+
+        $invitation = Invitation::query()->where('token', $token)->first();
+
+        return ($invitation !== null && $invitation->isPending()) ? $invitation : null;
     }
 
     /**

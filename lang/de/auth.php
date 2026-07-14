@@ -30,6 +30,11 @@ return [
     'continue_with_email' => 'Mit E-Mail fortfahren',
     'change_email' => 'Ändern',
 
+    // An eine Einladung gebundene Registrierung (E-Mail fest vorgegeben)
+    'invite_join_title' => 'Du trittst :workspace bei',
+    'invite_join_title_generic' => 'Du nimmst eine Einladung an',
+    'invite_email_locked' => 'Registriere dich mit :email, um sie anzunehmen. Für eine andere Adresse bitte um eine neue Einladung.',
+
     // Anmeldecode (passwortlose E-Mail-Registrierung)
     'code_label' => 'Bestätigungscode',
     'code_help' => 'Wir haben einen 6-stelligen Code an :email geschickt. Gib ihn unten ein.',
