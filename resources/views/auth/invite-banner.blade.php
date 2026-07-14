@@ -10,7 +10,7 @@
                 : __('auth.invite_join_title_generic') }}
         </div>
         <div style="opacity: .75; margin-top: .15rem;">
-            {{ __('auth.invite_email_locked', ['email' => $email]) }}
+            {{ $hint ?? __('auth.invite_email_locked', ['email' => $email]) }}
         </div>
     </div>
 </div>

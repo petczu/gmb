@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\App\Auth\Login;
 use App\Filament\App\Auth\Register;
 use App\Models\Invitation;
 use App\Models\Workspace;
@@ -132,5 +133,24 @@ class RegisterInvitedEmailLockTest extends TestCase
         Livewire::test(Register::class)
             ->assertSet('invitedEmail', null)
             ->assertSet('data.email', null);
+    }
+
+    public function test_the_login_page_shows_the_invite_banner_with_a_masked_address(): void
+    {
+        // An invitee whose address already has an account lands on /login —
+        // the banner explains what they are joining, without the full address.
+        $invite = $this->invitation();
+        session(['pending_invite' => $invite->token]);
+
+        Livewire::test(Login::class)
+            ->assertSee('Acme Agency')
+            ->assertSee('i***@example.com')
+            ->assertDontSee('invitee@example.com');
+    }
+
+    public function test_the_login_page_has_no_banner_without_an_invite(): void
+    {
+        Livewire::test(Login::class)
+            ->assertDontSee('Acme Agency');
     }
 }

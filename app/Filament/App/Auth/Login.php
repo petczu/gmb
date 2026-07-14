@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Auth;
 
+use App\Services\Workspaces\InvitationAcceptor;
 use Filament\Auth\Pages\Login as BaseLogin;
 use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Components\Component;
@@ -16,6 +17,11 @@ use Illuminate\Support\HtmlString;
 /**
  * Login page with the "Forgot password?" link moved onto the "Remember me"
  * row (right-aligned) instead of sitting next to the password field label.
+ *
+ * When the visitor arrived from an invitation link (the invited address
+ * already has an account, so the invite page sent them here), a banner says
+ * which workspace they are joining and with which (masked) address —
+ * otherwise the redirect to a bare login form reads as "nothing happened".
  */
 class Login extends BaseLogin
 {
@@ -23,6 +29,20 @@ class Login extends BaseLogin
     {
         return $schema
             ->components([
+                Placeholder::make('invite_banner')
+                    ->hiddenLabel()
+                    ->visible(fn (): bool => app(InvitationAcceptor::class)->pendingFromSession() !== null)
+                    ->content(function (): HtmlString {
+                        $invitation = app(InvitationAcceptor::class)->pendingFromSession();
+                        $masked = InvitationAcceptor::maskEmail((string) $invitation?->email);
+
+                        return new HtmlString(view('auth.invite-banner', [
+                            'workspace' => (string) ($invitation?->workspace?->name ?? ''),
+                            'email' => $masked,
+                            'hint' => __('auth.invite_email_login', ['email' => $masked]),
+                        ])->render());
+                    }),
+
                 $this->getEmailFormComponent(),
                 $this->getPasswordFormComponent(),
                 Flex::make([
