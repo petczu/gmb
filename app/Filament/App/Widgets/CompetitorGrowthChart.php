@@ -23,11 +23,15 @@ use Illuminate\Support\Str;
  */
 class CompetitorGrowthChart extends ChartWidget
 {
+    use Concerns\HasSkeletonPlaceholder;
     use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
     protected static ?int $sort = 9;
+
+    /** Sized lazy-loading skeleton (the data comes from an external API). */
+    protected ?string $placeholderHeight = '19rem';
 
     protected int|string|array $columnSpan = 'full';
 

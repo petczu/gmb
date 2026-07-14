@@ -18,6 +18,7 @@ use Filament\Widgets\Widget;
  */
 class ListingSearchesWidget extends Widget
 {
+    use Concerns\HasSkeletonPlaceholder;
     use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
@@ -27,6 +28,8 @@ class ListingSearchesWidget extends Widget
     protected string $view = 'filament.app.widgets.listing-searches';
 
     /** Sized lazy-loading skeleton (the data comes from an external API). */
+    protected string $skeletonVariant = 'list';
+
     protected ?string $placeholderHeight = '20rem';
 
     protected int|string|array $columnSpan = 'full';

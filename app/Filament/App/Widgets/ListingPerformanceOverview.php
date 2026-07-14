@@ -20,11 +20,17 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class ListingPerformanceOverview extends StatsOverviewWidget
 {
+    use Concerns\HasSkeletonPlaceholder;
     use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
     protected static ?int $sort = 5;
+
+    /** Sized lazy-loading skeleton (the data comes from an external API). */
+    protected string $skeletonVariant = 'stats';
+
+    protected ?string $placeholderHeight = '19rem';
 
     /** Half width: the KPI 2×2 sits left of the performance chart. */
     protected int|string|array $columnSpan = 1;

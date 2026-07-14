@@ -18,11 +18,15 @@ use Filament\Widgets\Concerns\InteractsWithPageFilters;
  */
 class ListingPerformanceChart extends ChartWidget
 {
+    use Concerns\HasSkeletonPlaceholder;
     use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
     protected static ?int $sort = 6;
+
+    /** Sized lazy-loading skeleton (the data comes from an external API). */
+    protected ?string $placeholderHeight = '19rem';
 
     public ?string $filter = 'views';
 

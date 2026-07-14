@@ -24,6 +24,7 @@ use Filament\Widgets\Widget;
  */
 class CompetitorBenchmarkWidget extends Widget
 {
+    use Concerns\HasSkeletonPlaceholder;
     use Concerns\HasUserGridSpan;
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
@@ -33,6 +34,8 @@ class CompetitorBenchmarkWidget extends Widget
     protected string $view = 'filament.app.widgets.competitor-benchmark';
 
     /** Sized lazy-loading skeleton (the data comes from an external API). */
+    protected string $skeletonVariant = 'table';
+
     protected ?string $placeholderHeight = '14rem';
 
     protected int|string|array $columnSpan = 'full';
