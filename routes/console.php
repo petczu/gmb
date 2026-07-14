@@ -45,6 +45,9 @@ Schedule::command('ai:auto-recharge')->everyFifteenMinutes();
 // gates and per-location cooldowns decide what actually sends.
 Schedule::command('reviews:insights')->dailyAt('10:00');
 
+// Push bulk hours edits scheduled for today (early, before opening time).
+Schedule::command('listings:apply-scheduled')->dailyAt('00:20');
+
 // Onboarding email series: one due step per user per day (see DripSeries).
 Schedule::command('emails:drip')->dailyAt('10:00');
 

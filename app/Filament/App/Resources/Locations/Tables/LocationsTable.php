@@ -3,29 +3,16 @@
 namespace App\Filament\App\Resources\Locations\Tables;
 
 use App\Filament\App\Pages\BusinessProfile;
-use App\Models\ExternalCalendarEvent;
 use App\Models\Location;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Billing\LocationBilling;
-use App\Services\Listings\ListingUpdater;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\BulkAction;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Collection;
-use Throwable;
 
 class LocationsTable
 {
@@ -138,198 +125,6 @@ class LocationsTable
                         }),
                 ]),
             ])
-            ->toolbarActions([
-                self::bulkEditHours(),
-            ]);
-    }
-
-    /**
-     * Set regular and/or special opening hours on every selected location in
-     * one go (e.g. holiday closures across the whole chain).
-     */
-    protected static function bulkEditHours(): BulkAction
-    {
-        return BulkAction::make('editHours')
-            ->label(__('resources/locations.bulk_hours'))
-            ->icon(Heroicon::OutlinedClock)
-            ->visible(fn (): bool => auth()->user()?->can('edit_business_info') ?? false)
-            ->modalHeading(__('resources/locations.bulk_hours_heading'))
-            ->modalDescription(__('resources/locations.bulk_hours_desc'))
-            ->modalSubmitActionLabel(__('resources/locations.bulk_hours_submit'))
-            ->deselectRecordsAfterCompletion()
-            ->schema([
-                Section::make(__('resources/locations.bulk_hours_regular'))
-                    ->description(__('resources/locations.bulk_hours_regular_desc'))
-                    ->schema([
-                        Toggle::make('apply_regular')
-                            ->label(__('resources/locations.bulk_hours_apply'))
-                            ->live(),
-
-                        Repeater::make('opening_hours')
-                            ->hiddenLabel()
-                            ->addActionLabel(__('resources/locations.bulk_hours_add_row'))
-                            ->reorderable(false)
-                            ->visible(fn (Get $get): bool => (bool) $get('apply_regular'))
-                            ->default(collect(BusinessProfile::DAYS)->take(5)->map(fn (string $day): array => [
-                                'day' => $day, 'open' => '09:00', 'close' => '18:00',
-                            ])->values()->all())
-                            ->schema([
-                                Grid::make(3)->schema([
-                                    Select::make('day')
-                                        ->label(__('pages/business_profile.field_day'))
-                                        ->options(collect(BusinessProfile::DAYS)->mapWithKeys(
-                                            fn (string $d): array => [$d => __('pages/business_profile.day_'.strtolower($d))],
-                                        )->all())
-                                        ->required(),
-                                    TimePicker::make('open')
-                                        ->label(__('pages/business_profile.field_open'))
-                                        ->seconds(false)
-                                        ->required(),
-                                    TimePicker::make('close')
-                                        ->label(__('pages/business_profile.field_close'))
-                                        ->seconds(false)
-                                        ->required(),
-                                ]),
-                            ]),
-                    ]),
-
-                Section::make(__('resources/locations.bulk_hours_special'))
-                    ->description(__('resources/locations.bulk_hours_special_desc'))
-                    ->schema([
-                        Toggle::make('apply_special')
-                            ->label(__('resources/locations.bulk_hours_apply'))
-                            ->live(),
-
-                        Select::make('holiday_events')
-                            ->label(__('resources/locations.bulk_hours_holidays'))
-                            ->helperText(__('resources/locations.bulk_hours_holidays_help'))
-                            ->multiple()
-                            ->options(fn (): array => self::upcomingCalendarEvents())
-                            ->visible(fn (Get $get): bool => (bool) $get('apply_special') && self::upcomingCalendarEvents() !== []),
-
-                        Repeater::make('special_hours')
-                            ->hiddenLabel()
-                            ->addActionLabel(__('pages/business_profile.add_special'))
-                            ->reorderable(false)
-                            ->default([])
-                            ->visible(fn (Get $get): bool => (bool) $get('apply_special'))
-                            ->schema([
-                                Grid::make(2)->schema([
-                                    DatePicker::make('start_date')
-                                        ->label(__('pages/business_profile.field_start_date'))
-                                        ->native(false)
-                                        ->required(),
-                                    DatePicker::make('end_date')
-                                        ->label(__('pages/business_profile.field_end_date'))
-                                        ->native(false)
-                                        ->required(),
-                                ]),
-                                Toggle::make('closed')
-                                    ->label(__('pages/business_profile.field_closed'))
-                                    ->default(true)
-                                    ->live(),
-                                Grid::make(2)->schema([
-                                    TimePicker::make('open')
-                                        ->label(__('pages/business_profile.field_open'))
-                                        ->seconds(false)
-                                        ->required(fn (Get $get): bool => ! $get('closed')),
-                                    TimePicker::make('close')
-                                        ->label(__('pages/business_profile.field_close'))
-                                        ->seconds(false)
-                                        ->required(fn (Get $get): bool => ! $get('closed')),
-                                ])->visible(fn (Get $get): bool => ! $get('closed')),
-                            ]),
-                    ]),
-            ])
-            ->action(fn (Collection $records, array $data) => self::applyBulkHours($records, $data));
-    }
-
-    /**
-     * Upcoming external-calendar events (next 6 months) as date-labelled
-     * options, so holiday closures don't have to be typed by hand.
-     *
-     * @return array<int, string>
-     */
-    protected static function upcomingCalendarEvents(): array
-    {
-        return once(fn (): array => ExternalCalendarEvent::query()
-            ->whereBetween('date', [now()->toDateString(), now()->addMonths(6)->toDateString()])
-            ->orderBy('date')
-            ->limit(60)
-            ->get()
-            ->mapWithKeys(fn (ExternalCalendarEvent $event): array => [
-                $event->id => $event->date->translatedFormat('D, M j').' · '.$event->title,
-            ])
-            ->all());
-    }
-
-    /**
-     * @param  Collection<int, Location>  $records
-     * @param  array<string, mixed>  $data
-     */
-    protected static function applyBulkHours(Collection $records, array $data): void
-    {
-        $openingHours = ($data['apply_regular'] ?? false) ? array_values((array) ($data['opening_hours'] ?? [])) : null;
-        $specialHours = ($data['apply_special'] ?? false) ? array_values((array) ($data['special_hours'] ?? [])) : null;
-
-        // Selected holiday-calendar events become closed days.
-        if ($specialHours !== null && filled($data['holiday_events'] ?? null)) {
-            $holidays = ExternalCalendarEvent::query()->whereIn('id', (array) $data['holiday_events'])->get();
-
-            foreach ($holidays as $holiday) {
-                $specialHours[] = [
-                    'start_date' => $holiday->date->toDateString(),
-                    'end_date' => $holiday->date->toDateString(),
-                    'closed' => true,
-                ];
-            }
-        }
-
-        if (($openingHours === null || $openingHours === []) && ($specialHours === null || $specialHours === [])) {
-            Notification::make()->title(__('resources/locations.bulk_hours_nothing'))->warning()->send();
-
-            return;
-        }
-
-        $updater = app(ListingUpdater::class);
-        $updated = 0;
-        $failed = [];
-
-        foreach ($records as $location) {
-            if (blank($location->zernio_account_id) || blank($location->external_id)) {
-                $failed[] = $location->name.' ('.__('resources/locations.bulk_hours_unmatched').')';
-
-                continue;
-            }
-
-            try {
-                $updater->pushHours($location, $openingHours, $specialHours);
-                $updated++;
-            } catch (Throwable $e) {
-                $failed[] = $location->name.' ('.$e->getMessage().')';
-            }
-        }
-
-        if ($updated > 0) {
-            ActivityLogger::log('listing.bulk_hours', [
-                'locations' => $updated,
-                'regular' => $openingHours !== null,
-                'special' => $specialHours !== null,
-            ]);
-        }
-
-        if ($failed === []) {
-            Notification::make()
-                ->title(trans_choice('resources/locations.bulk_hours_done', $updated, ['count' => $updated]))
-                ->success()
-                ->send();
-        } else {
-            Notification::make()
-                ->title(trans_choice('resources/locations.bulk_hours_partial', $updated, ['count' => $updated]))
-                ->body(implode("\n", $failed))
-                ->warning()
-                ->persistent()
-                ->send();
-        }
+            ->toolbarActions([]);
     }
 }

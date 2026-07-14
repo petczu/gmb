@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\App\Resources\Locations\HoursBulkEdit;
 use App\Filament\App\Resources\Locations\Pages\ListLocations;
 use App\Models\ExternalCalendar;
 use App\Models\Location;
+use App\Models\ScheduledListingUpdate;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
@@ -121,18 +123,40 @@ class BulkHoursTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('scheduled_listing_updates', function ($table): void {
+            $table->increments('id');
+            $table->json('location_ids');
+            $table->json('opening_hours')->nullable();
+            $table->json('special_hours')->nullable();
+            $table->date('apply_on')->index();
+            $table->timestamp('applied_at')->nullable();
+            $table->text('error')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->string('created_by_name')->nullable();
+            $table->timestamps();
+        });
+
         Filament::setCurrentPanel(Filament::getPanel('app'));
     }
 
     protected function tearDown(): void
     {
-        foreach (['external_calendar_events', 'external_calendars', 'locations'] as $table) {
+        foreach (['scheduled_listing_updates', 'external_calendar_events', 'external_calendars', 'locations'] as $table) {
             Schema::dropIfExists($table);
         }
         foreach (['workspace_user', 'role_has_permissions', 'model_has_roles', 'model_has_permissions', 'roles', 'permissions', 'users'] as $table) {
             Schema::connection('mysql')->dropIfExists($table);
         }
         parent::tearDown();
+    }
+
+    private function location(): Location
+    {
+        return Location::create([
+            'name' => 'Vienna',
+            'external_id' => 'g-1',
+            'zernio_account_id' => 'acc-1',
+        ]);
     }
 
     public function test_bulk_hours_updates_matched_locations_and_reports_unmatched(): void
@@ -150,7 +174,8 @@ class BulkHoursTest extends TestCase
         $calendar = ExternalCalendar::create(['name' => 'AT', 'url' => 'https://calendar.test/at.ics']);
         $holiday = $calendar->events()->create(['date' => now()->addDays(10)->toDateString(), 'title' => 'Staatsfeiertag']);
 
-        Livewire::test(ListLocations::class)->callTableBulkAction('editHours', [$matched->id, $unmatched->id], [
+        Livewire::test(ListLocations::class)->callAction('editHours', [
+            'locations' => [$matched->id, $unmatched->id],
             'apply_regular' => true,
             'opening_hours' => [
                 ['day' => 'MONDAY', 'open' => '09:00', 'close' => '18:00'],
@@ -196,7 +221,8 @@ class BulkHoursTest extends TestCase
 
         $location = Location::create(['name' => 'Vienna', 'external_id' => 'g-1', 'zernio_account_id' => 'acc-1']);
 
-        Livewire::test(ListLocations::class)->callTableBulkAction('editHours', [$location->id], [
+        Livewire::test(ListLocations::class)->callAction('editHours', [
+            'locations' => [$location->id],
             'apply_regular' => false,
             'apply_special' => false,
             'opening_hours' => [],
@@ -204,5 +230,59 @@ class BulkHoursTest extends TestCase
         ]);
 
         Http::assertNothingSent();
+    }
+
+    public function test_a_future_apply_date_parks_the_update_instead_of_pushing(): void
+    {
+        Http::fake();
+        $location = $this->location();
+
+        Livewire::test(ListLocations::class)->callAction('editHours', [
+            'locations' => [$location->id],
+            'apply_regular' => true,
+            'opening_hours' => [
+                ['day' => 'MONDAY', 'open' => '10:00', 'close' => '17:00'],
+            ],
+            'apply_special' => false,
+            'special_hours' => [],
+            'apply_on' => now()->addMonths(2)->toDateString(),
+        ]);
+
+        Http::assertNothingSent();
+
+        $update = ScheduledListingUpdate::query()->sole();
+        $this->assertNull($update->applied_at);
+        $this->assertSame(now()->addMonths(2)->toDateString(), $update->apply_on->toDateString());
+        $this->assertContains($location->id, $update->location_ids);
+    }
+
+    public function test_the_command_applies_due_updates_and_skips_future_ones(): void
+    {
+        Http::fake(['zernio.test/*' => Http::response(['ok' => true])]);
+        $location = $this->location();
+
+        $due = ScheduledListingUpdate::create([
+            'location_ids' => [$location->id],
+            'opening_hours' => [['day' => 'MONDAY', 'open' => '10:00', 'close' => '17:00']],
+            'apply_on' => now()->toDateString(),
+        ]);
+        $future = ScheduledListingUpdate::create([
+            'location_ids' => [$location->id],
+            'opening_hours' => [['day' => 'TUESDAY', 'open' => '10:00', 'close' => '17:00']],
+            'apply_on' => now()->addMonth()->toDateString(),
+        ]);
+
+        [$updated, $failed] = HoursBulkEdit::push(
+            Location::query()->whereIn('id', $due->location_ids)->get(),
+            $due->opening_hours,
+            $due->special_hours,
+        );
+        $due->forceFill(['applied_at' => now()])->save();
+
+        $this->assertSame(1, $updated);
+        $this->assertSame([], $failed);
+        Http::assertSentCount(1);
+        $this->assertNotNull($due->refresh()->applied_at);
+        $this->assertNull($future->refresh()->applied_at);
     }
 }

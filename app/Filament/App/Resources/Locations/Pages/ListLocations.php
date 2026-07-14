@@ -2,8 +2,8 @@
 
 namespace App\Filament\App\Resources\Locations\Pages;
 
+use App\Filament\App\Resources\Locations\HoursBulkEdit;
 use App\Filament\App\Resources\Locations\LocationResource;
-use App\Models\GoogleAccount;
 use App\Models\Location;
 use App\Models\Workspace;
 use App\Services\Reviews\ReviewSync;
@@ -22,6 +22,19 @@ class ListLocations extends ListRecords
         $isZernio = config('services.reviews.driver') === 'zernio';
 
         return [
+            // Bulk hours editing across locations, now or from a future date.
+            Action::make('editHours')
+                ->label(__('resources/locations.bulk_hours'))
+                ->icon(Heroicon::OutlinedClock)
+                ->color('gray')
+                ->visible(fn (): bool => Location::query()->exists()
+                    && (auth()->user()?->can('edit_business_info') ?? false))
+                ->modalHeading(__('resources/locations.bulk_hours_heading'))
+                ->modalDescription(__('resources/locations.bulk_hours_desc'))
+                ->modalSubmitActionLabel(__('resources/locations.bulk_hours_submit'))
+                ->schema(HoursBulkEdit::schema())
+                ->action(fn (array $data) => HoursBulkEdit::apply($data)),
+
             // OAuth connect, pick which location(s) to track in the picker.
             Action::make('connect')
                 ->label(__('resources/locations.add_location'))
