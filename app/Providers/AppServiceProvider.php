@@ -8,6 +8,7 @@ use App\Listeners\SendBillingEmails;
 use App\Models\CashierSubscription;
 use App\Models\CashierSubscriptionItem;
 use App\Models\EmailSuppression;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Ai\ClaudeReplyGenerator;
 use App\Services\Ai\FakeReplyGenerator;
@@ -16,6 +17,8 @@ use App\Services\Reviews\FakeReviewProvider;
 use App\Services\Reviews\ReviewProvider;
 use App\Services\Reviews\ReviewProviderFactory;
 use App\Services\Reviews\ZernioProvider;
+use App\Support\FavoritePages;
+use Filament\Facades\Filament;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -120,6 +123,23 @@ class AppServiceProvider extends ServiceProvider
         // by SetCurrentWorkspace.) Return null for non-owners so other
         // permission checks still run.
         Gate::before(fn ($user, string $ability): ?bool => $user->hasRole('owner') ? true : null);
+
+        // The signed-in user's starred pages as extra sidebar items. Must run
+        // per request (serving), because the list differs per user.
+        Filament::serving(function (): void {
+            $panel = Filament::getCurrentPanel();
+            $user = auth()->user();
+
+            if ($panel?->getId() !== 'app' || ! $user instanceof User) {
+                return;
+            }
+
+            $items = FavoritePages::navigationItems($user);
+
+            if ($items !== []) {
+                $panel->navigationItems($items);
+            }
+        });
 
         // Keep the current workspace (tenant) initialized across Livewire AJAX
         // updates. Without this, modals/typing/drag in the `app` panel lose the

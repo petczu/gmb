@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Auth\SocialiteUserProvisioner;
 use App\Support\DemoDashboard;
+use App\Support\FavoritePages;
 use DutchCodingCompany\FilamentSocialite\FilamentSocialitePlugin;
 use DutchCodingCompany\FilamentSocialite\Provider;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
@@ -200,6 +201,27 @@ class AppPanelProvider extends PanelProvider
                 fn (): string => request()->routeIs('filament.app.auth.*')
                     ? '<script>(function(){var el=document.documentElement;var strip=function(){if(el.classList.contains("dark")){el.classList.remove("dark");}};strip();el.style.colorScheme="light";new MutationObserver(strip).observe(el,{attributes:true,attributeFilter:["class"]});})();</script>'
                     : '',
+            )
+            // Star button next to each page's header actions: pins the page to
+            // the user's sidebar favorites (see FavoritePages).
+            ->renderHook(
+                PanelsRenderHook::PAGE_HEADER_HEADING_AFTER,
+                function (array $scopes): string {
+                    $page = collect($scopes)->first(fn ($scope): bool => is_string($scope) && class_exists($scope));
+
+                    if ($page === null || $page === Dashboard::class || ! tenancy()->initialized || auth()->guest()) {
+                        return '';
+                    }
+
+                    return Blade::render(
+                        "@livewire('favorite-page-star', ['path' => \$path, 'label' => \$label, 'icon' => \$icon], key('favorite-star'))",
+                        [
+                            'path' => request()->getPathInfo(),
+                            'label' => FavoritePages::labelFor($page),
+                            'icon' => FavoritePages::iconFor($page),
+                        ],
+                    );
+                },
             )
             // While the workspace has no locations, the dashboard widgets show
             // DEMO data (see DemoDashboard) and this small connect-first invite

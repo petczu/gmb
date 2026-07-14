@@ -35,6 +35,8 @@ return [
     'mcp' => 'MCP',
     'api_keys' => 'API keys',
     'webhooks' => 'Webhooks',
+    'favorite_add' => 'Add to favorites',
+    'favorite_remove' => 'Remove from favorites',
     'switch_workspace' => 'Switch workspace',
     'create_workspace' => 'Create workspace',
 ];
