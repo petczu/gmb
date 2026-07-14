@@ -16,6 +16,13 @@ class ListAutoReplyQueueItems extends ListRecords
 {
     protected static string $resource = AutoReplyQueueItemResource::class;
 
+    /** The list-page heading matches the nav item ("Approvals"), not the
+     *  pluralized model label ("Auto-replies"). */
+    public function getTitle(): string
+    {
+        return __('nav.approvals');
+    }
+
     protected function getHeaderActions(): array
     {
         return [];

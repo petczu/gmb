@@ -124,6 +124,9 @@ class AppPanelProvider extends PanelProvider
             ])
             // Collapsible left sidebar on desktop.
             ->sidebarCollapsibleOnDesktop()
+            // No breadcrumbs: the sidebar already shows where you are, and the
+            // "Resource > List" trail reads as clutter on single-level pages.
+            ->breadcrumbs(false)
             // Brand primary derived from the logo colour (#2d19ec).
             ->colors([
                 'primary' => Color::hex('#2d19ec'),
