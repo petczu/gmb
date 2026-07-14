@@ -162,11 +162,17 @@ class AutoReplyQueueItemsTable
             ->checkIfRecordIsSelectableUsing(fn (AutoReplyQueueItem $record): bool => in_array($record->status, ['pending', 'scheduled'], true))
             ->toolbarActions([
                 BulkAction::make('approveSelected')
-                    ->label(__('resources/auto_reply.approve_selected'))
+                    // On the Scheduled tab these items are already approved;
+                    // the same fast-track then simply reads "Publish now".
+                    ->label(fn ($livewire): string => ($livewire->activeTab ?? null) === 'scheduled'
+                        ? __('resources/auto_reply.publish_now_selected')
+                        : __('resources/auto_reply.approve_selected'))
                     ->icon(Heroicon::OutlinedCheck)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->modalDescription(__('resources/auto_reply.bulk_approve_confirm'))
+                    ->modalDescription(fn ($livewire): string => ($livewire->activeTab ?? null) === 'scheduled'
+                        ? __('resources/auto_reply.bulk_publish_now_confirm')
+                        : __('resources/auto_reply.bulk_approve_confirm'))
                     ->deselectRecordsAfterCompletion()
                     ->action(function (Collection $records): void {
                         $queued = 0;
@@ -202,7 +208,9 @@ class AutoReplyQueueItemsTable
                     }),
 
                 BulkAction::make('rejectSelected')
-                    ->label(__('resources/auto_reply.reject_selected'))
+                    ->label(fn ($livewire): string => ($livewire->activeTab ?? null) === 'scheduled'
+                        ? __('resources/auto_reply.cancel_scheduled_selected')
+                        : __('resources/auto_reply.reject_selected'))
                     ->icon(Heroicon::OutlinedXMark)
                     ->color('danger')
                     ->requiresConfirmation()

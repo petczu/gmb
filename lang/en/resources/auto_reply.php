@@ -68,4 +68,9 @@ return [
     // List tabs
     'tab_pending' => 'Needs approval',
     'tab_all' => 'All',
+
+    // Scheduled-tab bulk labels
+    'publish_now_selected' => 'Publish selected now',
+    'bulk_publish_now_confirm' => 'The selected replies skip their scheduled time and go out within the next few minutes.',
+    'cancel_scheduled_selected' => 'Cancel scheduling',
 ];

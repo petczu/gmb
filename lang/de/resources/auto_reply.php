@@ -68,4 +68,9 @@ return [
     // List tabs
     'tab_pending' => 'Wartet auf Freigabe',
     'tab_all' => 'Alle',
+
+    // Scheduled-tab bulk labels
+    'publish_now_selected' => 'Auswahl jetzt veröffentlichen',
+    'bulk_publish_now_confirm' => 'Die ausgewählten Antworten überspringen ihre geplante Zeit und gehen in den nächsten Minuten raus.',
+    'cancel_scheduled_selected' => 'Planung abbrechen',
 ];
