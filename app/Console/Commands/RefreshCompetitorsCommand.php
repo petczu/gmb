@@ -9,6 +9,7 @@ use App\Models\Location;
 use App\Models\TrackedPlace;
 use App\Models\Workspace;
 use App\Services\Competitors\CompetitorTrends;
+use App\Services\Competitors\DataForSeoClient;
 use App\Services\Competitors\PlacesClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -29,10 +30,18 @@ class RefreshCompetitorsCommand extends Command
 
     protected $description = 'Refresh competitor ratings/review counts from the Google Places API';
 
+    /** The details provider for snapshots: DataForSEO when configured, else Places. */
+    private function snapshotClient(): DataForSeoClient|PlacesClient
+    {
+        $dataForSeo = app(DataForSeoClient::class);
+
+        return $dataForSeo->configured() ? $dataForSeo : app(PlacesClient::class);
+    }
+
     public function handle(PlacesClient $places): int
     {
-        if (! $places->configured()) {
-            $this->warn('GOOGLE_PLACES_API_KEY is not set — skipping.');
+        if (! $places->configured() && ! app(DataForSeoClient::class)->configured()) {
+            $this->warn('Neither GOOGLE_PLACES_API_KEY nor DataForSEO credentials are set — skipping.');
 
             return self::SUCCESS;
         }
@@ -90,7 +99,9 @@ class RefreshCompetitorsCommand extends Command
             }
 
             try {
-                $details = $places->details($placeId);
+                // Snapshots go through DataForSEO when configured (a fraction
+                // of the Place Details price); Places API is the fallback.
+                $details = $this->snapshotClient()->details($placeId);
                 $fresh[$placeId] = [
                     'name' => $details['name'] ?? null,
                     'address' => $details['address'] ?? null,

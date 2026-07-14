@@ -24,6 +24,14 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    // DataForSEO Business Data API: cheap Google place snapshots for the
+    // competitor refresh (rating + review counts). Empty = fall back to the
+    // Google Places API for snapshots too.
+    'dataforseo' => [
+        'login' => env('DATAFORSEO_LOGIN'),
+        'password' => env('DATAFORSEO_PASSWORD'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
