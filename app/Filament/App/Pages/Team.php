@@ -23,7 +23,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -82,25 +82,70 @@ class Team extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => User::query()
-                ->whereIn('id', $this->workspace()->users()->pluck('users.id')))
+            // ONE list for members and sent invitations: pending invites are
+            // union-hydrated as pseudo rows (invite_status = pending, id offset
+            // far past real user ids) so they sit next to the active members.
+            ->query(function (): Builder {
+                $workspaceId = $this->workspace()->id;
+
+                $members = DB::connection('mysql')->table('users')
+                    ->join('workspace_user as wu', function ($join) use ($workspaceId): void {
+                        $join->on('wu.user_id', '=', 'users.id')->where('wu.workspace_id', $workspaceId);
+                    })
+                    ->select([
+                        'users.id',
+                        'users.name',
+                        'users.email',
+                        DB::raw('wu.role as team_role'),
+                        DB::raw("'active' as invite_status"),
+                        DB::raw('NULL as invitation_id'),
+                    ]);
+
+                $invites = DB::connection('mysql')->table('invitations')
+                    ->where('workspace_id', $workspaceId)
+                    ->whereNull('accepted_at')
+                    ->select([
+                        DB::raw('invitations.id + 1000000000 as id'),
+                        DB::raw('invitations.email as name'),
+                        'invitations.email',
+                        DB::raw('invitations.role as team_role'),
+                        DB::raw("'pending' as invite_status"),
+                        DB::raw('invitations.id as invitation_id'),
+                    ]);
+
+                return User::query()->fromSub($members->unionAll($invites), 'users');
+            })
             ->columns([
                 TextColumn::make('name')->label(__('pages/team.col_name'))->searchable()->sortable(),
                 TextColumn::make('email')->label(__('pages/team.col_email'))->searchable(),
                 TextColumn::make('role')
                     ->label(__('pages/team.col_role'))
                     ->badge()
-                    ->state(fn (User $record): string => $this->roleOf($record))
+                    ->state(fn (User $record): string => $record->getAttribute('invite_status') === 'active'
+                        ? ($this->roleOf($record) ?: (string) $record->getAttribute('team_role'))
+                        : (string) $record->getAttribute('team_role'))
                     ->color(fn (string $state): string => match ($state) {
                         'owner' => 'success',
                         'admin' => 'warning',
                         default => 'gray',
                     }),
+
+                TextColumn::make('invite_status')
+                    ->label(__('pages/team.col_status'))
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => $state === 'active'
+                        ? __('pages/team.status_active')
+                        : __('pages/team.status_pending'))
+                    ->color(fn (string $state): string => $state === 'active' ? 'success' : 'warning')
+                    ->tooltip(fn (User $record): ?string => $record->getAttribute('invite_status') === 'pending'
+                        ? __('pages/team.pending_hint')
+                        : null),
             ])
             ->recordActions([
                 Action::make('edit')
                     ->label(__('pages/team.edit'))
                     ->icon(Heroicon::OutlinedPencilSquare)
+                    ->visible(fn (User $record): bool => $record->getAttribute('invite_status') === 'active')
                     ->fillForm(fn (User $record): array => [
                         'name' => $record->name,
                         'email' => $record->email,
@@ -129,6 +174,7 @@ class Team extends Page implements HasTable
                 Action::make('changeRole')
                     ->label(__('pages/team.change_role'))
                     ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
+                    ->visible(fn (User $record): bool => $record->getAttribute('invite_status') === 'active')
                     ->schema([
                         Select::make('role')->options($this->roleOptions())->required()
                             ->default(fn (User $record): string => $this->roleOf($record) ?: 'member'),
@@ -147,13 +193,42 @@ class Team extends Page implements HasTable
                     ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (User $record): bool => $record->id !== auth()->id())
+                    ->visible(fn (User $record): bool => $record->getAttribute('invite_status') === 'active' && $record->id !== auth()->id())
                     ->action(function (User $record): void {
                         $this->applyTeamScope();
                         $record->syncRoles([]);
                         $this->workspace()->users()->detach($record->id);
                         ActivityLogger::log('team.member_removed', ['member' => $record->name]);
                         Notification::make()->title(__('pages/team.member_removed'))->success()->send();
+                    }),
+
+                Action::make('resendInvite')
+                    ->label(__('pages/team.invite_resend'))
+                    ->icon(Heroicon::OutlinedArrowPath)
+                    ->visible(fn (User $record): bool => $record->getAttribute('invite_status') === 'pending')
+                    ->action(fn (User $record) => $this->resendInvitation((int) $record->getAttribute('invitation_id'))),
+
+                Action::make('revokeInvite')
+                    ->label(__('pages/team.invite_revoke'))
+                    ->icon(Heroicon::OutlinedTrash)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('pages/team.invite_revoke'))
+                    ->modalDescription(__('pages/team.invite_revoke_desc'))
+                    ->visible(fn (User $record): bool => $record->getAttribute('invite_status') === 'pending')
+                    ->action(function (User $record): void {
+                        $invitation = Invitation::query()
+                            ->where('workspace_id', $this->workspace()->id)
+                            ->whereNull('accepted_at')
+                            ->find((int) $record->getAttribute('invitation_id'));
+
+                        if ($invitation === null) {
+                            return;
+                        }
+
+                        ActivityLogger::log('team.invite_revoked', ['email' => $invitation->email]);
+                        $invitation->delete();
+                        Notification::make()->title(__('pages/team.invite_revoked'))->success()->send();
                     }),
             ])
             ->headerActions([
@@ -282,16 +357,6 @@ class Team extends Page implements HasTable
     /** @return array<int, int> location ids the user is limited to ([] = all). */
     // ── Pending invitations ─────────────────────────────────────────────────
 
-    /** Sent but not yet accepted invitations of this workspace. */
-    public function pendingInvitations(): Collection
-    {
-        return Invitation::query()
-            ->where('workspace_id', $this->workspace()->id)
-            ->whereNull('accepted_at')
-            ->latest('created_at')
-            ->get();
-    }
-
     /** Send the invite email again and extend its validity window. */
     public function resendInvitation(int $invitationId): void
     {
@@ -316,39 +381,6 @@ class Team extends Page implements HasTable
 
         ActivityLogger::log('team.invite_resent', ['email' => $invitation->email]);
         Notification::make()->title(__('pages/team.invitation_sent'))->success()->send();
-    }
-
-    /** The invitation whose revoke-confirmation modal is open. */
-    public ?int $revokingInvitationId = null;
-
-    public function confirmRevokeInvitation(int $invitationId): void
-    {
-        $this->revokingInvitationId = $invitationId;
-        $this->mountAction('revokeInvitation');
-    }
-
-    public function revokeInvitationAction(): Action
-    {
-        return Action::make('revokeInvitation')
-            ->requiresConfirmation()
-            ->modalHeading(__('pages/team.invite_revoke'))
-            ->modalDescription(__('pages/team.invite_revoke_desc'))
-            ->modalSubmitActionLabel(__('pages/team.invite_revoke'))
-            ->color('danger')
-            ->action(function (): void {
-                $invitation = Invitation::query()
-                    ->where('workspace_id', $this->workspace()->id)
-                    ->whereNull('accepted_at')
-                    ->find($this->revokingInvitationId);
-
-                if ($invitation === null) {
-                    return;
-                }
-
-                ActivityLogger::log('team.invite_revoked', ['email' => $invitation->email]);
-                $invitation->delete();
-                Notification::make()->title(__('pages/team.invite_revoked'))->success()->send();
-            });
     }
 
     protected function allowedLocationsOf(User $user): array

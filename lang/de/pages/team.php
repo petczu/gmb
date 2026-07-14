@@ -30,12 +30,12 @@ return [
     'guest_added' => 'Gast hinzugefügt',
 
     // Pending invitations
-    'pending_title' => 'Ausstehende Einladungen',
     'pending_hint' => 'Verschickt, aber noch nicht angenommen. Sende die E-Mail erneut oder ziehe die Einladung zurück, falls sie an die falsche Adresse ging.',
-    'pending_sent' => 'Gesendet :ago',
-    'pending_expired' => 'Abgelaufen, erneut senden zum Verlängern',
     'invite_resend' => 'Erneut senden',
     'invite_revoke' => 'Zurückziehen',
     'invite_revoke_desc' => 'Der Einladungslink funktioniert sofort nicht mehr. Die Person wird nicht benachrichtigt.',
     'invite_revoked' => 'Einladung zurückgezogen',
+    'col_status' => 'Status',
+    'status_active' => 'Aktiv',
+    'status_pending' => 'Ausstehend',
 ];
