@@ -68,8 +68,11 @@ class CompetitorBenchmarkTest extends TestCase
 
         $results = app(PlacesClient::class)->search('rival cafe wien');
 
+        // Interactive search stays on the cheaper Basic SKU: name + address
+        // only, no rating fields in the mask.
         Http::assertSent(fn ($request): bool => $request->hasHeader('X-Goog-Api-Key', 'places-test-key')
-            && str_contains((string) $request->header('X-Goog-FieldMask')[0], 'places.userRatingCount')
+            && str_contains((string) $request->header('X-Goog-FieldMask')[0], 'places.formattedAddress')
+            && ! str_contains((string) $request->header('X-Goog-FieldMask')[0], 'places.userRatingCount')
             && $request['textQuery'] === 'rival cafe wien');
 
         $this->assertSame('place-1', $results[0]['place_id']);
