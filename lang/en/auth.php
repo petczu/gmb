@@ -34,6 +34,7 @@ return [
     'invite_join_title' => "You're joining :workspace",
     'invite_join_title_generic' => "You're accepting an invitation",
     'invite_email_locked' => 'Sign up with :email to accept it. To use a different address, ask for a new invitation.',
+    'invite_wrong_social' => 'This invitation is for :email. Pick that account to accept it, or ask for a new invitation.',
 
     // Sign-up code (passwordless email registration)
     'code_label' => 'Verification code',

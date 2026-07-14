@@ -11,6 +11,7 @@ use App\Models\LegalDocument;
 use App\Services\Auth\BetaAccess;
 use App\Services\Auth\EmailOtp;
 use App\Services\Auth\TooManyCodeRequests;
+use App\Services\Workspaces\InvitationAcceptor;
 use App\Services\Workspaces\WorkspaceProvisioner;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
@@ -28,7 +29,6 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Passwordless sign-up, matching the Google flow: step 1 asks only for the
@@ -341,46 +341,21 @@ class Register extends BaseRegister
 
     /**
      * If a valid pending invitation matches this user's email, attach them to
-     * that workspace + assign the invited role and mark it accepted. Returns
-     * true when handled (so no new workspace is provisioned).
+     * that workspace via the shared InvitationAcceptor (role, location scope,
+     * locale, beta approval). Returns true when handled (so no new workspace
+     * is provisioned).
      */
     protected function attachToPendingInvite(Model $user): bool
     {
-        $token = session('pending_invite');
-        if (! is_string($token) || $token === '') {
+        $invitation = $this->pendingInvitation();
+        if ($invitation === null) {
             return false;
         }
 
-        $invitation = Invitation::query()->where('token', $token)->first();
-
-        if ($invitation === null
-            || ! $invitation->isPending()
-            || mb_strtolower(trim($invitation->email)) !== mb_strtolower(trim((string) $user->email))) {
-            session()->forget('pending_invite');
-
-            return false;
-        }
-
-        $workspace = $invitation->workspace;
-        if ($workspace === null) {
-            session()->forget('pending_invite');
-
-            return false;
-        }
-
-        $workspace->users()->syncWithoutDetaching([
-            $user->getKey() => ['role' => $invitation->role, 'membership_type' => 'internal'],
-        ]);
-
-        app(PermissionRegistrar::class)->setPermissionsTeamId($workspace->id);
-        $user->syncRoles([$invitation->role]);
-
-        $invitation->forceFill(['accepted_at' => now()])->save();
-
-        session(['current_workspace_id' => $workspace->id]);
+        $accepted = app(InvitationAcceptor::class)->accept($user, $invitation);
         session()->forget('pending_invite');
 
-        return true;
+        return $accepted;
     }
 
     protected function sendWelcomeEmail(Model $user): void

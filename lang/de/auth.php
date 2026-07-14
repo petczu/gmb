@@ -34,6 +34,7 @@ return [
     'invite_join_title' => 'Du trittst :workspace bei',
     'invite_join_title_generic' => 'Du nimmst eine Einladung an',
     'invite_email_locked' => 'Registriere dich mit :email, um sie anzunehmen. Für eine andere Adresse bitte um eine neue Einladung.',
+    'invite_wrong_social' => 'Diese Einladung ist für :email. Wähle dieses Konto, um sie anzunehmen, oder bitte um eine neue Einladung.',
 
     // Anmeldecode (passwortlose E-Mail-Registrierung)
     'code_label' => 'Bestätigungscode',

@@ -6,10 +6,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Invitation;
 use App\Models\User;
+use App\Services\Workspaces\InvitationAcceptor;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Accept a workspace invitation via its token link. The flow handles three
@@ -23,6 +23,9 @@ class InvitationController extends Controller
     public function show(string $token): View|RedirectResponse|Response
     {
         $invitation = Invitation::query()->where('token', $token)->first();
+
+        // Render these pages in the language the invite was sent in.
+        $this->applyInvitationLocale($invitation);
 
         if ($invitation === null || ! $invitation->isPending()) {
             return response()->view('invitations.invalid', [], 410);
@@ -63,53 +66,43 @@ class InvitationController extends Controller
         $invitation = Invitation::query()->where('token', $token)->first();
         $user = auth()->user();
 
-        if ($invitation === null || ! $invitation->isPending() || $user === null
-            || ! $this->emailsMatch($user->email, $invitation->email)) {
-            return redirect()->route('invite.show', $token);
-        }
+        $this->applyInvitationLocale($invitation);
 
-        $workspace = $invitation->workspace;
-        if ($workspace === null) {
+        // Workspace gone (deleted after the invite went out) → the invite can
+        // never be accepted; don't bounce back to the accept button forever.
+        if ($invitation !== null && $invitation->workspace === null) {
             return response()->view('invitations.invalid', [], 410);
         }
 
-        // The inviter's location scope drives both access and location-scoped
-        // notification routing; empty = all locations.
-        $locationIds = array_values(array_map('intval', (array) ($invitation->location_ids ?? [])));
-
-        $workspace->users()->syncWithoutDetaching([
-            $user->id => [
-                'role' => $invitation->role,
-                'membership_type' => 'internal',
-                'permissions' => json_encode(['allowed_locations' => $locationIds]),
-            ],
-        ]);
-
-        app(PermissionRegistrar::class)->setPermissionsTeamId($workspace->id);
-        $user->unsetRelation('roles');
-        $user->syncRoles([$invitation->role]);
-
-        // Adopt the language the inviter picked (notifications, reports). The
-        // member can switch it anytime via the UI language switcher.
-        if (in_array($invitation->locale, ['en', 'de'], true) && $user->getAttribute('locale') !== $invitation->locale) {
-            $user->forceFill(['locale' => $invitation->locale])->save();
+        if ($invitation === null || $user === null
+            || ! app(InvitationAcceptor::class)->accept($user, $invitation)) {
+            return redirect()->route('invite.show', $token);
         }
-
-        $invitation->forceFill(['accepted_at' => now()])->save();
-
-        // An accepted invitation IS the beta approval: the workspace owner
-        // vouched for this person, so they never sit on the waitlist.
-        if ($user->approved_at === null) {
-            $user->forceFill(['approved_at' => now()])->save();
-        }
-
-        session(['current_workspace_id' => $workspace->id]);
 
         return redirect('/');
     }
 
     private function emailsMatch(?string $a, ?string $b): bool
     {
-        return $a !== null && $b !== null && mb_strtolower(trim($a)) === mb_strtolower(trim($b));
+        return app(InvitationAcceptor::class)->emailsMatch($a, $b);
+    }
+
+    /**
+     * These pages have no tenant/session context, so the app locale defaults to
+     * English. Prefer the language the invitation was sent in; fall back to the
+     * visitor's browser preference (used when the token is unknown).
+     */
+    private function applyInvitationLocale(?Invitation $invitation): void
+    {
+        $supported = ['en', 'de'];
+
+        $locale = $invitation?->locale;
+        if (! in_array($locale, $supported, true)) {
+            $locale = request()->getPreferredLanguage($supported);
+        }
+
+        if (in_array($locale, $supported, true)) {
+            app()->setLocale($locale);
+        }
     }
 }

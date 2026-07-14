@@ -42,6 +42,7 @@ class InvitationShowTest extends TestCase
             $table->string('workspace_id')->nullable();
             $table->string('email');
             $table->string('role')->default('member');
+            $table->string('locale')->nullable();
             $table->unsignedBigInteger('invited_by')->nullable();
             $table->timestamp('accepted_at')->nullable();
             $table->timestamp('expires_at')->nullable();
@@ -73,11 +74,13 @@ class InvitationShowTest extends TestCase
         $invite = $this->invitation();
 
         // Not an error (no 403/500): a plain page explaining who it's for.
+        // The invited address is masked — this visitor is NOT the invitee.
         $this->actingAs($other)
             ->get(route('invite.show', $invite->token))
             ->assertOk()
             ->assertViewIs('invitations.wrong-account')
-            ->assertSee($invite->email);
+            ->assertSee('i***@example.com')
+            ->assertDontSee($invite->email);
     }
 
     public function test_an_expired_invitation_returns_a_410_page(): void
@@ -90,5 +93,15 @@ class InvitationShowTest extends TestCase
     public function test_an_unknown_token_returns_a_410_page(): void
     {
         $this->get(route('invite.show', 'no-such-token'))->assertStatus(410);
+    }
+
+    public function test_an_expired_invite_renders_in_the_language_it_was_sent_in(): void
+    {
+        $invite = $this->invitation(['locale' => 'de', 'expires_at' => now()->subDay()]);
+
+        $this->get(route('invite.show', $invite->token))
+            ->assertStatus(410)
+            ->assertSee(__('invitations.invalid_title', [], 'de'))
+            ->assertDontSee(__('invitations.invalid_title', [], 'en'));
     }
 }

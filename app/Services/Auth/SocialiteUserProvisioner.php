@@ -6,6 +6,7 @@ namespace App\Services\Auth;
 
 use App\Mail\WelcomeMail;
 use App\Models\User;
+use App\Services\Workspaces\InvitationAcceptor;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -38,6 +39,25 @@ class SocialiteUserProvisioner
         // Google emails are verified — mark verified to avoid a verification gate.
         // (email_verified_at is guarded, so set it outside mass-assignment.)
         $user->forceFill(['email_verified_at' => now()])->save();
+
+        // Invited sign-up: attach to the inviter's workspace instead of the
+        // solo/waitlist paths below (the invite also vouches for the beta).
+        // A mismatched Google account never reaches this point — it is blocked
+        // in the plugin's authorizeUserUsing (AppPanelProvider). Plain DML only,
+        // so it is safe inside the wrapping DB::transaction.
+        $acceptor = app(InvitationAcceptor::class);
+        $invitation = $acceptor->pendingFromSession();
+        if ($invitation !== null && $acceptor->accept($user, $invitation)) {
+            session()->forget('pending_invite');
+
+            try {
+                Mail::to($user->email)->send(new WelcomeMail($user->name, $user->locale ?? 'en'));
+            } catch (\Throwable $e) {
+                Log::warning('Welcome email failed', ['error' => $e->getMessage()]);
+            }
+
+            return $user;
+        }
 
         $beta = app(BetaAccess::class);
 

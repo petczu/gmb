@@ -17,6 +17,7 @@ use App\Models\SocialiteUser;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Auth\SocialiteUserProvisioner;
+use App\Services\Workspaces\InvitationAcceptor;
 use App\Support\DemoDashboard;
 use App\Support\FavoritePages;
 use DutchCodingCompany\FilamentSocialite\FilamentSocialitePlugin;
@@ -37,6 +38,7 @@ use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Blade;
@@ -97,7 +99,25 @@ class AppPanelProvider extends PanelProvider
                     ->userModelClass(User::class)
                     ->socialiteUserModelClass(SocialiteUser::class)
                     ->createUserUsing(fn (string $provider, \Laravel\Socialite\Contracts\User $oauthUser) => app(SocialiteUserProvisioner::class)->create($oauthUser))
-                    ->resolveUserUsing(fn (string $provider, \Laravel\Socialite\Contracts\User $oauthUser) => User::query()->where('email', $oauthUser->getEmail())->first()),
+                    ->resolveUserUsing(fn (string $provider, \Laravel\Socialite\Contracts\User $oauthUser) => User::query()->where('email', $oauthUser->getEmail())->first())
+                    // Invitation-bound sign-up: a visitor arriving from an invite
+                    // link must continue with the invited address. Without this,
+                    // picking a different Google account silently created a solo
+                    // account (+ workspace) instead of joining the inviter's.
+                    ->authorizeUserUsing(function (FilamentSocialitePlugin $plugin, \Laravel\Socialite\Contracts\User $oauthUser): bool {
+                        $acceptor = app(InvitationAcceptor::class);
+                        $invitation = $acceptor->pendingFromSession();
+
+                        if ($invitation !== null && ! $acceptor->emailsMatch($oauthUser->getEmail(), $invitation->email)) {
+                            session()->flash('filament-socialite-login-error', __('auth.invite_wrong_social', [
+                                'email' => InvitationAcceptor::maskEmail((string) $invitation->email),
+                            ]));
+
+                            throw new HttpResponseException(redirect()->to('/register'));
+                        }
+
+                        return FilamentSocialitePlugin::checkDomainAllowList($plugin, $oauthUser);
+                    }),
             )
             ->brandName('Repunio')
             // Full wordmark when expanded; icon-only when collapsed/mobile.
