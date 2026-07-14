@@ -316,10 +316,12 @@ class Posts extends Page implements HasTable
             $field => filled($value) ? mb_substr($value, 0, $field === 'body' ? 2000 : 60) : null,
         ]);
 
-        // Body/tag saves fire on BLUR, typically right before a click lands
-        // somewhere else; re-rendering would morph the DOM mid-click and
-        // swallow that click. Only a color change needs a repaint.
-        if ($field !== 'color') {
+        // A body save fires on BLUR, typically right before a click lands
+        // somewhere else (e.g. "+ Note" on another day); re-rendering would
+        // morph the DOM mid-click and swallow it, so we skip the repaint.
+        // Tag/color DO repaint: a new tag has to surface the tag filter, and
+        // a colour swap has to recolour the note immediately.
+        if ($field === 'body') {
             $this->skipRender();
         }
     }

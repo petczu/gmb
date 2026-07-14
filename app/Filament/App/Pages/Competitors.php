@@ -287,6 +287,9 @@ class Competitors extends Page implements HasTable
 
                 TextColumn::make('rating_trend')
                     ->label(__('pages/competitors.col_rating_trend'))
+                    // Secondary metric — hidden below large screens so the core
+                    // comparison columns fit without horizontal scroll.
+                    ->visibleFrom('lg')
                     ->state(function (CompetitorBattle $record): ?string {
                         $delta = $this->trendFor($record)['rating_delta'];
 
@@ -310,12 +313,17 @@ class Competitors extends Page implements HasTable
 
                 TextColumn::make('spark')
                     ->label(__('pages/competitors.col_trend'))
+                    ->visibleFrom('xl')
                     ->state(fn (CompetitorBattle $record): ?HtmlString => $this->sparkSvg($this->trendFor($record)['spark']))
                     ->placeholder('—')
                     ->html(),
 
                 TextColumn::make('own')
                     ->label(__('pages/competitors.col_location'))
+                    // Redundant in the row (own locations show in the battle
+                    // description and the "View details" modal) — off by default,
+                    // still available via the column manager.
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->state(function (CompetitorBattle $record): string {
                         $names = $record->ownLocations()->pluck('name')->implode(', ');
 
