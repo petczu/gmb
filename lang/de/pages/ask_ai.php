@@ -5,15 +5,15 @@ declare(strict_types=1);
 return [
     'nav' => 'KI fragen',
     'title' => 'KI fragen',
-    'empty_title' => 'Frag alles über deine Bewertungen',
-    'empty_body' => 'Der Assistent liest deine Standorte, Bewertungen und Statistiken und antwortet mit echten Zahlen. Ändern kann er nichts.',
+    'empty_title' => 'Hi, ich bin Bo 👋',
+    'empty_body' => 'Ich bin dein KI-Assistent für Bewertungen. Ich lese deine Standorte, Bewertungen und Statistiken und antworte mit echten Zahlen. Ändern kann ich nichts, frag einfach los.',
     'examples' => [
         'Wie lief dieser Monat?',
         'Welche Bewertungen sind noch unbeantwortet?',
         'Worüber beschweren sich Gäste?',
         'Wer im Team wird am meisten gelobt?',
     ],
-    'placeholder' => 'z. B. Wie viele 5-Sterne-Bewertungen gab es im Juni?',
+    'placeholder' => 'z. B. Wie viele 5-Sterne-Bewertungen gab es letzten Monat?',
     'send' => 'Senden',
     'clear' => 'Leeren',
     'thinking' => 'Schaue in deine Daten…',

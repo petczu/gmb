@@ -108,11 +108,23 @@
                     </a>
                 </div>
             @elseif ($messages === [])
-                <div style="color:#6b7280; font-size:.85rem; line-height:1.55;">
-                    <div style="font-weight:700; color:#111827; margin-bottom:.3rem;">{{ __('pages/ask_ai.empty_title') }}</div>
-                    {{ __('pages/ask_ai.empty_body') }}
+                {{-- Bot introduction: a friendly face instead of a bare hint. --}}
+                <div style="text-align:center; padding:1.6rem .5rem .3rem;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:4.2rem; height:4.2rem; border-radius:999px; background:linear-gradient(135deg, #2d19ec, #7c6cf9); box-shadow:0 8px 20px rgb(45 25 236 / .3);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" style="width:2.2rem; height:2.2rem;">
+                            <circle cx="12" cy="4.2" r="1" fill="#fff"/>
+                            <path stroke-linecap="round" d="M12 5.2v1.6"/>
+                            <rect x="5" y="6.8" width="14" height="10.5" rx="3.4"/>
+                            <circle cx="9.4" cy="11.4" r="1.15" fill="#fff" stroke="none"/>
+                            <circle cx="14.6" cy="11.4" r="1.15" fill="#fff" stroke="none"/>
+                            <path stroke-linecap="round" d="M9.8 14.6c.6.55 1.35.85 2.2.85s1.6-.3 2.2-.85"/>
+                            <path stroke-linecap="round" d="M3.4 11v2.6M20.6 11v2.6"/>
+                        </svg>
+                    </span>
+                    <div style="font-weight:700; font-size:1.05rem; color:#111827; margin:.8rem 0 .3rem;">{{ __('pages/ask_ai.empty_title') }}</div>
+                    <div style="color:#6b7280; font-size:.85rem; line-height:1.55; max-width:24rem; margin:0 auto;">{{ __('pages/ask_ai.empty_body') }}</div>
                 </div>
-                <div style="display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.4rem;">
+                <div style="display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.5rem; justify-content:center;">
                     @foreach (__('pages/ask_ai.examples') as $example)
                         <button type="button" wire:click="ask({{ \Illuminate\Support\Js::from($example) }})"
                                 style="border:1px solid #e5e7eb; background:#fff; border-radius:999px; padding:.35rem .7rem; font-size:.78rem; color:#374151; cursor:pointer; text-align:left;">

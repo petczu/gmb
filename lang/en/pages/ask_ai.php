@@ -5,15 +5,15 @@ declare(strict_types=1);
 return [
     'nav' => 'Ask AI',
     'title' => 'Ask AI',
-    'empty_title' => 'Ask anything about your reviews',
-    'empty_body' => 'The assistant reads your locations, reviews and stats, and answers with real numbers. It cannot change anything.',
+    'empty_title' => 'Hi, I\'m Bo 👋',
+    'empty_body' => 'I\'m your AI assistant for reviews. I read your locations, reviews and stats, and answer with real numbers. I can\'t change anything, just ask away.',
     'examples' => [
         'How did we do this month?',
         'Which reviews are still unanswered?',
         'What do guests complain about?',
         'Who on the team gets praised the most?',
     ],
-    'placeholder' => 'e.g. How many 5-star reviews did we get in June?',
+    'placeholder' => 'e.g. How many 5-star reviews did we get last month?',
     'send' => 'Send',
     'clear' => 'Clear',
     'thinking' => 'Looking at your data…',
