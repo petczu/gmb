@@ -8,6 +8,7 @@ use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -19,7 +20,7 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class InvitationController extends Controller
 {
-    public function show(string $token): View|RedirectResponse
+    public function show(string $token): View|RedirectResponse|Response
     {
         $invitation = Invitation::query()->where('token', $token)->first();
 
@@ -34,12 +35,14 @@ class InvitationController extends Controller
             return view('invitations.show', ['invitation' => $invitation->load('workspace')]);
         }
 
-        // Signed in as a DIFFERENT user → can't accept someone else's invite.
+        // Signed in as a DIFFERENT user (e.g. the owner opening the link they
+        // sent) → not an error: explain who it's for. A plain 200 view keeps
+        // it out of the error monitor and off the "something broke" path.
         if ($user !== null) {
-            return response()->view('invitations.invalid', [
-                'title' => 'Wrong account',
-                'message' => "This invitation was sent to {$invitation->email}. Sign out and sign in with that email to accept it.",
-            ], 403);
+            return view('invitations.wrong-account', [
+                'invitation' => $invitation,
+                'currentEmail' => (string) $user->email,
+            ]);
         }
 
         // Not signed in: route by whether an account already exists.
@@ -55,7 +58,7 @@ class InvitationController extends Controller
         return redirect('/register');
     }
 
-    public function accept(string $token): RedirectResponse
+    public function accept(string $token): RedirectResponse|Response
     {
         $invitation = Invitation::query()->where('token', $token)->first();
         $user = auth()->user();

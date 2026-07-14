@@ -1,27 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Join {{ $invitation->workspace?->name }}</title>
     @include('partials.favicons')
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#f3f4f6; color:#1f2937; display:flex; min-height:100vh; align-items:center; justify-content:center; margin:0; }
-        .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.08); padding:32px; width:420px; max-width:92vw; text-align:center; }
-        .card h1 { font-size:1.25rem; margin:.6rem 0 .4rem; }
-        .card p { color:#6b7280; font-size:.92rem; margin:0 0 1.4rem; }
-        .btn { display:inline-block; background:#111827; color:#fff; text-decoration:none; padding:11px 22px; border-radius:9px; font-size:.95rem; border:none; cursor:pointer; }
-    </style>
+    @include('invitations._styles')
 </head>
 <body>
-    <div class="card">
-        <div style="font-size:1.8rem;">🤝</div>
-        <h1>Join {{ $invitation->workspace?->name }}</h1>
-        <p>You've been invited to join <strong>{{ $invitation->workspace?->name }}</strong> on Repunio as {{ \Illuminate\Support\Str::headline($invitation->role) }}.</p>
-        <form method="POST" action="{{ route('invite.accept', $invitation->token) }}">
-            @csrf
-            <button type="submit" class="btn">Accept invitation</button>
-        </form>
+    <div class="glow"></div>
+    <a class="logo" href="{{ url('/') }}">{!! view('filament.logo', ['theme' => 'dark'])->render() !!}</a>
+
+    <div class="wrap">
+        <div class="card">
+            <span class="badge badge-brand">✉️ You're invited</span>
+            <div class="ws-avatar">{{ \Illuminate\Support\Str::of($invitation->workspace?->name ?? 'R')->substr(0, 1)->upper() }}</div>
+            <h1>Join {{ $invitation->workspace?->name }}</h1>
+            <p class="sub">You've been invited to <strong>{{ $invitation->workspace?->name }}</strong> on Repunio as
+                <span class="role">{{ \Illuminate\Support\Str::headline($invitation->role) }}</span>.</p>
+
+            <form method="POST" action="{{ route('invite.accept', $invitation->token) }}" class="actions">
+                @csrf
+                <button type="submit" class="btn btn-primary">Accept &amp; join</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
