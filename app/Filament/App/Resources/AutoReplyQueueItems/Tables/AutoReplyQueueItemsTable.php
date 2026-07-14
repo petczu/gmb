@@ -23,6 +23,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +36,13 @@ class AutoReplyQueueItemsTable
     {
         return $table
             ->defaultSort('created_at', 'desc')
+            // Status tabs live INSIDE the table card (header slot), not as a
+            // separate floating block above it. See ListAutoReplyQueueItems::
+            // getTabs() for the tab definitions.
+            ->header(fn ($livewire): View => view('filament.app.resources.auto-reply-tabs', [
+                'tabs' => $livewire->getCachedTabs(),
+                'activeTab' => $livewire->activeTab,
+            ]))
             ->searchable(AutoReplyQueueItem::query()->exists())
             ->emptyStateIcon(Heroicon::OutlinedInboxStack)
             ->emptyStateHeading(__('resources/auto_reply.empty_heading'))

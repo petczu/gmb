@@ -5,7 +5,11 @@ namespace App\Filament\App\Resources\AutoReplyQueueItems\Pages;
 use App\Filament\App\Resources\AutoReplyQueueItems\AutoReplyQueueItemResource;
 use App\Models\AutoReplyQueueItem;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\EmbeddedTable;
+use Filament\Schemas\Components\RenderHook;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListAutoReplyQueueItems extends ListRecords
@@ -15,6 +19,21 @@ class ListAutoReplyQueueItems extends ListRecords
     protected function getHeaderActions(): array
     {
         return [];
+    }
+
+    /**
+     * Drop the default tabs block that renders ABOVE the table — the tabs are
+     * rendered inside the table's own header slot instead (see the table's
+     * ->header()). The tab STATE (activeTab + getTabs) still comes from the
+     * HasTabs trait, so the query filtering is unchanged.
+     */
+    public function content(Schema $schema): Schema
+    {
+        return $schema->components([
+            RenderHook::make(PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE),
+            EmbeddedTable::make(),
+            RenderHook::make(PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_AFTER),
+        ]);
     }
 
     /**
