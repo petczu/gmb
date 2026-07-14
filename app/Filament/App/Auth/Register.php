@@ -49,6 +49,11 @@ class Register extends BaseRegister
      * address: the email field is prefilled + locked so the account that gets
      * created is the one the workspace owner invited. Otherwise a mismatched
      * email would silently spin up a fresh solo workspace instead of joining.
+     *
+     * MASKED (p***@gmail.com): Livewire public state and the form are client-
+     * visible, and whoever holds the link is not necessarily the invitee — the
+     * full address must never leave the server. The real one is resolved
+     * per-request from the session token (see effectiveEmail()).
      */
     public ?string $invitedEmail = null;
 
@@ -64,10 +69,11 @@ class Register extends BaseRegister
     {
         parent::mount();
 
-        // Invitation-bound sign-up: lock the form to the invited address.
+        // Invitation-bound sign-up: lock the form to the invited address
+        // (displayed masked; the real one never leaves the server).
         $invitation = $this->pendingInvitation();
         if ($invitation !== null) {
-            $this->invitedEmail = mb_strtolower(trim((string) $invitation->email));
+            $this->invitedEmail = InvitationAcceptor::maskEmail((string) $invitation->email);
             $this->invitedWorkspaceName = (string) ($invitation->workspace?->name ?? '');
             $this->data['email'] = $this->invitedEmail;
         }
@@ -154,12 +160,13 @@ class Register extends BaseRegister
     /** Step 1 sends the code, step 2 verifies it, step 3 accepts the Terms and creates the account. */
     public function register(): ?RegistrationResponse
     {
-        // Invitation-bound sign-up: force the email from the (untamperable)
-        // session token, so a crafted client request can't swap in a different
-        // address than the one that was invited.
+        // Invitation-bound sign-up: pin the visible field to the masked form.
+        // The REAL address is resolved server-side from the (untamperable)
+        // session token in effectiveEmail(), so a crafted client request can't
+        // swap in a different address — and the full one never reaches the client.
         $invitation = $this->pendingInvitation();
         if ($invitation !== null) {
-            $this->data['email'] = mb_strtolower(trim((string) $invitation->email));
+            $this->data['email'] = InvitationAcceptor::maskEmail((string) $invitation->email);
         }
 
         if ($this->step === 1) {
@@ -175,13 +182,13 @@ class Register extends BaseRegister
 
             // Server-side proof the OTP passed: $step is client-visible Livewire
             // state, so the final step re-checks this session flag instead.
-            session(['register_otp_email' => mb_strtolower(trim((string) data_get($this->form->getRawState(), 'email')))]);
+            session(['register_otp_email' => $this->effectiveEmail()]);
             $this->step = 3;
 
             return null;
         }
 
-        $email = mb_strtolower(trim((string) data_get($this->form->getRawState(), 'email')));
+        $email = $this->effectiveEmail();
         if (session('register_otp_email') !== $email || $email === '') {
             // Never verified (or the email was swapped afterwards) → start over.
             $this->step = 1;
@@ -220,10 +227,23 @@ class Register extends BaseRegister
             ->disabled(fn (): bool => $this->step === 3 && ! (bool) data_get($this->data, 'terms_read'));
     }
 
+    /**
+     * The address this registration is really for: the invited one when the
+     * sign-up is invitation-bound (resolved server-side from the session token,
+     * because the form only carries the masked display value), otherwise
+     * whatever was typed into the form.
+     */
+    protected function effectiveEmail(): string
+    {
+        $invited = $this->pendingInvitation()?->email;
+
+        return mb_strtolower(trim($invited ?? (string) data_get($this->form->getRawState(), 'email')));
+    }
+
     /** Early email validation so step 1 fails fast on typos/taken addresses. */
     protected function validateEmailStep(): void
     {
-        $email = (string) data_get($this->form->getRawState(), 'email');
+        $email = $this->effectiveEmail();
 
         $validator = Validator::make(
             ['email' => $email],
@@ -242,7 +262,7 @@ class Register extends BaseRegister
 
     protected function sendCode(): void
     {
-        $email = (string) data_get($this->form->getRawState(), 'email');
+        $email = $this->effectiveEmail();
 
         try {
             app(EmailOtp::class)->send($email, app()->getLocale());
@@ -255,9 +275,8 @@ class Register extends BaseRegister
 
     protected function validateCode(): void
     {
-        $state = $this->form->getRawState();
-        $email = (string) data_get($state, 'email');
-        $code = (string) data_get($state, 'code');
+        $email = $this->effectiveEmail();
+        $code = (string) data_get($this->form->getRawState(), 'code');
 
         if (! app(EmailOtp::class)->verify($email, $code)) {
             throw ValidationException::withMessages([
@@ -268,7 +287,9 @@ class Register extends BaseRegister
 
     protected function handleRegistration(array $data): Model
     {
-        $email = (string) $data['email'];
+        // Invitation-bound: the form only carries the masked display value —
+        // the account must be created with the real invited address.
+        $email = $this->effectiveEmail();
 
         $user = $this->getUserModel()::create([
             // A real name comes later (profile); default to the address's local

@@ -90,32 +90,41 @@ class RegisterInvitedEmailLockTest extends TestCase
         ], $overrides));
     }
 
-    public function test_the_email_is_prefilled_and_the_invite_banner_shown(): void
+    public function test_the_email_is_prefilled_masked_and_the_invite_banner_shown(): void
     {
         $invite = $this->invitation();
         session(['pending_invite' => $invite->token]);
 
+        // Only the MASKED address may reach the client (Livewire state + form):
+        // whoever holds the link is not necessarily the invitee.
         Livewire::test(Register::class)
-            ->assertSet('data.email', 'invitee@example.com')
-            ->assertSet('invitedEmail', 'invitee@example.com')
-            ->assertSee('Acme Agency');
+            ->assertSet('data.email', 'i***@example.com')
+            ->assertSet('invitedEmail', 'i***@example.com')
+            ->assertSee('Acme Agency')
+            ->assertDontSee('invitee@example.com');
     }
 
-    public function test_a_swapped_email_is_re_forced_from_the_session_token(): void
+    public function test_a_swapped_email_is_ignored_and_the_code_goes_to_the_invited_address(): void
     {
-        $this->mock(EmailOtp::class, function ($mock): void {
-            $mock->shouldReceive('send')->andReturnNull();
+        $sentTo = null;
+        $this->mock(EmailOtp::class, function ($mock) use (&$sentTo): void {
+            $mock->shouldReceive('send')->andReturnUsing(function (string $email) use (&$sentTo): void {
+                $sentTo = $email;
+            });
         });
 
         $invite = $this->invitation();
         session(['pending_invite' => $invite->token]);
 
-        // Client tampers the locked field, then submits step 1.
+        // Client tampers the locked field, then submits step 1: the code must
+        // go to the REAL invited address, the form stays masked.
         Livewire::test(Register::class)
             ->set('data.email', 'attacker@evil.com')
             ->call('register')
-            ->assertSet('data.email', 'invitee@example.com')
+            ->assertSet('data.email', 'i***@example.com')
             ->assertSet('step', 2);
+
+        $this->assertSame('invitee@example.com', $sentTo);
     }
 
     public function test_a_plain_registration_leaves_the_email_editable(): void
