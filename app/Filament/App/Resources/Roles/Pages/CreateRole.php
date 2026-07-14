@@ -10,6 +10,7 @@ use App\Filament\App\Resources\Roles\RoleResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\RedirectResponse;
 
 class CreateRole extends CreateRecord
 {
@@ -37,7 +38,9 @@ class CreateRole extends CreateRecord
             ->warning()
             ->send();
 
-        throw new HttpResponseException(redirect(Billing::getUrl()));
+        // redirect() inside a Livewire request returns Livewire's Redirector,
+        // not a Symfony response, so build the RedirectResponse directly.
+        throw new HttpResponseException(new RedirectResponse(Billing::getUrl()));
     }
 
     /** Back to the roles list after creating (instead of the edit page). */
