@@ -63,4 +63,8 @@ return [
     'ai_limit_body' => 'Du hast alle KI-Antworten diesen Monat aufgebraucht. Bearbeite manuell oder upgrade für ein höheres Limit.',
     'generation_failed' => 'Generierung fehlgeschlagen',
     'reply_generated' => 'Antwort generiert',
+
+    // Deep-link banner from the new-reviews digest email
+    'from_email' => '{1} 1 Bewertung aus deiner E-Mail-Benachrichtigung|[2,*] :count Bewertungen aus deiner E-Mail-Benachrichtigung',
+    'from_email_clear' => 'Alle Bewertungen anzeigen',
 ];

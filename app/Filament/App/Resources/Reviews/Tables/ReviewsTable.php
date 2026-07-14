@@ -24,6 +24,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
@@ -35,6 +36,18 @@ class ReviewsTable
         return $table
             ->defaultSort('created_at_external', 'desc')
             ->persistSortInSession()
+            // When the multi-review digest email deep-linked here
+            // (?reviews=1,2,3), show ONLY those reviews plus a banner to clear.
+            ->modifyQueryUsing(function (Builder $query) use ($table): Builder {
+                $ids = $table->getLivewire()->emailReviewIds ?? [];
+
+                return $ids === [] ? $query : $query->whereIn('id', $ids);
+            })
+            ->header(function () use ($table): ?View {
+                $ids = $table->getLivewire()->emailReviewIds ?? [];
+
+                return $ids === [] ? null : view('filament.app.resources.reviews-email-banner', ['count' => count($ids)]);
+            })
             // Classic table on desktop; secondary columns hidden on small screens
             // so it stays readable on mobile without horizontal scroll.
             ->columns([

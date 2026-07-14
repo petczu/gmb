@@ -52,6 +52,7 @@ class ReviewSync
         /** @var array<int, bool> $newLocationIds distinct location ids with new reviews (for location-scoped routing) */
         $newLocationIds = [];
         $firstReviewId = null; // for the single-review deep-link in the digest
+        $newReviewIds = []; // every new review id, for the multi-review filtered deep-link
 
         /** @var list<array{name: string, count: int, rating: ?float}> $firstSynced locations whose FIRST import finished this run */
         $firstSynced = [];
@@ -130,6 +131,7 @@ class ReviewSync
                         $newLocations[$location->name] = true;
                         $newLocationIds[(int) $location->id] = true;
                         $firstReviewId ??= $review->id;
+                        $newReviewIds[] = (int) $review->id;
 
                         $review->setRelation('location', $location);
                         app(WebhookDispatcher::class)
@@ -201,8 +203,15 @@ class ReviewSync
         // a mail failure fail the whole sync.
         if ($newCount > 0) {
             $locationLabel = $newLocations !== [] ? implode(', ', array_keys($newLocations)) : $workspace->name;
-            $reviewsUrl = rtrim((string) config('app.url'), '/').'/reviews'
-                .($newCount === 1 && $firstReviewId !== null ? '?review='.$firstReviewId : '');
+            // Deep-link so the button lands on exactly the new reviews:
+            //  - one review  → ?review={id}  opens its reply panel,
+            //  - many reviews → ?reviews={ids} filters the list to just them.
+            $base = rtrim((string) config('app.url'), '/').'/reviews';
+            $reviewsUrl = match (true) {
+                $newCount === 1 && $firstReviewId !== null => $base.'?review='.$firstReviewId,
+                $newReviewIds !== [] => $base.'?reviews='.implode(',', array_slice($newReviewIds, 0, 50)),
+                default => $base,
+            };
 
             // When the digest is about a single location, route it to that
             // location's people; a multi-location digest goes to everyone.

@@ -63,4 +63,8 @@ return [
     'ai_limit_body' => 'You’ve used all AI replies this month. Edit manually, or upgrade for a higher limit.',
     'generation_failed' => 'Generation failed',
     'reply_generated' => 'Reply generated',
+
+    // Deep-link banner from the new-reviews digest email
+    'from_email' => '{1} Showing 1 review from your email notification|[2,*] Showing :count reviews from your email notification',
+    'from_email_clear' => 'Show all reviews',
 ];
