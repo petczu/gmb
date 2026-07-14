@@ -38,4 +38,6 @@ return [
     'col_status' => 'Status',
     'status_active' => 'Aktiv',
     'status_pending' => 'Ausstehend',
+    'role_hint_member' => 'Erhält eine E-Mail-Einladung und meldet sich mit eigenem Konto an.',
+    'role_hint_guest' => 'Ein Gast kann sich nicht anmelden. Er erhält nur die Benachrichtigungen, die du an ihn weiterleitest (neue Bewertungen, Berichte).',
 ];

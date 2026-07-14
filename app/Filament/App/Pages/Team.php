@@ -17,6 +17,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -237,9 +238,24 @@ class Team extends Page implements HasTable
                     ->icon(Heroicon::OutlinedUserPlus)
                     ->schema([
                         TextInput::make('email')->email()->required()
-                            ->helperText(__('pages/team.add_member_email_helper')),
-                        // Guests are added through their own action (no login invite).
-                        Select::make('role')->options(collect($this->roleOptions())->except('guest')->all())->default('member')->required(),
+                            ->helperText(fn (Get $get): string => $get('role') === 'guest'
+                                ? __('pages/team.add_guest_helper')
+                                : __('pages/team.add_member_email_helper')),
+                        // One flow for everyone: picking "guest" switches to the
+                        // notification-only contact path (no login invite).
+                        Select::make('role')
+                            ->options($this->roleOptions())
+                            ->default('member')
+                            ->required()
+                            ->live()
+                            ->helperText(fn (Get $get): string => $get('role') === 'guest'
+                                ? __('pages/team.role_hint_guest')
+                                : __('pages/team.role_hint_member')),
+                        TextInput::make('name')
+                            ->label(__('pages/team.name'))
+                            ->maxLength(120)
+                            ->visible(fn (Get $get): bool => $get('role') === 'guest')
+                            ->required(fn (Get $get): bool => $get('role') === 'guest'),
                         Select::make('allowed_locations')
                             ->label(__('pages/team.location_access'))
                             ->multiple()
@@ -261,6 +277,14 @@ class Team extends Page implements HasTable
 
                         $locale = in_array($data['locale'] ?? null, ['en', 'de'], true) ? $data['locale'] : 'en';
                         $locationIds = array_values(array_map('intval', $data['allowed_locations'] ?? []));
+
+                        // Guests skip the invite email entirely: they get no
+                        // login, only a recipient account for notifications.
+                        if (($data['role'] ?? null) === 'guest') {
+                            $this->addGuestContact($workspace, $email, (string) $data['name'], $locale, $locationIds);
+
+                            return;
+                        }
 
                         $invitation = Invitation::updateOrCreate(
                             ['workspace_id' => $workspace->id, 'email' => $email],
@@ -287,75 +311,48 @@ class Team extends Page implements HasTable
                         Notification::make()->title(__('pages/team.invitation_sent'))->success()->send();
                     }),
 
-                // A Guest is a notification-only contact: no login invite, no
-                // password, no permissions — just selectable as an email recipient.
-                Action::make('addGuest')
-                    ->label(__('pages/team.add_guest'))
-                    ->icon(Heroicon::OutlinedBellAlert)
-                    ->color('gray')
-                    ->schema([
-                        TextInput::make('name')->label(__('pages/team.name'))->required()->maxLength(120),
-                        TextInput::make('email')->email()->required()
-                            ->helperText(__('pages/team.add_guest_helper')),
-                        Select::make('allowed_locations')
-                            ->label(__('pages/team.location_access'))
-                            ->multiple()
-                            ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
-                            ->placeholder(__('common.all_locations'))
-                            ->helperText(__('pages/team.guest_location_helper')),
-                        Select::make('locale')
-                            ->label(__('pages/team.guest_language'))
-                            ->options(['en' => 'English', 'de' => 'Deutsch'])
-                            ->default(fn (): string => app()->getLocale())
-                            ->selectablePlaceholder(false)
-                            ->helperText(__('pages/team.guest_language_helper')),
-                    ])
-                    ->action(function (array $data): void {
-                        $workspace = $this->workspace();
-                        $email = mb_strtolower(trim($data['email']));
-
-                        $locale = in_array($data['locale'] ?? null, ['en', 'de'], true) ? $data['locale'] : app()->getLocale();
-                        $locationIds = array_values(array_map('intval', $data['allowed_locations'] ?? []));
-
-                        $user = User::firstOrCreate(
-                            ['email' => $email],
-                            [
-                                'name' => $data['name'],
-                                'password' => Hash::make(Str::random(40)),
-                                'locale' => $locale,
-                            ],
-                        );
-
-                        // Guests have no login to change the language themselves —
-                        // apply the picked one to an existing guest account too.
-                        if (! $user->wasRecentlyCreated && $user->getAttribute('locale') !== $locale) {
-                            $user->forceFill(['locale' => $locale])->save();
-                        }
-
-                        if (! $user->wasRecentlyCreated && filled($data['name'])) {
-                            $user->forceFill(['name' => $data['name']])->save();
-                        }
-
-                        $workspace->users()->syncWithoutDetaching([
-                            $user->id => [
-                                'role' => 'guest',
-                                'membership_type' => 'guest',
-                                'permissions' => json_encode(['allowed_locations' => $locationIds]),
-                            ],
-                        ]);
-
-                        $this->applyTeamScope();
-                        $user->unsetRelation('roles');
-                        $user->syncRoles(['guest']);
-
-                        ActivityLogger::log('team.guest_added', ['member' => $data['name'], 'email' => $email]);
-                        Notification::make()->title(__('pages/team.guest_added'))->success()->send();
-                    }),
             ]);
     }
 
-    /** @return array<int, int> location ids the user is limited to ([] = all). */
     // ── Pending invitations ─────────────────────────────────────────────────
+
+    /** Attach (or update) a notification-only guest contact to the workspace. */
+    protected function addGuestContact(Workspace $workspace, string $email, string $name, string $locale, array $locationIds): void
+    {
+        $user = User::firstOrCreate(
+            ['email' => $email],
+            [
+                'name' => $name,
+                'password' => Hash::make(Str::random(40)),
+                'locale' => $locale,
+            ],
+        );
+
+        // Guests have no login to change the language themselves — apply the
+        // picked one to an existing guest account too.
+        if (! $user->wasRecentlyCreated && $user->getAttribute('locale') !== $locale) {
+            $user->forceFill(['locale' => $locale])->save();
+        }
+
+        if (! $user->wasRecentlyCreated && filled($name)) {
+            $user->forceFill(['name' => $name])->save();
+        }
+
+        $workspace->users()->syncWithoutDetaching([
+            $user->id => [
+                'role' => 'guest',
+                'membership_type' => 'guest',
+                'permissions' => json_encode(['allowed_locations' => $locationIds]),
+            ],
+        ]);
+
+        $this->applyTeamScope();
+        $user->unsetRelation('roles');
+        $user->syncRoles(['guest']);
+
+        ActivityLogger::log('team.guest_added', ['member' => $name, 'email' => $email]);
+        Notification::make()->title(__('pages/team.guest_added'))->success()->send();
+    }
 
     /** Send the invite email again and extend its validity window. */
     public function resendInvitation(int $invitationId): void

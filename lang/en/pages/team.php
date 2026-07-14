@@ -38,4 +38,6 @@ return [
     'col_status' => 'Status',
     'status_active' => 'Active',
     'status_pending' => 'Pending',
+    'role_hint_member' => 'Gets an email invitation and signs in with their own account.',
+    'role_hint_guest' => 'A guest cannot sign in. They only receive the notifications you route to them (new reviews, reports).',
 ];
