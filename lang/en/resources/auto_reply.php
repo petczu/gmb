@@ -64,4 +64,8 @@ return [
     'cancel_scheduled' => 'Cancel',
     'cancel_scheduled_confirm' => 'Cancel this scheduled reply? It will not be posted.',
     'schedule_cancelled' => 'Scheduled reply cancelled',
+
+    // List tabs
+    'tab_pending' => 'Needs approval',
+    'tab_all' => 'All',
 ];

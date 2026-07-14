@@ -21,7 +21,6 @@ use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\Indicator;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -109,36 +108,8 @@ class AutoReplyQueueItemsTable
                 TextColumn::make('created_at')->label(__('resources/auto_reply.col_generated'))->since()->sortable()->visibleFrom('md'),
             ])
             ->filters([
-                SelectFilter::make('status')
-                    ->options([
-                        'pending' => __('resources/auto_reply.status_pending'),
-                        'scheduled' => __('resources/auto_reply.status_scheduled'),
-                        'published' => __('resources/auto_reply.status_published'),
-                        'skipped' => __('resources/auto_reply.status_skipped'),
-                        'failed' => __('resources/auto_reply.status_failed'),
-                    ])
-                    ->multiple()
-                    // "What still needs my attention + what's about to go out".
-                    ->default(['pending', 'scheduled'])
-                    // Colour the active-filter chips to match the status badges
-                    // instead of the brand-primary blue.
-                    ->indicateUsing(function (array $state): array {
-                        $labels = [
-                            'pending' => __('resources/auto_reply.status_pending'),
-                            'scheduled' => __('resources/auto_reply.status_scheduled'),
-                            'published' => __('resources/auto_reply.status_published'),
-                            'skipped' => __('resources/auto_reply.status_skipped'),
-                            'failed' => __('resources/auto_reply.status_failed'),
-                        ];
-                        $colors = ['pending' => 'warning', 'scheduled' => 'info', 'published' => 'success', 'skipped' => 'gray', 'failed' => 'danger'];
-
-                        return collect($state['values'] ?? [])
-                            ->filter(fn ($value): bool => filled($value))
-                            ->map(fn (string $value): Indicator => Indicator::make(__('resources/auto_reply.status_indicator', ['status' => $labels[$value] ?? $value]))
-                                ->color($colors[$value] ?? 'success')
-                                ->removeField('values'))
-                            ->all();
-                    }),
+                // The status split lives in the page tabs (see
+                // ListAutoReplyQueueItems::getTabs), not in a filter.
 
                 // Review date window (filters through the related review).
                 Filter::make('date')

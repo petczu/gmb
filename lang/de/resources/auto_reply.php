@@ -64,4 +64,8 @@ return [
     'cancel_scheduled' => 'Abbrechen',
     'cancel_scheduled_confirm' => 'Diese geplante Antwort abbrechen? Sie wird nicht veröffentlicht.',
     'schedule_cancelled' => 'Geplante Antwort abgebrochen',
+
+    // List tabs
+    'tab_pending' => 'Wartet auf Freigabe',
+    'tab_all' => 'Alle',
 ];
