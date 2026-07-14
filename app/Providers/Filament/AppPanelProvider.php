@@ -108,11 +108,9 @@ class AppPanelProvider extends PanelProvider
                         $acceptor = app(InvitationAcceptor::class);
                         $invitation = $acceptor->pendingFromSession();
 
+                        // No extra flash message: the register page's invite
+                        // banner already explains which address to use.
                         if ($invitation !== null && ! $acceptor->emailsMatch($oauthUser->getEmail(), $invitation->email)) {
-                            session()->flash('filament-socialite-login-error', __('auth.invite_wrong_social', [
-                                'email' => InvitationAcceptor::maskEmail((string) $invitation->email),
-                            ]));
-
                             throw new HttpResponseException(redirect()->to('/register'));
                         }
 
