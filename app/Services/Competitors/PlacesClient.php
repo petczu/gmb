@@ -17,6 +17,12 @@ class PlacesClient
 
     protected const FIELDS = 'id,displayName,formattedAddress,rating,userRatingCount';
 
+    /**
+     * Interactive search only shows name + address; leaving out the rating
+     * fields keeps those calls in the cheaper Basic SKU (bigger free tier).
+     */
+    protected const SEARCH_FIELDS = 'id,displayName,formattedAddress';
+
     public function configured(): bool
     {
         return filled(config('services.google.places_key'));
@@ -28,7 +34,7 @@ class PlacesClient
     public function search(string $query): array
     {
         $response = $this->request()
-            ->withHeaders(['X-Goog-FieldMask' => collect(explode(',', self::FIELDS))->map(fn (string $f): string => 'places.'.$f)->implode(',')])
+            ->withHeaders(['X-Goog-FieldMask' => collect(explode(',', self::SEARCH_FIELDS))->map(fn (string $f): string => 'places.'.$f)->implode(',')])
             ->post(self::BASE.'/places:searchText', ['textQuery' => $query, 'pageSize' => 8])
             ->throw()
             ->json();
