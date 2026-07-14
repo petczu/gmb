@@ -61,4 +61,5 @@ return [
     'period_7d' => '7 Tage',
     'period_6m' => '6 Monate',
     'no_change' => 'unverändert',
+    'search_failed' => 'Die Konkurrenzsuche ist vorübergehend nicht verfügbar',
 ];

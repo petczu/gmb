@@ -61,4 +61,5 @@ return [
     'period_7d' => '7 days',
     'period_6m' => '6 months',
     'no_change' => 'no change',
+    'search_failed' => 'Competitor search is temporarily unavailable',
 ];

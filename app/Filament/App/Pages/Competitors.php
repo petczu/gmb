@@ -26,6 +26,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Throwable;
@@ -343,7 +344,17 @@ class Competitors extends Page implements HasTable
                                 $place['place_id'] => $place['name'].($place['address'] ? ' — '.$place['address'] : ''),
                             ])
                             ->all();
-                    } catch (Throwable) {
+                    } catch (Throwable $e) {
+                        // A silent empty list reads as "no results"; surface
+                        // the real cause (quota, billing, key restrictions).
+                        Log::warning('Places competitor search failed', ['error' => $e->getMessage()]);
+
+                        Notification::make()
+                            ->title(__('pages/competitors.search_failed'))
+                            ->body(Str::limit($e->getMessage(), 200))
+                            ->danger()
+                            ->send();
+
                         return [];
                     }
                 })
