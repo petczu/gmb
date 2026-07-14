@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureBetaApproved;
 use App\Mail\BetaApprovedMail;
 use App\Mail\Templates\EmailTemplateCatalog;
 use App\Models\BetaAllowlistEntry;
+use App\Models\Invitation;
 use App\Models\User;
 use App\Services\Auth\BetaAccess;
 use Illuminate\Http\Request;
@@ -45,6 +46,19 @@ class BetaAccessTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::connection('mysql')->create('invitations', function ($table): void {
+            $table->increments('id');
+            $table->string('workspace_id')->nullable();
+            $table->string('email');
+            $table->string('role')->nullable();
+            $table->string('token')->nullable();
+            $table->string('locale')->nullable();
+            $table->json('location_ids')->nullable();
+            $table->timestamp('accepted_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamps();
+        });
+
         Schema::connection('mysql')->create('users', function ($table): void {
             $table->increments('id');
             $table->string('name');
@@ -59,6 +73,7 @@ class BetaAccessTest extends TestCase
 
     protected function tearDown(): void
     {
+        Schema::connection('mysql')->dropIfExists('invitations');
         Schema::connection('mysql')->dropIfExists('users');
         Schema::connection('mysql')->dropIfExists('beta_allowlist');
         parent::tearDown();
@@ -148,5 +163,19 @@ class BetaAccessTest extends TestCase
             $this->assertNotSame('', EmailTemplateCatalog::defaultBody($key, 'en'));
             $this->assertNotSame('', EmailTemplateCatalog::defaultBody($key, 'de'));
         }
+    }
+
+    public function test_a_pending_invitation_grants_immediate_access(): void
+    {
+        Invitation::create([
+            'email' => 'Invited@Example.com',
+            'role' => 'manager',
+            'token' => 'tok-1',
+        ]);
+
+        $beta = app(BetaAccess::class);
+
+        $this->assertTrue($beta->grantsImmediateAccess('invited@example.com'));
+        $this->assertFalse($beta->grantsImmediateAccess('stranger@example.com'));
     }
 }

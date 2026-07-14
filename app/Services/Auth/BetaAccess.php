@@ -7,6 +7,7 @@ namespace App\Services\Auth;
 use App\Mail\BetaApprovedMail;
 use App\Mail\BetaReceivedMail;
 use App\Models\BetaAllowlistEntry;
+use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -46,7 +47,16 @@ class BetaAccess
             return true;
         }
 
-        return BetaAllowlistEntry::query()->where('email', $email)->exists();
+        if (BetaAllowlistEntry::query()->where('email', $email)->exists()) {
+            return true;
+        }
+
+        // People invited into an existing workspace were vouched for by its
+        // owner; they never join the waitlist.
+        return Invitation::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->whereNull('accepted_at')
+            ->exists();
     }
 
     /** Activate a pending application and tell the person by email. */

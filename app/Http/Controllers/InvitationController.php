@@ -94,6 +94,12 @@ class InvitationController extends Controller
 
         $invitation->forceFill(['accepted_at' => now()])->save();
 
+        // An accepted invitation IS the beta approval: the workspace owner
+        // vouched for this person, so they never sit on the waitlist.
+        if ($user->approved_at === null) {
+            $user->forceFill(['approved_at' => now()])->save();
+        }
+
         session(['current_workspace_id' => $workspace->id]);
 
         return redirect('/');
