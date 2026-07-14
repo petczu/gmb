@@ -4,22 +4,32 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Models\ExternalCalendar;
+use App\Models\ExternalCalendarEvent;
 use App\Models\Location;
 use App\Models\Post;
+use App\Models\PostNote;
+use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
+use App\Services\Posts\IcsCalendarSync;
 use App\Services\Posts\PostPublisher;
 use App\Services\Zernio\ZernioRestClient;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -27,7 +37,11 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 /**
  * Google Business Profile posts (updates, offers, events, photos), published
@@ -69,6 +83,479 @@ class Posts extends Page implements HasTable
     public function isConfigured(): bool
     {
         return app(ZernioRestClient::class)->configured();
+    }
+
+    /** Create lives on the PAGE header so it shows in both calendar and list mode. */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('create')
+                ->label(__('pages/posts.create'))
+                ->icon(Heroicon::OutlinedPlus)
+                ->visible(fn (): bool => $this->isConfigured())
+                ->modalHeading(__('pages/posts.create_heading'))
+                ->modalSubmitActionLabel(__('pages/posts.submit'))
+                ->modalWidth(Width::SixExtraLarge)
+                ->schema($this->composerSchema())
+                ->extraModalFooterActions(fn (Action $action): array => [
+                    $action->makeModalSubmitAction('saveDraft', arguments: ['draft' => true])
+                        ->label(__('pages/posts.save_draft'))
+                        ->color('gray'),
+                ])
+                ->action(fn (array $data, array $arguments) => $this->publish($data, draft: (bool) ($arguments['draft'] ?? false))),
+        ];
+    }
+
+    /** The composer form next to a live Google-style preview of the post. */
+    protected function composerSchema(): array
+    {
+        return [
+            Grid::make(['default' => 1, 'lg' => 2])
+                ->schema([
+                    Group::make($this->formSchema()),
+                    Group::make([
+                        Placeholder::make('post_preview')
+                            ->hiddenLabel()
+                            ->content(fn (Get $get): HtmlString => new HtmlString($this->previewHtml($get))),
+                    ])->extraAttributes(['class' => 'lg:sticky lg:top-4']),
+                ]),
+        ];
+    }
+
+    /** 'calendar' | 'table', remembered per session. */
+    public string $mode = 'calendar';
+
+    /** 'month' | 'week' inside calendar mode. */
+    public string $calView = 'month';
+
+    /** The month the calendar shows (Y-m). */
+    public string $calMonth = '';
+
+    /** Monday (Y-m-d) of the week the week view shows. */
+    public string $calWeek = '';
+
+    /** Prefill for the create modal's schedule field ("+ Post" on a day cell). */
+    public ?string $prefillDate = null;
+
+    public function mount(): void
+    {
+        $this->mode = in_array(session('posts_view_mode'), ['calendar', 'table'], true)
+            ? session('posts_view_mode')
+            : 'calendar';
+        $this->calView = in_array(session('posts_cal_view'), ['month', 'week'], true)
+            ? session('posts_cal_view')
+            : 'month';
+        $this->calMonth = now()->format('Y-m');
+        $this->calWeek = now()->startOfWeek(CarbonImmutable::MONDAY)->format('Y-m-d');
+        $this->hiddenNoteTags = array_values(array_filter((array) session('posts_hidden_note_tags', []), 'is_string'));
+    }
+
+    public function setMode(string $mode): void
+    {
+        $this->mode = in_array($mode, ['calendar', 'table'], true) ? $mode : 'calendar';
+        session(['posts_view_mode' => $this->mode]);
+    }
+
+    /** Switch month/week, keeping the shown period roughly in place. */
+    public function setCalView(string $view): void
+    {
+        $this->calView = in_array($view, ['month', 'week'], true) ? $view : 'month';
+        session(['posts_cal_view' => $this->calView]);
+
+        if ($this->calView === 'week') {
+            $month = CarbonImmutable::createFromFormat('Y-m', $this->calMonth);
+            $anchor = now()->isSameMonth($month) ? now()->toImmutable() : $month->startOfMonth();
+            $this->calWeek = $anchor->startOfWeek(CarbonImmutable::MONDAY)->format('Y-m-d');
+        } else {
+            $this->calMonth = CarbonImmutable::createFromFormat('Y-m-d', $this->calWeek)->format('Y-m');
+        }
+    }
+
+    public function prevPeriod(): void
+    {
+        $this->shiftPeriod(-1);
+    }
+
+    public function nextPeriod(): void
+    {
+        $this->shiftPeriod(1);
+    }
+
+    private function shiftPeriod(int $direction): void
+    {
+        if ($this->calView === 'week') {
+            $this->calWeek = CarbonImmutable::createFromFormat('Y-m-d', $this->calWeek)->addWeeks($direction)->format('Y-m-d');
+        } else {
+            $this->calMonth = CarbonImmutable::createFromFormat('Y-m', $this->calMonth)->addMonths($direction)->format('Y-m');
+        }
+    }
+
+    public function goToToday(): void
+    {
+        $this->calMonth = now()->format('Y-m');
+        $this->calWeek = now()->startOfWeek(CarbonImmutable::MONDAY)->format('Y-m-d');
+    }
+
+    /** The period label for the calendar header, localized (week view adds the ISO week number). */
+    public function calendarLabel(): string
+    {
+        if ($this->calView === 'week') {
+            $week = CarbonImmutable::createFromFormat('Y-m-d', $this->calWeek);
+
+            return $week->translatedFormat('M Y').' · W'.$week->isoWeek();
+        }
+
+        return CarbonImmutable::createFromFormat('Y-m', $this->calMonth)->translatedFormat('F Y');
+    }
+
+    /** "+ Post" on a day cell: open the composer with the schedule prefilled. */
+    public function addPostOn(string $date): void
+    {
+        $day = CarbonImmutable::createFromFormat('Y-m-d', $date);
+        $this->prefillDate = match (true) {
+            $day->isToday() => now()->addHour()->startOfHour()->format('Y-m-d H:i'),
+            $day->isFuture() => $day->setTime(10, 0)->format('Y-m-d H:i'),
+            default => null,
+        };
+
+        $this->mountAction('create');
+    }
+
+    /** Consumed by the schedule field's default when the composer mounts. */
+    public function pullPrefillDate(): ?string
+    {
+        $date = $this->prefillDate;
+        $this->prefillDate = null;
+
+        return $date;
+    }
+
+    /**
+     * The visible calendar grid: full weeks (Mon–Sun), each day with its
+     * posts, sticky notes and external-calendar events. A post lands on its
+     * scheduled date, or the creation date for immediately-published ones.
+     *
+     * @return array<int, array<int, array{date: CarbonImmutable, inMonth: bool, isToday: bool, posts: Collection<int, Post>, notes: Collection<int, PostNote>, events: Collection<int, ExternalCalendarEvent>}>>
+     */
+    public function calendarWeeks(): array
+    {
+        if ($this->calView === 'week') {
+            $gridStart = CarbonImmutable::createFromFormat('Y-m-d', $this->calWeek)->startOfDay();
+            $gridEnd = $gridStart->addDays(6)->endOfDay();
+            $month = null;
+        } else {
+            $month = CarbonImmutable::createFromFormat('Y-m', $this->calMonth)->startOfMonth();
+            $gridStart = $month->startOfWeek(CarbonImmutable::MONDAY);
+            $gridEnd = $month->endOfMonth()->endOfWeek(CarbonImmutable::SUNDAY);
+        }
+
+        $posts = Post::query()
+            ->where(function (Builder $q) use ($gridStart, $gridEnd): void {
+                $q->whereBetween('scheduled_at', [$gridStart, $gridEnd])
+                    ->orWhere(fn (Builder $qq) => $qq->whereNull('scheduled_at')->whereBetween('created_at', [$gridStart, $gridEnd]));
+            })
+            ->orderBy('scheduled_at')
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy(fn (Post $post): string => ($post->scheduled_at ?? $post->created_at)->format('Y-m-d'));
+
+        $notes = PostNote::query()
+            ->whereBetween('date', [$gridStart->toDateString(), $gridEnd->toDateString()])
+            ->orderBy('id')
+            ->get()
+            ->reject(fn (PostNote $note): bool => in_array($note->tag ?? self::UNTAGGED, $this->hiddenNoteTags, true))
+            ->groupBy(fn (PostNote $note): string => $note->date->format('Y-m-d'));
+
+        $events = ExternalCalendarEvent::query()
+            ->whereBetween('date', [$gridStart->toDateString(), $gridEnd->toDateString()])
+            ->whereHas('calendar', fn (Builder $q) => $q->where('enabled', true))
+            ->with('calendar:id,color')
+            ->orderBy('id')
+            ->get()
+            ->groupBy(fn ($event): string => $event->date->format('Y-m-d'));
+
+        $weeks = [];
+        for ($day = $gridStart; $day->lessThanOrEqualTo($gridEnd); $day = $day->addDay()) {
+            $key = $day->format('Y-m-d');
+            $weeks[$day->format('o-W')][] = [
+                'date' => $day,
+                'inMonth' => $month === null || $day->isSameMonth($month),
+                'isToday' => $day->isToday(),
+                'posts' => $posts->get($key, collect()),
+                'notes' => $notes->get($key, collect()),
+                'events' => $events->get($key, collect()),
+            ];
+        }
+
+        return array_values($weeks);
+    }
+
+    // ── Sticky notes ────────────────────────────────────────────────────────
+
+    public function addNote(string $date): void
+    {
+        PostNote::create([
+            'date' => CarbonImmutable::createFromFormat('Y-m-d', $date)->toDateString(),
+            'color' => 'yellow',
+            'created_by' => auth()->id(),
+            'created_by_name' => auth()->user()?->name,
+        ]);
+    }
+
+    public function updateNote(int $noteId, string $field, ?string $value): void
+    {
+        if (! in_array($field, ['body', 'color', 'tag'], true)) {
+            return;
+        }
+
+        if ($field === 'color' && ! array_key_exists((string) $value, PostNote::COLORS)) {
+            return;
+        }
+
+        PostNote::query()->whereKey($noteId)->update([
+            $field => filled($value) ? mb_substr($value, 0, $field === 'body' ? 2000 : 60) : null,
+        ]);
+    }
+
+    public function deleteNote(int $noteId): void
+    {
+        PostNote::query()->whereKey($noteId)->delete();
+    }
+
+    /** Existing tags for the pick-or-create tag input. @return list<string> */
+    public function noteTags(): array
+    {
+        return PostNote::query()->whereNotNull('tag')->distinct()->orderBy('tag')->pluck('tag')->all();
+    }
+
+    /** Sentinel for filtering notes that have no tag. */
+    public const UNTAGGED = '__untagged';
+
+    /** Note tags hidden from the calendar (plus UNTAGGED), session-persisted. */
+    public array $hiddenNoteTags = [];
+
+    public function toggleNoteTagFilter(string $tag): void
+    {
+        $this->hiddenNoteTags = in_array($tag, $this->hiddenNoteTags, true)
+            ? array_values(array_diff($this->hiddenNoteTags, [$tag]))
+            : [...$this->hiddenNoteTags, $tag];
+
+        session(['posts_hidden_note_tags' => $this->hiddenNoteTags]);
+    }
+
+    // ── External calendars ─────────────────────────────────────────────────
+
+    /** @return Collection<int, ExternalCalendar> */
+    public function externalCalendars(): Collection
+    {
+        return ExternalCalendar::query()->orderBy('name')->get();
+    }
+
+    public function toggleCalendar(int $calendarId): void
+    {
+        $calendar = ExternalCalendar::find($calendarId);
+        $calendar?->forceFill(['enabled' => ! $calendar->enabled])->save();
+    }
+
+    public function refreshCalendars(): void
+    {
+        $sync = app(IcsCalendarSync::class);
+        $failed = $this->externalCalendars()->reject(fn (ExternalCalendar $c): bool => $sync->sync($c));
+
+        if ($failed->isEmpty()) {
+            Notification::make()->title(__('pages/posts.calendars_synced'))->success()->send();
+        } else {
+            Notification::make()
+                ->title(__('pages/posts.calendars_sync_failed'))
+                ->body($failed->pluck('name')->implode(', '))
+                ->warning()
+                ->send();
+        }
+    }
+
+    public function deleteCalendar(int $calendarId): void
+    {
+        ExternalCalendar::query()->whereKey($calendarId)->delete();
+    }
+
+    /** "Add external calendar" modal (name + public ICS URL + color). */
+    public function addCalendarAction(): Action
+    {
+        return Action::make('addCalendar')
+            ->modalHeading(__('pages/posts.calendar_add'))
+            ->modalSubmitActionLabel(__('pages/posts.calendar_add_submit'))
+            ->modalWidth(Width::Medium)
+            ->schema([
+                TextInput::make('name')
+                    ->label(__('pages/posts.calendar_name'))
+                    ->placeholder(__('pages/posts.calendar_name_placeholder'))
+                    ->maxLength(100)
+                    ->required(),
+
+                TextInput::make('url')
+                    ->label(__('pages/posts.calendar_url'))
+                    ->url()
+                    ->required()
+                    ->helperText(__('pages/posts.calendar_url_helper')),
+
+                Select::make('color')
+                    ->label(__('pages/posts.calendar_color'))
+                    ->options(collect(PostNote::COLORS)->mapWithKeys(
+                        fn (array $c, string $key): array => [$key => '<span style="display:inline-flex; align-items:center; gap:.55rem;">'
+                            .'<span style="display:inline-block; width:.75rem; height:.75rem; border-radius:999px; background:'.$c[1].';"></span>'
+                            .e(__('pages/posts.color_'.$key)).'</span>'],
+                    )->all())
+                    ->allowHtml()
+                    ->native(false)
+                    ->default('green')
+                    ->required()
+                    ->selectablePlaceholder(false),
+            ])
+            ->action(function (array $data): void {
+                $calendar = ExternalCalendar::create([
+                    'name' => $data['name'],
+                    'url' => $data['url'],
+                    'color' => $data['color'],
+                    'enabled' => true,
+                ]);
+
+                if (app(IcsCalendarSync::class)->sync($calendar)) {
+                    Notification::make()
+                        ->title(__('pages/posts.calendar_added'))
+                        ->body(trans_choice('pages/posts.calendar_events_count', $calendar->events()->count(), ['count' => $calendar->events()->count()]))
+                        ->success()
+                        ->send();
+                } else {
+                    Notification::make()
+                        ->title(__('pages/posts.calendar_sync_error'))
+                        ->body((string) $calendar->sync_error)
+                        ->warning()
+                        ->send();
+                }
+            });
+    }
+
+    /** The post whose details modal is open (calendar card click). */
+    public ?int $viewingPostId = null;
+
+    public function showPost(int $postId): void
+    {
+        $this->viewingPostId = $postId;
+
+        // Drafts open in the editable composer; everything else is history and
+        // gets the read-only details dialog.
+        $this->mountAction(Post::find($postId)?->status === 'draft' ? 'editDraft' : 'viewPost');
+    }
+
+    /** Details modal for a calendar card. */
+    public function viewPostAction(): Action
+    {
+        return Action::make('viewPost')
+            ->modalHeading(fn (): string => __('pages/posts.type_'.(Post::find($this->viewingPostId)?->type ?? 'update')))
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel(__('pages/posts.close'))
+            ->schema(fn (): array => [
+                Placeholder::make('post_details')
+                    ->hiddenLabel()
+                    ->content(new HtmlString($this->postDetailsHtml((int) $this->viewingPostId))),
+            ]);
+    }
+
+    /** Drafts reopen in the full composer: publish, keep as draft, or discard. */
+    public function editDraftAction(): Action
+    {
+        return Action::make('editDraft')
+            ->modalHeading(__('pages/posts.draft_heading'))
+            ->modalSubmitActionLabel(__('pages/posts.submit'))
+            ->modalWidth(Width::SixExtraLarge)
+            ->schema($this->composerSchema())
+            ->fillForm(fn (): array => $this->draftFormState())
+            ->extraModalFooterActions(fn (Action $action): array => [
+                $action->makeModalSubmitAction('saveDraft', arguments: ['draft' => true])
+                    ->label(__('pages/posts.save_draft'))
+                    ->color('gray'),
+                Action::make('deleteDraft')
+                    ->label(__('pages/posts.draft_delete'))
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription(__('pages/posts.draft_delete_desc'))
+                    ->action(function (): void {
+                        Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->delete();
+                        Notification::make()->title(__('pages/posts.draft_deleted'))->success()->send();
+                    })
+                    ->cancelParentActions(),
+            ])
+            ->action(function (array $data, array $arguments): void {
+                $draft = Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->first();
+                $this->publish($data, draft: (bool) ($arguments['draft'] ?? false), existing: $draft);
+            });
+    }
+
+    /** @return array<string, mixed> */
+    private function draftFormState(): array
+    {
+        $post = Post::find($this->viewingPostId);
+
+        if ($post === null) {
+            return [];
+        }
+
+        return [
+            'type' => $post->type,
+            'locations' => $post->location_ids ?? [],
+            'caption' => $post->caption,
+            'image' => $this->imagePathFromUrl($post->image_url),
+            'title' => $post->title,
+            'starts_at' => $post->starts_at?->format('Y-m-d H:i'),
+            'ends_at' => $post->ends_at?->format('Y-m-d H:i'),
+            'voucher_code' => $post->voucher_code,
+            'redeem_url' => $post->redeem_url,
+            'terms_url' => $post->terms_url,
+            'cta_type' => $post->cta_type,
+            'cta_url' => $post->cta_url,
+            'scheduled_at' => $post->scheduled_at?->format('Y-m-d H:i'),
+        ];
+    }
+
+    /** Reverse of url(Storage::url(...)) so FileUpload can re-hydrate a draft image. */
+    private function imagePathFromUrl(?string $url): ?string
+    {
+        $path = (string) parse_url((string) $url, PHP_URL_PATH);
+
+        return str_contains($path, '/storage/') ? Str::after($path, '/storage/') : null;
+    }
+
+    private function postDetailsHtml(int $postId): string
+    {
+        $post = Post::find($postId);
+        if ($post === null) {
+            return '';
+        }
+
+        $when = $post->scheduled_at ?? $post->created_at;
+        $statusColors = ['published' => '#16a34a', 'scheduled' => '#0ea5e9', 'failed' => '#dc2626', 'in_progress' => '#d97706', 'draft' => '#9ca3af'];
+
+        $html = '';
+        if ($post->image_url) {
+            $html .= '<img src="'.e($post->image_url).'" alt="" style="width:100%; max-height:16rem; object-fit:cover; border-radius:.6rem; margin-bottom:.9rem;">';
+        }
+        $html .= '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.6rem; font-size:.8rem; color:#6b7280;">'
+            .'<span style="display:inline-block; width:.55rem; height:.55rem; border-radius:999px; background:'.($statusColors[$post->status] ?? '#9ca3af').';"></span>'
+            .e(__('pages/posts.status_'.$post->status))
+            .' · '.e($when->translatedFormat('D, j M Y · H:i'))
+            .' · '.e(trans_choice('pages/posts.location_count', count($post->location_ids ?? []), ['count' => count($post->location_ids ?? [])]))
+            .'</div>';
+        if (filled($post->title)) {
+            $html .= '<div style="font-weight:700; margin-bottom:.35rem;">'.e($post->title).'</div>';
+        }
+        if (filled($post->caption)) {
+            $html .= '<div style="white-space:pre-wrap; font-size:.92rem; line-height:1.55;">'.e($post->caption).'</div>';
+        }
+        if (filled($post->error)) {
+            $html .= '<div style="margin-top:.8rem; padding:.6rem .8rem; border-radius:.5rem; background:#fef2f2; color:#991b1b; font-size:.85rem;">'.e($post->error).'</div>';
+        }
+
+        return $html;
     }
 
     public function table(Table $table): Table
@@ -113,6 +600,7 @@ class Posts extends Page implements HasTable
                         'published' => 'success',
                         'scheduled' => 'info',
                         'failed' => 'danger',
+                        'draft' => 'gray',
                         default => 'warning',
                     })
                     ->tooltip(fn (Post $record): ?string => $record->error),
@@ -130,6 +618,7 @@ class Posts extends Page implements HasTable
                         'scheduled' => __('pages/posts.status_scheduled'),
                         'in_progress' => __('pages/posts.status_in_progress'),
                         'failed' => __('pages/posts.status_failed'),
+                        'draft' => __('pages/posts.status_draft'),
                     ]),
             ])
             ->recordActions([
@@ -144,16 +633,7 @@ class Posts extends Page implements HasTable
                         Notification::make()->title(__('pages/posts.deleted'))->success()->send();
                     }),
             ])
-            ->headerActions([
-                Action::make('create')
-                    ->label(__('pages/posts.create'))
-                    ->icon(Heroicon::OutlinedPlus)
-                    ->visible(fn (): bool => $this->isConfigured())
-                    ->modalHeading(__('pages/posts.create_heading'))
-                    ->modalSubmitActionLabel(__('pages/posts.submit'))
-                    ->schema($this->formSchema())
-                    ->action(fn (array $data) => $this->publish($data)),
-            ]);
+            ->headerActions([]);
     }
 
     /**
@@ -187,7 +667,8 @@ class Posts extends Page implements HasTable
                 ->label(__('pages/posts.field_caption'))
                 ->rows(4)
                 ->maxLength(1500)
-                ->required(),
+                ->required()
+                ->live(debounce: 600),
 
             FileUpload::make('image')
                 ->label(__('pages/posts.field_image'))
@@ -195,31 +676,36 @@ class Posts extends Page implements HasTable
                 ->disk('uploads')
                 ->directory('posts')
                 ->maxSize(4096)
+                ->live()
                 ->helperText(__('pages/posts.field_image_helper')),
 
             TextInput::make('title')
                 ->label(__('pages/posts.field_title'))
                 ->maxLength(58)
                 ->required($isOfferOrEvent)
-                ->visible($isOfferOrEvent),
+                ->visible($isOfferOrEvent)
+                ->live(debounce: 600),
 
             DateTimePicker::make('starts_at')
                 ->label(__('pages/posts.field_starts'))
                 ->seconds(false)
                 ->required($isOfferOrEvent)
-                ->visible($isOfferOrEvent),
+                ->visible($isOfferOrEvent)
+                ->live(),
 
             DateTimePicker::make('ends_at')
                 ->label(__('pages/posts.field_ends'))
                 ->seconds(false)
                 ->after('starts_at')
                 ->required($isOfferOrEvent)
-                ->visible($isOfferOrEvent),
+                ->visible($isOfferOrEvent)
+                ->live(),
 
             TextInput::make('voucher_code')
                 ->label(__('pages/posts.field_voucher'))
                 ->maxLength(58)
-                ->visible(fn (Get $get): bool => $get('type') === 'offer'),
+                ->visible(fn (Get $get): bool => $get('type') === 'offer')
+                ->live(debounce: 600),
 
             TextInput::make('redeem_url')
                 ->label(__('pages/posts.field_redeem_url'))
@@ -251,14 +737,115 @@ class Posts extends Page implements HasTable
                 ->label(__('pages/posts.field_schedule'))
                 ->seconds(false)
                 ->minDate(now())
+                ->default(fn (): ?string => $this->pullPrefillDate())
                 ->helperText(__('pages/posts.field_schedule_helper')),
         ];
     }
 
+    /** Live preview of the composed post, styled like the card on Google Maps. */
+    protected function previewHtml(Get $get): string
+    {
+        $locationIds = array_map('intval', (array) $get('locations'));
+        $names = Location::query()->whereIn('id', $locationIds)->orderBy('name')->pluck('name');
+        $name = $names->first() ?? __('pages/posts.preview_business');
+        $extra = $names->count() > 1 ? ' +'.($names->count() - 1) : '';
+
+        $workspaceId = session('current_workspace_id');
+        $logoUrl = $workspaceId ? Workspace::find($workspaceId)?->logoUrl() : null;
+
+        $image = $get('image');
+        $image = is_array($image) ? collect($image)->first() : $image;
+        $imageUrl = match (true) {
+            $image instanceof TemporaryUploadedFile => $image->temporaryUrl(),
+            is_string($image) && filled($image) => url(Storage::disk('uploads')->url($image)),
+            default => null,
+        };
+
+        $type = (string) $get('type');
+        $dates = null;
+        if (in_array($type, ['offer', 'event'], true) && (filled($get('starts_at')) || filled($get('ends_at')))) {
+            $format = fn ($v): ?string => filled($v) ? CarbonImmutable::parse($v)->translatedFormat('M j') : null;
+            $dates = trim(($format($get('starts_at')) ?? '…').' – '.($format($get('ends_at')) ?? '…'));
+        }
+
+        $postDate = filled($get('scheduled_at'))
+            ? CarbonImmutable::parse((string) $get('scheduled_at'))->translatedFormat('M j, Y')
+            : now()->translatedFormat('M j, Y');
+
+        $html = '<div style="font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:#9ca3af; margin-bottom:.5rem;">'
+            .e(__('pages/posts.preview_label')).'</div>';
+        $html .= '<div style="max-width:26rem; border:1px solid rgb(0 0 0 / .08); border-radius:.75rem; overflow:hidden; background:#fff; color:#202124; box-shadow:0 1px 3px rgb(0 0 0 / .1);">';
+
+        // Header: logo with verified badge, name + date, share/menu icons.
+        $avatar = $logoUrl !== null
+            ? '<img src="'.e($logoUrl).'" alt="" style="width:2.4rem; height:2.4rem; border-radius:999px; object-fit:cover;">'
+            : '<span style="display:inline-flex; align-items:center; justify-content:center; width:2.4rem; height:2.4rem; border-radius:999px; background:#202124; color:#fff; font-weight:700;">'.e(mb_strtoupper(mb_substr((string) $name, 0, 1))).'</span>';
+
+        $html .= '<div style="display:flex; align-items:center; gap:.65rem; padding:.75rem .9rem;">'
+            .'<span style="position:relative; flex:none; line-height:0;">'.$avatar
+            .'<svg viewBox="0 0 24 24" fill="#1a73e8" style="position:absolute; right:-.15rem; bottom:-.15rem; width:.95rem; height:.95rem; background:#fff; border-radius:999px;"><path d="M12 2 9.19 4.63l-3.83.44-.44 3.83L2.29 11.7l2.63 2.81-.44 3.83 3.83.44L11.12 21.7l2.81-2.63 3.83.44.44-3.83 2.63-2.81-2.63-2.81.44-3.83-3.83-.44L12 2zm-1.4 13.3-2.9-2.9 1.06-1.06 1.84 1.83 4.64-4.63 1.06 1.06-5.7 5.7z"/></svg>'
+            .'</span>'
+            .'<span style="flex:1; min-width:0;">'
+            .'<span style="display:block; font-weight:700; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">'.e($name.$extra).'</span>'
+            .'<span style="display:block; font-size:.76rem; color:#5f6368;">'.e($postDate).'</span>'
+            .'</span>'
+            .'<span style="flex:none; display:inline-flex; align-items:center; gap:.7rem; color:#5f6368;">'
+            .'<svg style="width:1.05rem; height:1.05rem;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"/></svg>'
+            .'<svg style="width:1.05rem; height:1.05rem;" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>'
+            .'</span>'
+            .'</div>';
+
+        if ($imageUrl !== null) {
+            $html .= '<img src="'.e($imageUrl).'" alt="" style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover;">';
+        } else {
+            $html .= '<div style="width:100%; aspect-ratio:2/1; background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 12px,#e5e7eb 12px,#e5e7eb 24px); display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:.8rem;">'.e(__('pages/posts.preview_no_image')).'</div>';
+        }
+
+        $html .= '<div style="padding:.9rem .9rem .35rem;">';
+
+        if (filled($get('title'))) {
+            $html .= '<div style="font-weight:700; font-size:.95rem; margin-bottom:.25rem;">'.e((string) $get('title')).'</div>';
+        }
+        if ($dates !== null) {
+            $html .= '<div style="font-size:.8rem; color:#5f6368; margin-bottom:.35rem;">'.e($dates).'</div>';
+        }
+        if (filled($get('caption'))) {
+            $html .= '<div style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit((string) $get('caption'), 600)).'</div>';
+        } else {
+            $html .= '<div style="font-size:.9rem; color:#c0c3c9;">'.e(__('pages/posts.preview_placeholder')).'</div>';
+        }
+
+        if ($type === 'offer' && filled($get('voucher_code'))) {
+            $html .= '<div style="margin-top:.7rem; padding:.5rem .7rem; border:1px dashed #9ca3af; border-radius:.5rem; text-align:center; font-family:monospace; font-size:.85rem; letter-spacing:.1em;">'.e((string) $get('voucher_code')).'</div>';
+        }
+
+        $html .= '</div>';
+
+        // Centered CTA above the card's bottom edge, like the Maps card.
+        $cta = (string) $get('cta_type');
+        if ($type === 'offer') {
+            $cta = 'learn_more';
+        }
+        if (filled($cta)) {
+            $html .= '<div style="margin-top:.55rem; border-top:1px solid rgb(0 0 0 / .07); padding:.75rem; text-align:center;">'
+                .'<span style="color:#0d766e; font-weight:600; font-size:.9rem;">'.e(__('pages/posts.cta_'.$cta)).'</span>'
+                .'</div>';
+        } else {
+            $html .= '<div style="height:.55rem;"></div>';
+        }
+
+        $html .= '</div>';
+
+        return $html;
+    }
+
     /**
+     * Publish (or keep as a draft) the composer's post. $existing is set when
+     * an earlier draft is being republished or re-saved.
+     *
      * @param  array<string, mixed>  $data
      */
-    protected function publish(array $data): void
+    protected function publish(array $data, bool $draft = false, ?Post $existing = null): void
     {
         $locations = Location::query()->whereIn('id', $data['locations'] ?? [])->get();
 
@@ -272,7 +859,7 @@ class Posts extends Page implements HasTable
         // locations were connected with — no extra id mapping.
         $unmatched = $locations->filter(fn (Location $l): bool => blank($l->zernio_account_id) || blank($l->external_id));
 
-        if ($unmatched->isNotEmpty()) {
+        if (! $draft && $unmatched->isNotEmpty()) {
             Notification::make()
                 ->title(__('pages/posts.unmatched'))
                 ->body($unmatched->pluck('name')->implode(', '))
@@ -282,7 +869,7 @@ class Posts extends Page implements HasTable
             return;
         }
 
-        $post = Post::create([
+        $attributes = [
             'type' => $data['type'],
             'caption' => $data['caption'] ?? null,
             'title' => $data['title'] ?? null,
@@ -299,10 +886,24 @@ class Posts extends Page implements HasTable
             'location_ids' => $locations->pluck('id')->all(),
             'source_ids' => $locations->pluck('external_id')->all(),
             'scheduled_at' => $data['scheduled_at'] ?? null,
-            'status' => 'in_progress',
-            'created_by' => auth()->id(),
-            'created_by_name' => auth()->user()?->name,
-        ]);
+            'status' => $draft ? 'draft' : 'in_progress',
+        ];
+
+        if ($existing !== null) {
+            $existing->update($attributes);
+            $post = $existing;
+        } else {
+            $post = Post::create($attributes + [
+                'created_by' => auth()->id(),
+                'created_by_name' => auth()->user()?->name,
+            ]);
+        }
+
+        if ($draft) {
+            Notification::make()->title(__('pages/posts.draft_saved'))->success()->send();
+
+            return;
+        }
 
         app(PostPublisher::class)->publish($post, $locations);
         $post->refresh();

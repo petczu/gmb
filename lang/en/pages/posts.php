@@ -5,7 +5,6 @@ declare(strict_types=1);
 return [
     'nav' => 'Posts',
     'title' => 'Google posts',
-    'intro' => 'Publish updates, offers, events and photos straight to the Google Business Profiles of your locations. Scheduled posts are delivered by the provider at the chosen time (UTC).',
 
     'empty' => 'No posts yet.',
     'empty_desc' => 'Create your first post to show news, offers or events on your Google profile.',
@@ -29,6 +28,7 @@ return [
     'status_scheduled' => 'Scheduled',
     'status_in_progress' => 'Publishing…',
     'status_failed' => 'Failed',
+    'status_draft' => 'Draft',
 
     'create' => 'New post',
     'create_heading' => 'New Google post',
@@ -38,7 +38,7 @@ return [
     'field_locations' => 'Locations',
     'field_caption' => 'Text',
     'field_image' => 'Image',
-    'field_image_helper' => 'The image must be publicly reachable for Google to fetch it — uploads only work from a public server, not from a local machine.',
+    'field_image_helper' => 'The image must be publicly reachable for Google to fetch it: uploads only work from a public server, not from a local machine.',
     'field_photo_category' => 'Photo category',
     'field_title' => 'Title',
     'field_starts' => 'Starts',
@@ -68,4 +68,73 @@ return [
     'delete' => 'Remove',
     'delete_desc' => 'This only removes the entry from this list — it does not delete the post from Google.',
     'deleted' => 'Entry removed',
+
+    // Calendar view
+    'view_calendar' => 'Calendar',
+    'view_list' => 'List',
+    'view_month' => 'Month',
+    'view_week' => 'Week',
+    'today' => 'Today',
+    'close' => 'Close',
+    'location_count' => '{1} 1 location|[2,*] :count locations',
+    'add_post' => 'Post',
+    'add_note' => 'Note',
+
+    // Drafts
+    'save_draft' => 'Save draft',
+    'draft_heading' => 'Edit draft',
+    'draft_saved' => 'Draft saved',
+    'draft_delete' => 'Delete draft',
+    'draft_delete_desc' => 'The draft will be removed. Nothing was published to Google.',
+    'draft_deleted' => 'Draft deleted',
+
+    // Live preview
+    'preview_label' => 'Preview',
+    'preview_business' => 'Your business',
+    'preview_now' => 'just now',
+    'preview_no_image' => 'No image',
+    'preview_placeholder' => 'Your post text will appear here.',
+
+    // Sticky notes
+    'note_placeholder' => 'Type a private note…',
+    'note_color' => 'Note color',
+    'note_tag' => '# tag',
+    'note_delete' => 'Delete note',
+    'note_delete_confirm' => 'Delete this note?',
+    'notes_filter' => 'Notes',
+    'notes_filter_title' => 'Notes by tag',
+    'notes_filter_hint' => 'Unticked tags are hidden from the calendar.',
+    'notes_filter_untagged' => 'Without tag',
+
+    'color_yellow' => 'Yellow',
+    'color_orange' => 'Orange',
+    'color_red' => 'Red',
+    'color_pink' => 'Pink',
+    'color_purple' => 'Purple',
+    'color_blue' => 'Blue',
+    'color_teal' => 'Teal',
+    'color_green' => 'Green',
+    'color_gray' => 'Gray',
+
+    // External calendars
+    'calendars_button' => '{0} Calendars|{1} 1 calendar|[2,*] :count calendars',
+    'calendars_connect' => 'External calendar',
+    'calendars_title' => 'External calendars',
+    'calendars_empty' => 'Overlay public calendars on this view: holidays, bookings or other content plans.',
+    'calendars_synced_ago' => 'Synced :ago',
+    'calendars_refresh' => 'Sync now',
+    'calendars_synced' => 'Calendars synced',
+    'calendars_sync_failed' => 'Some calendars failed to sync',
+    'calendar_add' => 'Add external calendar',
+    'calendar_add_submit' => 'Add calendar',
+    'calendar_name' => 'Name',
+    'calendar_name_placeholder' => 'e.g. Austria holidays',
+    'calendar_url' => 'ICS link',
+    'calendar_url_helper' => 'A public iCal/ICS feed URL. In Google Calendar: Settings, then "Integrate calendar", then "Public address in iCal format".',
+    'calendar_color' => 'Color',
+    'calendar_added' => 'Calendar added',
+    'calendar_events_count' => '{0} No events found in the feed.|{1} 1 event imported.|[2,*] :count events imported.',
+    'calendar_sync_error' => 'Calendar added, but the feed could not be synced',
+    'calendar_delete' => 'Remove calendar',
+    'calendar_delete_confirm' => 'Remove this calendar and its events from the view?',
 ];
