@@ -23,7 +23,9 @@ use Throwable;
  */
 class RefreshCompetitorsCommand extends Command
 {
-    protected $signature = 'competitors:refresh {workspace? : Workspace id or slug; omit for all}';
+    protected $signature = 'competitors:refresh
+        {workspace? : Workspace id or slug; omit for all}
+        {--watchlist : Also refresh the admin watchlist (tracked_places) that no tenant uses}';
 
     protected $description = 'Refresh competitor ratings/review counts from the Google Places API';
 
@@ -39,11 +41,17 @@ class RefreshCompetitorsCommand extends Command
             ? Workspace::query()->get()
             : Workspace::query()->where('id', $this->argument('workspace'))->orWhere('slug', $this->argument('workspace'))->get();
 
-        // Pass 1 — the distinct place ids across all tenants + admin watchlist,
-        // plus a map of place ids we ALREADY sync (connected locations with a
-        // resolved place_id) → their fresh rating/reviews. Those get a snapshot
-        // from our own data and skip the paid Places call entirely.
-        $placeIds = TrackedPlace::query()->pluck('place_id')->all();
+        // Pass 1 — the distinct place ids across all tenants, plus a map of
+        // place ids we ALREADY sync (connected locations with a resolved
+        // place_id) → their fresh rating/reviews. Those get a snapshot from
+        // our own data and skip the paid Places call entirely.
+        //
+        // The admin watchlist (tracked_places, potentially hundreds of rows
+        // from bulk discovery) joins only with --watchlist: refreshing places
+        // no tenant uses every day is what burns the Places budget.
+        $placeIds = $this->option('watchlist')
+            ? TrackedPlace::query()->pluck('place_id')->all()
+            : [];
 
         /** @var array<string, array{name: ?string, address: ?string, rating: ?float, reviews_count: int}> $connected */
         $connected = [];

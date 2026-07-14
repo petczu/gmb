@@ -56,6 +56,10 @@ Schedule::command('emails:drip')->dailyAt('10:00');
 // on the Competitors page; cost is ~1 details call per competitor per day.
 Schedule::command('competitors:refresh')->dailyAt('06:00');
 
+// The full admin watchlist (bulk-discovered places) refreshes only weekly —
+// daily Place Details for hundreds of unused places burns the Places budget.
+Schedule::command('competitors:refresh --watchlist')->weeklyOn(1, '06:30');
+
 // Global AI budget guard: emails super-admins at 80%/100% of
 // AI_MONTHLY_BUDGET_USD (no-op while unset).
 Schedule::command('ai:budget-check')->dailyAt('09:30');
