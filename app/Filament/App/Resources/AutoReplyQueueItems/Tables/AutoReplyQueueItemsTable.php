@@ -93,7 +93,10 @@ class AutoReplyQueueItemsTable
                     ->tooltip(fn (AutoReplyQueueItem $record): ?string => match ($record->status) {
                         'failed' => $record->error,
                         'scheduled' => $record->post_at
-                            ? __('resources/auto_reply.scheduled_for', ['time' => $record->post_at->translatedFormat('j. M Y, H:i')])
+                            ? __('resources/auto_reply.scheduled_for', ['time' => $record->post_at
+                                ->copy()
+                                ->setTimezone(Auth::user()?->timezone ?: config('app.timezone'))
+                                ->translatedFormat('j. M Y, H:i')])
                             : null,
                         default => null,
                     })
