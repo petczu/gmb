@@ -28,13 +28,6 @@ return [
     // Massenbearbeitung der Öffnungszeiten
     'bulk_hours' => 'Zeiten bearbeiten',
 
-    // Standort-Zeitzone (automatisch erkannt, editierbar)
-    'set_timezone' => 'Zeitzone festlegen',
-    'timezone_heading' => 'Standort-Zeitzone',
-    'timezone' => 'Zeitzone',
-    'timezone_helper' => 'Die Arbeitszeiten für Auto-Antworten gelten in dieser Zeitzone. Beim Verbinden automatisch erkannt; hier bei Bedarf korrigieren.',
-    'timezone_saved' => 'Zeitzone gespeichert',
-
     // Standortgruppen (Filter + Organisation)
     'group' => 'Gruppe',
     'groups' => 'Gruppen',

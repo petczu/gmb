@@ -134,6 +134,7 @@ class BusinessProfile extends Page implements HasForms
             'phone' => $location->phone,
             'additional_phones' => $stored['additional_phones'] ?? [],
             'website' => $location->website_url,
+            'timezone' => $location->timezone,
             'opening_hours' => $stored['opening_hours'] ?? [],
             'special_hours' => $stored['special_hours'] ?? [],
             'socials' => array_fill_keys(array_keys(ListingUpdater::SOCIAL_ATTRIBUTES), null),
@@ -161,6 +162,7 @@ class BusinessProfile extends Page implements HasForms
             'phone' => $live['phone'] ?? $location->phone,
             'additional_phones' => $live['additional_phones'] ?? $stored['additional_phones'] ?? [],
             'website' => $live['website'] ?? $location->website_url,
+            'timezone' => $location->timezone,
             'opening_hours' => $live['opening_hours'] ?? $stored['opening_hours'] ?? [],
             'special_hours' => $live['special_hours'] ?? $stored['special_hours'] ?? [],
             'socials' => $this->fetchSocialUrls($location),
@@ -313,6 +315,12 @@ class BusinessProfile extends Page implements HasForms
                             ->label(__('pages/business_profile.field_additional_phones'))
                             ->placeholder(__('pages/business_profile.field_additional_phones_placeholder'))
                             ->helperText(__('pages/business_profile.field_additional_phones_help')),
+                        Select::make('timezone')
+                            ->label(__('pages/business_profile.field_timezone'))
+                            ->options(collect(\DateTimeZone::listIdentifiers())->mapWithKeys(fn (string $tz): array => [$tz => $tz])->all())
+                            ->searchable()
+                            ->native(false)
+                            ->helperText(__('pages/business_profile.field_timezone_helper')),
                     ]),
 
                 Section::make(__('pages/business_profile.section_socials'))
@@ -415,6 +423,14 @@ class BusinessProfile extends Page implements HasForms
             return;
         }
 
+        $state = $this->form->getState();
+
+        // Timezone is our own field, not a Google/Zernio property — persist it
+        // regardless of the listing push (and keep it out of the push payload).
+        $tz = $state['timezone'] ?? null;
+        $location->forceFill(['timezone' => filled($tz) ? $tz : null])->save();
+        unset($state['timezone']);
+
         if (blank($location->zernio_account_id) || blank($location->external_id)) {
             Notification::make()->title(__('pages/business_profile.unmatched'))->danger()->send();
 
@@ -422,7 +438,7 @@ class BusinessProfile extends Page implements HasForms
         }
 
         try {
-            app(ListingUpdater::class)->push($location, $this->form->getState());
+            app(ListingUpdater::class)->push($location, $state);
         } catch (Throwable $e) {
             Notification::make()
                 ->title(__('pages/business_profile.save_failed'))

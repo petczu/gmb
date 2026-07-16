@@ -10,7 +10,6 @@ use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Billing\LocationBilling;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -116,25 +115,6 @@ class LocationsTable
                         ->icon(Heroicon::OutlinedPencilSquare)
                         ->visible(fn (): bool => auth()->user()?->can('edit_business_info') ?? false)
                         ->url(fn (Location $record): string => BusinessProfile::getUrl().'?location='.$record->id),
-
-                    Action::make('setTimezone')
-                        ->label(__('resources/locations.set_timezone'))
-                        ->icon(Heroicon::OutlinedGlobeAlt)
-                        ->visible(fn (): bool => auth()->user()?->can('edit_business_info') ?? false)
-                        ->modalHeading(__('resources/locations.timezone_heading'))
-                        ->fillForm(fn (Location $record): array => ['timezone' => $record->timezone])
-                        ->schema([
-                            Select::make('timezone')
-                                ->label(__('resources/locations.timezone'))
-                                ->options(collect(\DateTimeZone::listIdentifiers())->mapWithKeys(fn (string $tz): array => [$tz => $tz])->all())
-                                ->searchable()
-                                ->native(false)
-                                ->helperText(__('resources/locations.timezone_helper')),
-                        ])
-                        ->action(function (Location $record, array $data): void {
-                            $record->forceFill(['timezone' => filled($data['timezone'] ?? null) ? $data['timezone'] : null])->save();
-                            Notification::make()->title(__('resources/locations.timezone_saved'))->success()->send();
-                        }),
 
                     Action::make('disconnect')
                         ->label(__('resources/locations.disconnect'))

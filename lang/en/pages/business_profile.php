@@ -54,5 +54,7 @@ return [
     'field_additional_phones' => 'Additional phone numbers',
     'field_additional_phones_placeholder' => 'add number + Enter',
     'field_additional_phones_help' => 'Up to two extra numbers shown on the profile.',
+    'field_timezone' => 'Timezone',
+    'field_timezone_helper' => 'Auto-reply working hours are interpreted in this timezone. Auto-detected on connect; override here if wrong.',
     'loading_live' => 'Loading the current profile data from Google…',
 ];

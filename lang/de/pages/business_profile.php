@@ -54,5 +54,7 @@ return [
     'field_additional_phones' => 'Weitere Telefonnummern',
     'field_additional_phones_placeholder' => 'Nummer eingeben + Enter',
     'field_additional_phones_help' => 'Bis zu zwei zusätzliche Nummern auf dem Profil.',
+    'field_timezone' => 'Zeitzone',
+    'field_timezone_helper' => 'Die Arbeitszeiten für Auto-Antworten gelten in dieser Zeitzone. Beim Verbinden automatisch erkannt; hier bei Bedarf korrigieren.',
     'loading_live' => 'Aktuelle Profildaten werden von Google geladen…',
 ];
