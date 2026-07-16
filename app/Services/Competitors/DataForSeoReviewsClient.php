@@ -94,8 +94,10 @@ class DataForSeoReviewsClient
      */
     public function getTask(string $taskId): ?array
     {
+        // Business Data reviews task_get has NO "/advanced" variant (unlike
+        // SERP endpoints) — the plain path is the only one, else it 404s.
         $response = $this->request()
-            ->get(self::BASE.'/task_get/advanced/'.$taskId)
+            ->get(self::BASE.'/task_get/'.$taskId)
             ->throw()
             ->json();
 

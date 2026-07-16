@@ -64,6 +64,7 @@ class BackfillCompetitorReviewsCommand extends Command
                 $reviews = $client->fetch($placeId, $depth);
             } catch (Throwable $e) {
                 $failed++;
+                $this->warn(sprintf('  %s: %s', $placeId, $e->getMessage()));
                 Log::warning('Competitor reviews backfill failed', ['place' => $placeId, 'error' => $e->getMessage()]);
 
                 continue;
