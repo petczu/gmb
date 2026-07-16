@@ -55,6 +55,15 @@ class ApiRestTest extends TestCase
             $table->timestamps();
         });
 
+        // Publishing a reply retires open queue items (Review model hook).
+        Schema::create('auto_reply_queue', function ($table): void {
+            $table->increments('id');
+            $table->unsignedInteger('review_id');
+            $table->string('status');
+            $table->dateTime('decided_at')->nullable();
+            $table->timestamps();
+        });
+
         CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-06-30 12:00:00'));
 
         DB::table('locations')->insert([

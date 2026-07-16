@@ -147,6 +147,14 @@ return [
         'cta' => 'Freigaben öffnen',
     ],
 
+    'post_failed' => [
+        'subject' => 'Dein Google-Post konnte nicht veröffentlicht werden',
+        'intro' => 'Wir haben versucht, einen Google-Post für :business zu veröffentlichen, aber es ist fehlgeschlagen. Der Post liegt mit dem Fehler in deinem Kalender.',
+        'detail' => 'Bitte versuche, den Post erneut über die App zu veröffentlichen.',
+        'detail_reason' => 'Grund: :reason',
+        'cta' => 'Posts öffnen',
+    ],
+
     'approvals_pending' => [
         'subject' => ':count Antwort(en) warten auf Freigabe',
         'intro' => 'Du hast :count Antwort(en), die auf deine Freigabe warten. Prüfe und genehmige sie, damit sie veröffentlicht werden können.',

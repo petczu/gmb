@@ -51,6 +51,15 @@ class ActivityLogTest extends TestCase
             $table->timestamps();
         });
 
+        // Publishing a reply retires open queue items (Review model hook).
+        Schema::create('auto_reply_queue', function ($table): void {
+            $table->increments('id');
+            $table->unsignedInteger('review_id');
+            $table->string('status');
+            $table->dateTime('decided_at')->nullable();
+            $table->timestamps();
+        });
+
         // Empty endpoints table so the reply.published webhook dispatch no-ops.
         Schema::create('webhook_endpoints', function ($table): void {
             $table->increments('id');

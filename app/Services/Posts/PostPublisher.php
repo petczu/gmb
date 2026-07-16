@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services\Posts;
 
+use App\Mail\PostFailedMail;
 use App\Models\Location;
 use App\Models\Post;
+use App\Models\Workspace;
+use App\Services\Notifications\NotificationCategory;
+use App\Services\Notifications\NotificationDispatcher;
 use App\Services\Zernio\ZernioRestClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -29,15 +35,58 @@ class PostPublisher
         try {
             $created = $this->client->createPost($this->payload($post, $locations));
 
+            $status = $this->statusOf($created, $post);
+            $error = $this->platformError($created);
             $post->forceFill([
-                'status' => $this->statusOf($created, $post),
+                'status' => $status,
                 'external_ids' => array_values(array_filter([(string) ($created['_id'] ?? $created['id'] ?? '')])),
-                'error' => $this->platformError($created),
+                'error' => $error,
             ])->save();
+
+            if ($status === 'failed') {
+                $this->notifyFailed($post, $locations, $error);
+            }
         } catch (RequestException $e) {
-            $post->forceFill(['status' => 'failed', 'error' => $this->errorMessage($e)])->save();
+            $message = $this->errorMessage($e);
+            $post->forceFill(['status' => 'failed', 'error' => $message])->save();
+            $this->notifyFailed($post, $locations, $message);
         } catch (Throwable $e) {
             $post->forceFill(['status' => 'failed', 'error' => $e->getMessage()])->save();
+            $this->notifyFailed($post, $locations, $e->getMessage());
+        }
+    }
+
+    /**
+     * Best-effort: email the Operations recipients that a post failed to
+     * publish. Never throws — a notification failure must not mask the post
+     * outcome.
+     *
+     * @param  Collection<int, Location>  $locations
+     */
+    protected function notifyFailed(Post $post, Collection $locations, ?string $reason): void
+    {
+        try {
+            $workspace = tenant();
+            if (! $workspace instanceof Workspace) {
+                return;
+            }
+
+            $business = $locations->first()?->name ?? $workspace->name;
+            $postsUrl = rtrim((string) config('app.url'), '/').'/posts';
+
+            app(NotificationDispatcher::class)->dispatch(
+                $workspace,
+                NotificationCategory::OPERATIONS,
+                fn (string $name, string $lang): PostFailedMail => new PostFailedMail(
+                    name: $name,
+                    businessName: (string) $business,
+                    postsUrl: $postsUrl,
+                    reason: filled($reason) ? Str::limit((string) $reason, 200) : null,
+                    lang: $lang,
+                ),
+            );
+        } catch (Throwable $e) {
+            Log::warning('Post failed email failed', ['post' => $post->id, 'error' => $e->getMessage()]);
         }
     }
 

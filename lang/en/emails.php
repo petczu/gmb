@@ -147,6 +147,14 @@ return [
         'cta' => 'Open approvals',
     ],
 
+    'post_failed' => [
+        'subject' => 'We could not publish your Google post',
+        'intro' => 'We tried to publish a Google post for :business, but it failed. The post is on your calendar with the error.',
+        'detail' => 'Please try publishing the post again from the app.',
+        'detail_reason' => 'Reason: :reason',
+        'cta' => 'Open posts',
+    ],
+
     'approvals_pending' => [
         'subject' => ':count repl(y/ies) waiting for approval',
         'intro' => 'You have :count repl(y/ies) waiting for your approval. Review and approve them so they can be posted.',

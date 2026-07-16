@@ -49,6 +49,7 @@ class EmailTemplateCatalog
             'new_reviews' => ['title' => 'New reviews digest', 'category' => 'Reputation', 'sample' => ['name' => 'Peter', 'count' => '3', 'location' => 'GAME OVER Vienna', 'url' => self::url('reviews')]],
             'negative_review' => ['title' => 'Negative review', 'category' => 'Reputation', 'sample' => ['name' => 'Peter', 'business' => 'GAME OVER Vienna', 'rating' => '2', 'url' => self::url('reviews')]],
             'reply_failed' => ['title' => 'Reply failed', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'business' => 'GAME OVER Vienna', 'url' => self::url('approvals'), 'detail' => 'Please try posting the reply again from the app.']],
+            'post_failed' => ['title' => 'Post failed', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'business' => 'GAME OVER Vienna', 'url' => self::url('posts'), 'detail' => 'Please try publishing the post again from the app.']],
             'review_anomaly' => ['title' => 'Anomaly alert', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'count' => '3', 'url' => self::url('reviews')]],
             'review_goal_mid' => ['title' => 'Goal progress (mid-month)', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'intro' => 'Great pace! You have 18 new reviews this month, ahead of the 14 expected by now (goal 30). Keep it up.', 'url' => self::url('reviews')]],
             'review_goal_recap' => ['title' => 'Goal recap (month end)', 'category' => 'Review growth', 'sample' => ['name' => 'Peter', 'month' => 'May 2026', 'intro' => 'Here is how May 2026 finished: 28 new reviews against a goal of 30.', 'url' => self::url('reviews')]],
@@ -264,6 +265,11 @@ class EmailTemplateCatalog
                 ':detail',
             ], __('emails.reply_failed.cta', [], $locale)),
 
+            'post_failed' => self::shell($locale, self::greeting($locale), [
+                __('emails.post_failed.intro', ['business' => ':business'], $locale),
+                ':detail',
+            ], __('emails.post_failed.cta', [], $locale)),
+
             'review_anomaly' => self::shell($locale, self::greeting($locale), [
                 __('emails.review_anomaly.intro', [], $locale),
                 '{{ items }}',
@@ -339,6 +345,7 @@ class EmailTemplateCatalog
             'new_reviews' => 'reviews',
             'negative_review' => 'attention',
             'reply_failed' => 'send-failed',
+            'post_failed' => 'send-failed',
             'review_anomaly' => 'attention',
             'review_goal_mid' => 'progress',
             'review_goal_recap' => 'recap',
