@@ -139,7 +139,6 @@
 
                             @if ($filterTags !== [])
                                 <div class="head" style="{{ $hasLocationFilter ? 'margin-top:.7rem;' : '' }}"><b>{{ __('pages/posts.notes_filter_title') }}</b></div>
-                                <div class="sub">{{ __('pages/posts.notes_filter_hint') }}</div>
                                 @foreach ($filterTags as $tag)
                                     <label class="row" style="cursor:pointer;">
                                         <input type="checkbox" @checked(! in_array($tag, $this->hiddenNoteTags, true)) wire:click="toggleNoteTagFilter(@js($tag))" style="cursor:pointer;">
