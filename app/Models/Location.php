@@ -20,6 +20,7 @@ class Location extends Model
         'listing_data',
         'zernio_account_id',
         'place_id',
+        'cid',
         'name',
         'address',
         'timezone',

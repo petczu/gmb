@@ -31,6 +31,7 @@ class ExternalPostImporterTest extends TestCase
             $table->increments('id');
             $table->string('name');
             $table->string('zernio_account_id')->nullable();
+            $table->string('cid')->nullable();
             $table->timestamps();
         });
 
@@ -113,6 +114,32 @@ class ExternalPostImporterTest extends TestCase
 
         $this->assertSame(0, $second['imported']);
         $this->assertSame(1, Post::count());
+    }
+
+    public function test_it_attributes_shared_account_posts_by_cid(): void
+    {
+        // Two locations under ONE Zernio account; the feed carries both, each
+        // post's CID (in its url) decides which location it belongs to.
+        Location::create(['name' => 'City Walk', 'zernio_account_id' => 'acc-1', 'cid' => '111']);
+        $riyadh = Location::create(['name' => 'Riyadh', 'zernio_account_id' => 'acc-1', 'cid' => '222']);
+
+        Http::fake([
+            '*/posts/sync-external' => Http::response(['synced' => []]),
+            '*/posts*' => Http::response([
+                'posts' => [[
+                    '_id' => 'z-1', 'content' => 'Riyadh room',
+                    'mediaItems' => [], 'scheduledFor' => '2026-06-01T09:00:00Z', 'status' => 'published',
+                    'platforms' => [['platformPostId' => 'g-r', 'platformPostUrl' => 'https://local.google.com/place?id=222&use=posts']],
+                ]],
+                'pagination' => ['page' => 1, 'pages' => 1],
+            ]),
+        ]);
+
+        app(ExternalPostImporter::class)->import();
+
+        $post = Post::sole();
+        $this->assertSame([$riyadh->id], $post->location_ids);
+        $this->assertSame('Riyadh room', $post->caption);
     }
 
     public function test_store_creates_an_imported_post_from_normalized_data(): void

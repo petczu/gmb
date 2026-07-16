@@ -8,6 +8,7 @@ use App\Models\Location;
 use App\Models\Post;
 use App\Services\Zernio\ZernioRestClient;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -38,36 +39,38 @@ class ExternalPostImporter
             return ['locations' => 0, 'imported' => 0];
         }
 
-        $locations = 0;
+        $connected = Location::query()->whereNotNull('zernio_account_id')->get();
+
+        // Several locations can share one Zernio account whose feed carries posts
+        // for all of them, so walk each account ONCE and attribute posts by the
+        // per-post CID (from its url) to the right location.
+        $cidMap = $connected->whereNotNull('cid')->keyBy(fn (Location $l): string => (string) $l->cid);
+
         $imported = 0;
+        foreach ($connected->groupBy(fn (Location $l): string => trim((string) $l->zernio_account_id)) as $accountId => $group) {
+            if ($accountId === '') {
+                continue;
+            }
 
-        Location::query()
-            ->whereNotNull('zernio_account_id')
-            ->get()
-            ->each(function (Location $location) use (&$locations, &$imported): void {
-                $accountId = trim((string) $location->zernio_account_id);
-                if ($accountId === '') {
-                    return;
-                }
+            // Kick an on-demand refresh so recent posts are available now, then
+            // walk the stored history. Best-effort: a sync failure still lets us
+            // read whatever Zernio already holds.
+            try {
+                $this->zernio->syncExternalPosts($accountId);
+            } catch (Throwable $e) {
+                Log::info('External post on-demand sync skipped', ['account' => $accountId, 'error' => $e->getMessage()]);
+            }
 
-                $locations++;
+            $imported += $this->importAccount($group->first(), $accountId, $cidMap);
+        }
 
-                // Kick an on-demand refresh so recent posts are available now,
-                // then walk the stored history. Best-effort: a sync failure
-                // still lets us read whatever Zernio already holds.
-                try {
-                    $this->zernio->syncExternalPosts($accountId);
-                } catch (Throwable $e) {
-                    Log::info('External post on-demand sync skipped', ['account' => $accountId, 'error' => $e->getMessage()]);
-                }
-
-                $imported += $this->importAccount($location, $accountId);
-            });
-
-        return ['locations' => $locations, 'imported' => $imported];
+        return ['locations' => $connected->count(), 'imported' => $imported];
     }
 
-    private function importAccount(Location $location, string $accountId): int
+    /**
+     * @param  Collection<string, Location>  $cidMap
+     */
+    private function importAccount(Location $fallback, string $accountId, Collection $cidMap): int
     {
         $stored = 0;
         $page = 1;
@@ -87,12 +90,13 @@ class ExternalPostImporter
                 // id/url/date live under platforms[]; media under mediaItems[].
                 $platform = (array) ($post['platforms'][0] ?? []);
                 $mediaItems = is_array($post['mediaItems'] ?? null) ? $post['mediaItems'] : [];
+                $url = $platform['platformPostUrl'] ?? null;
 
-                $stored += $this->store($location, [
+                $stored += $this->store($this->locationForCid($url, $cidMap) ?? $fallback, [
                     'platform_post_id' => (string) ($platform['platformPostId'] ?? ($post['_id'] ?? '')),
                     'content' => (string) ($post['content'] ?? ''),
                     'image_url' => $mediaItems[0]['url'] ?? null,
-                    'url' => $platform['platformPostUrl'] ?? null,
+                    'url' => $url,
                     'published_at' => $platform['publishedAt'] ?? ($post['scheduledFor'] ?? null),
                 ]) ? 1 : 0;
             }
@@ -102,6 +106,20 @@ class ExternalPostImporter
         } while ($page <= $pages && $page <= self::MAX_PAGES);
 
         return $stored;
+    }
+
+    /**
+     * The location whose CID matches the post's url ("…?id=<cid>…"), or null.
+     *
+     * @param  Collection<string, Location>  $cidMap
+     */
+    private function locationForCid(?string $url, Collection $cidMap): ?Location
+    {
+        if ($url === null || preg_match('/[?&]id=(\d+)/', $url, $m) !== 1) {
+            return null;
+        }
+
+        return $cidMap->get($m[1]);
     }
 
     /**
@@ -118,7 +136,14 @@ class ExternalPostImporter
             return false;
         }
 
-        if (Post::query()->where('platform_post_id', $platformPostId)->exists()) {
+        // Already imported → correct its location if we now know a better one
+        // (a shared account may have attributed it to the wrong location before).
+        $existing = Post::query()->where('platform_post_id', $platformPostId)->first();
+        if ($existing !== null) {
+            if ($existing->location_ids !== [$location->id]) {
+                $existing->forceFill(['location_ids' => [$location->id]])->save();
+            }
+
             return false;
         }
 

@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Models\Location;
 use App\Models\Workspace;
+use App\Services\Competitors\LocationCidResolver;
 use App\Services\Competitors\LocationTimezoneResolver;
 use Illuminate\Console\Command;
 
@@ -20,9 +21,9 @@ class ResolveLocationTimezonesCommand extends Command
         {workspace? : Workspace id or slug; omit for all}
         {--force : Re-resolve even locations that already have a timezone}';
 
-    protected $description = 'Detect and store the IANA timezone for connected locations';
+    protected $description = 'Detect and store the IANA timezone and Google CID for connected locations';
 
-    public function handle(LocationTimezoneResolver $resolver): int
+    public function handle(LocationTimezoneResolver $resolver, LocationCidResolver $cids): int
     {
         $arg = $this->argument('workspace');
         $workspaces = $arg !== null
@@ -40,18 +41,22 @@ class ResolveLocationTimezonesCommand extends Command
             tenancy()->initialize($workspace);
 
             try {
-                $resolved = 0;
-                Location::query()->whereNotNull('place_id')->get()->each(function (Location $location) use ($resolver, &$resolved): void {
+                $tz = 0;
+                $cid = 0;
+                Location::query()->whereNotNull('place_id')->get()->each(function (Location $location) use ($resolver, $cids, &$tz, &$cid): void {
                     if ($this->option('force')) {
-                        $location->forceFill(['timezone' => null])->save();
+                        $location->forceFill(['timezone' => null, 'cid' => null])->save();
                     }
 
                     if (filled($resolver->resolve($location))) {
-                        $resolved++;
+                        $tz++;
+                    }
+                    if (filled($cids->resolve($location))) {
+                        $cid++;
                     }
                 });
 
-                $this->line("[{$workspace->slug}] timezones resolved: {$resolved}");
+                $this->line("[{$workspace->slug}] timezones: {$tz}  cids: {$cid}");
             } finally {
                 $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();
             }

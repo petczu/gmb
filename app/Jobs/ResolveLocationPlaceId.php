@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Models\Location;
 use App\Models\Workspace;
+use App\Services\Competitors\LocationCidResolver;
 use App\Services\Competitors\LocationPlaceResolver;
 use App\Services\Competitors\LocationTimezoneResolver;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,7 +29,7 @@ class ResolveLocationPlaceId implements ShouldQueue
         public readonly int $locationId,
     ) {}
 
-    public function handle(LocationPlaceResolver $resolver, LocationTimezoneResolver $timezones): void
+    public function handle(LocationPlaceResolver $resolver, LocationTimezoneResolver $timezones, LocationCidResolver $cids): void
     {
         $workspace = Workspace::find($this->workspaceId);
         if ($workspace === null) {
@@ -43,6 +44,7 @@ class ResolveLocationPlaceId implements ShouldQueue
             if ($location !== null) {
                 $resolver->resolve($location);
                 $timezones->resolve($location);
+                $cids->resolve($location);
             }
         } finally {
             $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();

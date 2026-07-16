@@ -232,7 +232,13 @@ class ZernioWebhookHandler
         tenancy()->initialize($workspace);
 
         try {
-            $location = Location::query()->where('zernio_account_id', $accountId)->first();
+            // Prefer the location whose CID matches the post's url (several
+            // locations can share one account); fall back to the account's first.
+            $url = (string) ($post['url'] ?? '');
+            $location = (preg_match('/[?&]id=(\d+)/', $url, $m) === 1
+                ? Location::query()->where('cid', $m[1])->first()
+                : null)
+                ?? Location::query()->where('zernio_account_id', $accountId)->first();
             if ($location === null) {
                 return;
             }

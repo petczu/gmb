@@ -138,6 +138,23 @@ class PlacesClient
     }
 
     /**
+     * A place's Google Maps CID (the numeric id in its maps URL), or null.
+     * Read from the place's googleMapsUri (e.g. "…?cid=12404534308606220248").
+     */
+    public function mapsCid(string $placeId): ?string
+    {
+        $place = (array) $this->request()
+            ->withHeaders(['X-Goog-FieldMask' => 'googleMapsUri'])
+            ->get(self::BASE.'/places/'.$placeId)
+            ->throw()
+            ->json();
+
+        $uri = (string) ($place['googleMapsUri'] ?? '');
+
+        return preg_match('/[?&]cid=(\d+)/', $uri, $m) === 1 ? $m[1] : null;
+    }
+
+    /**
      * IANA timezone id at a coordinate via the Google Time Zone API (e.g.
      * "Asia/Dubai"), or null. Requires the Time Zone API enabled on the key.
      */
