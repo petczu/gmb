@@ -98,6 +98,41 @@ class NotificationRecipientsTest extends TestCase
         $this->assertSame([1, 2], $ids);
     }
 
+    public function test_normalize_handles_legacy_flat_and_include_exclude_shapes(): void
+    {
+        $r = new NotificationRecipients;
+
+        $this->assertSame(
+            ['include' => ['role:admin', 5], 'exclude' => []],
+            $r->normalizeSelection(['role:admin', 5]),
+        );
+        $this->assertSame(
+            ['include' => ['role:member'], 'exclude' => [3]],
+            $r->normalizeSelection(['include' => ['role:member'], 'exclude' => [3]]),
+        );
+        $this->assertSame(['include' => [], 'exclude' => []], $r->normalizeSelection(null));
+    }
+
+    public function test_resolve_ids_subtracts_excluded_from_included(): void
+    {
+        $r = new NotificationRecipients;
+
+        // Include all members (2, 3), exclude one of them (3) → just 2.
+        $this->assertSame(
+            [2],
+            $r->resolveIds(['include' => ['role:member'], 'exclude' => [3]], $this->members()),
+        );
+
+        // Exclude a whole role from "everyone": all but the guest (4).
+        $this->assertSame(
+            [1, 2, 3],
+            $r->resolveIds(['include' => ['everyone'], 'exclude' => ['role:guest']], $this->members()),
+        );
+
+        // Legacy flat list still resolves (nothing excluded).
+        $this->assertSame([2, 3], $r->resolveIds(['role:member'], $this->members()));
+    }
+
     public function test_no_location_context_always_covers(): void
     {
         // A workspace-wide notification (null location) reaches everyone,

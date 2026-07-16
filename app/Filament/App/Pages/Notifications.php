@@ -70,9 +70,12 @@ class Notifications extends Page implements HasForms
     {
         $routes = app(NotificationRecipients::class)->routes($this->workspace());
 
+        $recipients = app(NotificationRecipients::class);
         $state = [];
         foreach (NotificationCategory::all() as $category) {
-            $state['route_'.$category] = $routes[$category] ?? [];
+            $selection = $recipients->normalizeSelection($routes[$category] ?? []);
+            $state['route_'.$category] = $selection['include'];
+            $state['exclude_'.$category] = $selection['exclude'];
         }
 
         $chat = ChatChannels::config($this->workspace());
@@ -167,11 +170,21 @@ class Notifications extends Page implements HasForms
                 ->description(__('pages/notifications.cat_'.$category.'_desc'))
                 ->schema([
                     Select::make('route_'.$category)
-                        ->label(__('pages/notifications.recipients'))
+                        ->label(__('pages/notifications.included'))
                         ->multiple()
                         ->options($options)
                         ->placeholder(__('pages/notifications.default_owner'))
                         ->helperText(__('pages/notifications.recipients_help')),
+
+                    // Subtracted from the included set: e.g. include a whole
+                    // role, exclude one person. Ignored when Included is empty
+                    // (that falls back to the workspace owner).
+                    Select::make('exclude_'.$category)
+                        ->label(__('pages/notifications.excluded'))
+                        ->multiple()
+                        ->options($options)
+                        ->placeholder(__('pages/notifications.excluded_none'))
+                        ->helperText(__('pages/notifications.excluded_help')),
                 ]);
         }
 
@@ -258,10 +271,18 @@ class Notifications extends Page implements HasForms
         foreach (NotificationCategory::all() as $category) {
             // Values are a mix of user ids and group tokens (everyone / role:*);
             // store them verbatim — the resolver expands groups at send time.
-            $selected = array_values($state['route_'.$category] ?? []);
-            if ($selected !== []) {
-                $routes[$category] = $selected;
+            $include = array_values($state['route_'.$category] ?? []);
+            $exclude = array_values($state['exclude_'.$category] ?? []);
+            if ($include === []) {
+                // No included = fall back to the owner; exclude is meaningless.
+                continue;
             }
+
+            // Keep the legacy flat shape when nothing is excluded; only switch
+            // to {include, exclude} when there is an exclusion.
+            $routes[$category] = $exclude === []
+                ? $include
+                : ['include' => $include, 'exclude' => $exclude];
         }
 
         $w = $this->workspace();

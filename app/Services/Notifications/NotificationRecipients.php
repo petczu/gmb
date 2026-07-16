@@ -35,15 +35,15 @@ class NotificationRecipients
      */
     public function for(Workspace $workspace, string $category, ?int $locationId = null): Collection
     {
-        $selected = $this->routes($workspace)[$category] ?? null;
+        $selection = $this->normalizeSelection($this->routes($workspace)[$category] ?? null);
 
-        if (! is_array($selected) || $selected === []) {
+        if ($selection['include'] === []) {
             // No explicit routing → the owner gets it, for every location.
             $owner = $workspace->owner();
             $recipients = $owner !== null ? collect([$owner]) : collect();
         } else {
             $members = $workspace->users()->get();
-            $ids = $this->expandSelection($selected, $members);
+            $ids = $this->resolveIds($selection, $members);
             $recipients = $members
                 ->whereIn('id', $ids)
                 ->filter(fn (User $user): bool => $this->coversLocation($user, $locationId))
@@ -82,6 +82,47 @@ class NotificationRecipients
         $allowed = is_array($allowed) ? array_map('intval', $allowed) : [];
 
         return $allowed === [] || in_array($locationId, $allowed, true);
+    }
+
+    /**
+     * A stored selection is either a legacy flat list of tokens (all included)
+     * or an {include, exclude} shape. Normalize to the latter.
+     *
+     * @return array{include: list<int|string>, exclude: list<int|string>}
+     */
+    public function normalizeSelection(mixed $selection): array
+    {
+        if (! is_array($selection)) {
+            return ['include' => [], 'exclude' => []];
+        }
+
+        if (array_key_exists('include', $selection) || array_key_exists('exclude', $selection)) {
+            return [
+                'include' => array_values((array) ($selection['include'] ?? [])),
+                'exclude' => array_values((array) ($selection['exclude'] ?? [])),
+            ];
+        }
+
+        // Legacy flat list = everything is included, nothing excluded.
+        return ['include' => array_values($selection), 'exclude' => []];
+    }
+
+    /**
+     * Concrete member ids for a selection: expand the included groups/people,
+     * then remove anyone the excluded groups/people resolve to. So "role:admin"
+     * included minus one person excluded means "all admins except that person".
+     *
+     * @param  mixed  $selection  a flat list or {include, exclude} shape
+     * @param  Collection<int, mixed>  $members
+     * @return list<int>
+     */
+    public function resolveIds(mixed $selection, Collection $members): array
+    {
+        $selection = $this->normalizeSelection($selection);
+        $include = $this->expandSelection($selection['include'], $members);
+        $exclude = $this->expandSelection($selection['exclude'], $members);
+
+        return array_values(array_diff($include, $exclude));
     }
 
     /**

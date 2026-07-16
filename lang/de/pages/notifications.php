@@ -12,6 +12,10 @@ return [
     'recipients' => 'Empfänger',
     'recipients_help' => 'Wähle Gruppen (nach Rolle oder alle) und/oder einzelne Mitglieder. Leer lassen für den Workspace-Inhaber als Standard.',
     'default_owner' => 'Workspace-Inhaber',
+    'included' => 'Eingeschlossen',
+    'excluded' => 'Ausgeschlossen',
+    'excluded_none' => 'Niemand ausgeschlossen',
+    'excluded_help' => 'Wird von den Eingeschlossenen abgezogen — z. B. eine ganze Rolle einschließen, aber eine Person auslassen.',
     'guest' => 'Gast',
     'saved' => 'Empfänger gespeichert',
 

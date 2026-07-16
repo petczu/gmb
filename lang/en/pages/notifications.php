@@ -12,6 +12,10 @@ return [
     'recipients' => 'Recipients',
     'recipients_help' => 'Pick groups (by role or everyone) and/or individual members. Leave empty to default to the workspace owner.',
     'default_owner' => 'Workspace owner',
+    'included' => 'Included',
+    'excluded' => 'Excluded',
+    'excluded_none' => 'No one excluded',
+    'excluded_help' => 'Removed from the included set — e.g. include a whole role but leave one person out.',
     'guest' => 'guest',
     'saved' => 'Notification recipients saved',
 
