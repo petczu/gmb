@@ -39,8 +39,10 @@ return [
     'field_name_placeholder' => 'e.g. Main Street vs the neighborhood',
     'field_your_locations' => 'Your locations',
     'field_your_locations_helper' => 'Pick one or more of your locations for your side.',
+    'field_place' => 'Competitor',
     'field_places' => 'Competitors',
-    'field_places_helper' => 'Type a business name (and city) to search Google Places. Add as many as you like.',
+    'field_places_helper' => 'Type a business name (and city) to search Google Places.',
+    'already_tracked' => 'You already track this competitor.',
     'saved' => 'Competitor saved',
     'some_failed' => ':count competitor(s) could not be fetched and were skipped.',
 

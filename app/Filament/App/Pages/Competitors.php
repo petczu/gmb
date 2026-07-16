@@ -162,7 +162,7 @@ class Competitors extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => CompetitorBattle::query()->with('competitors'))
+            ->query(fn (): Builder => CompetitorBattle::query()->has('competitors')->with('competitors'))
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading(__('pages/competitors.empty'))
             ->emptyStateDescription(__('pages/competitors.empty_desc'))
@@ -224,17 +224,16 @@ class Competitors extends Page implements HasTable
                     ->visible(fn (): bool => $this->isConfigured())
                     ->modalHeading(__('pages/competitors.add_heading'))
                     ->schema($this->battleFormSchema())
-                    ->action(fn (array $data) => $this->save($data, null)),
+                    ->action(fn (array $data) => $this->save($data)),
             ]);
     }
 
-    /** Shared add/edit form: name + own locations (multi) + competitor places (multi). */
+    /** Add form: one competitor place at a time (search Google Places). */
     protected function battleFormSchema(): array
     {
         return [
-            Select::make('place_ids')
-                ->label(__('pages/competitors.field_places'))
-                ->multiple()
+            Select::make('place_id')
+                ->label(__('pages/competitors.field_place'))
                 ->required()
                 ->searchable()
                 ->getSearchResultsUsing(function (string $search): array {
@@ -242,8 +241,12 @@ class Competitors extends Page implements HasTable
                         return [];
                     }
 
+                    // Hide places we already track so they can't be added twice.
+                    $tracked = Competitor::query()->pluck('place_id')->all();
+
                     try {
                         return collect(app(PlacesClient::class)->search($search))
+                            ->reject(fn (array $place): bool => in_array($place['place_id'], $tracked, true))
                             ->mapWithKeys(fn (array $place): array => [
                                 $place['place_id'] => $place['name'].($place['address'] ? ' — '.$place['address'] : ''),
                             ])
@@ -262,92 +265,74 @@ class Competitors extends Page implements HasTable
                         return [];
                     }
                 })
-                // Resolve labels for already-selected place ids. Prefer the stored
-                // competitor name (no API call); fall back to a Places lookup.
-                ->getOptionLabelsUsing(function (array $values): array {
-                    $stored = Competitor::query()->whereIn('place_id', $values)->pluck('name', 'place_id')->all();
+                ->getOptionLabelUsing(function (string $value): string {
+                    try {
+                        $place = app(PlacesClient::class)->details($value);
 
-                    return collect($values)->mapWithKeys(function (string $value) use ($stored): array {
-                        if (isset($stored[$value])) {
-                            return [$value => $stored[$value]];
-                        }
-
-                        try {
-                            $place = app(PlacesClient::class)->details($value);
-
-                            return [$value => $place['name'].($place['address'] ? ' — '.$place['address'] : '')];
-                        } catch (Throwable) {
-                            return [$value => $value];
-                        }
-                    })->all();
+                        return $place['name'].($place['address'] ? ' — '.$place['address'] : '');
+                    } catch (Throwable) {
+                        return $value;
+                    }
                 })
                 ->helperText(__('pages/competitors.field_places_helper')),
         ];
     }
 
     /**
-     * Create or update a battle and reconcile its competitor places.
+     * Add one competitor place. Own locations are auto-scoped to ALL of the
+     * workspace's locations (keeps the dashboard "You vs competitors" growth
+     * chart working); the name is derived from the place.
      *
      * @param  array<string, mixed>  $data
      */
-    protected function save(array $data, ?CompetitorBattle $battle): void
+    protected function save(array $data): void
     {
-        $placeIds = array_values(array_unique(array_filter((array) ($data['place_ids'] ?? []))));
+        $placeId = trim((string) ($data['place_id'] ?? ''));
+        if ($placeId === '') {
+            return;
+        }
 
-        // No comparison UI any more: own locations are auto-scoped to ALL of the
-        // workspace's locations (keeps the dashboard "You vs competitors" growth
-        // chart working) and the name is derived from the competitor place.
+        // Already tracked → error, don't create a stray empty row.
+        if (Competitor::query()->where('place_id', $placeId)->exists()) {
+            Notification::make()->title(__('pages/competitors.already_tracked'))->warning()->send();
+
+            return;
+        }
+
+        try {
+            $place = app(PlacesClient::class)->details($placeId);
+        } catch (Throwable $e) {
+            Notification::make()
+                ->title(__('pages/competitors.search_failed'))
+                ->body(Str::limit($e->getMessage(), 200))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         $ownIds = Location::query()->pluck('id')->map(fn ($id): int => (int) $id)->all();
 
-        $battle ??= new CompetitorBattle;
+        // Only create the battle once we have a valid, non-duplicate place, so a
+        // failure never leaves an empty "Untitled competition" behind.
+        $battle = new CompetitorBattle;
         $battle->own_location_ids = $ownIds;
         $battle->save();
 
-        $primaryLocationId = $ownIds[0] ?? null;
-        $failed = [];
+        $competitor = Competitor::create([
+            'battle_id' => $battle->id,
+            'place_id' => $place['place_id'],
+            'location_id' => $ownIds[0] ?? null,
+            'name' => $place['name'],
+            'address' => $place['address'],
+            'rating' => $place['rating'],
+            'reviews_count' => $place['reviews_count'],
+            'last_checked_at' => now(),
+        ]);
 
-        foreach ($placeIds as $placeId) {
-            try {
-                $place = app(PlacesClient::class)->details((string) $placeId);
-            } catch (Throwable) {
-                $failed[] = $placeId;
+        app(CompetitorTrends::class)->record($competitor);
 
-                continue;
-            }
-
-            try {
-                $competitor = Competitor::updateOrCreate(
-                    ['battle_id' => $battle->id, 'place_id' => $place['place_id']],
-                    [
-                        'location_id' => $primaryLocationId,
-                        'name' => $place['name'],
-                        'address' => $place['address'],
-                        'rating' => $place['rating'],
-                        'reviews_count' => $place['reviews_count'],
-                        'last_checked_at' => now(),
-                    ],
-                );
-            } catch (Throwable) {
-                // A place can be tracked only once per own location
-                // (unique location_id+place_id) — e.g. duplicating a comparison
-                // without switching the location. Skip instead of 500-ing.
-                $failed[] = $placeId;
-
-                continue;
-            }
-
-            app(CompetitorTrends::class)->record($competitor);
-        }
-
-        // Drop places removed from the selection; keep the primary location in sync.
-        $battle->competitors()->whereNotIn('place_id', $placeIds)->delete();
-        $battle->competitors()->update(['location_id' => $primaryLocationId]);
-
-        if ($failed !== []) {
-            Notification::make()->title(__('pages/competitors.some_failed', ['count' => count($failed)]))->warning()->send();
-        }
-
-        ActivityLogger::log('competitor.battle_saved', ['name' => $this->battleName($battle->fresh('competitors'))]);
+        ActivityLogger::log('competitor.added', ['name' => (string) $place['name']]);
 
         Notification::make()->title(__('pages/competitors.saved'))->success()->send();
     }

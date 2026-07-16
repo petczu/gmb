@@ -39,8 +39,10 @@ return [
     'field_name_placeholder' => 'z. B. Innenstadt vs. Umgebung',
     'field_your_locations' => 'Deine Standorte',
     'field_your_locations_helper' => 'Wähle einen oder mehrere deiner Standorte für deine Seite.',
+    'field_place' => 'Wettbewerber',
     'field_places' => 'Wettbewerber',
-    'field_places_helper' => 'Gib einen Unternehmensnamen (und Ort) ein, um Google Places zu durchsuchen. Füge beliebig viele hinzu.',
+    'field_places_helper' => 'Gib einen Unternehmensnamen (und Ort) ein, um Google Places zu durchsuchen.',
+    'already_tracked' => 'Diesen Wettbewerber verfolgst du bereits.',
     'saved' => 'Wettbewerber gespeichert',
     'some_failed' => ':count Wettbewerber konnten nicht geladen werden und wurden übersprungen.',
 
