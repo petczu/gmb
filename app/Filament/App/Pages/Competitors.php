@@ -358,6 +358,23 @@ class Competitors extends Page implements HasTable
                         ->schema($this->battleFormSchema())
                         ->action(fn (array $data, CompetitorBattle $record) => $this->save($data, $record)),
 
+                    Action::make('duplicate')
+                        ->label(__('pages/competitors.duplicate'))
+                        ->icon(Heroicon::OutlinedDocumentDuplicate)
+                        ->visible(fn (): bool => $this->isConfigured())
+                        // Opens the create form pre-filled from the source. It is
+                        // NOT a silent DB clone: a place can be tracked only once
+                        // per own location (unique location_id+place_id), so the
+                        // user typically switches the location before saving.
+                        ->modalHeading(__('pages/competitors.duplicate_heading'))
+                        ->fillForm(fn (CompetitorBattle $record): array => [
+                            'name' => __('pages/competitors.copy_name', ['name' => $this->battleName($record)]),
+                            'own_location_ids' => $record->ownLocationIds(),
+                            'place_ids' => $record->competitors->pluck('place_id')->all(),
+                        ])
+                        ->schema($this->battleFormSchema())
+                        ->action(fn (array $data) => $this->save($data, null)),
+
                     Action::make('remove')
                         ->label(__('pages/competitors.remove'))
                         ->icon(Heroicon::OutlinedTrash)
@@ -481,17 +498,26 @@ class Competitors extends Page implements HasTable
                 continue;
             }
 
-            $competitor = Competitor::updateOrCreate(
-                ['battle_id' => $battle->id, 'place_id' => $place['place_id']],
-                [
-                    'location_id' => $primaryLocationId,
-                    'name' => $place['name'],
-                    'address' => $place['address'],
-                    'rating' => $place['rating'],
-                    'reviews_count' => $place['reviews_count'],
-                    'last_checked_at' => now(),
-                ],
-            );
+            try {
+                $competitor = Competitor::updateOrCreate(
+                    ['battle_id' => $battle->id, 'place_id' => $place['place_id']],
+                    [
+                        'location_id' => $primaryLocationId,
+                        'name' => $place['name'],
+                        'address' => $place['address'],
+                        'rating' => $place['rating'],
+                        'reviews_count' => $place['reviews_count'],
+                        'last_checked_at' => now(),
+                    ],
+                );
+            } catch (Throwable) {
+                // A place can be tracked only once per own location
+                // (unique location_id+place_id) — e.g. duplicating a comparison
+                // without switching the location. Skip instead of 500-ing.
+                $failed[] = $placeId;
+
+                continue;
+            }
 
             app(CompetitorTrends::class)->record($competitor);
         }

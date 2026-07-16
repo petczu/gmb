@@ -44,6 +44,9 @@ return [
     'saved' => 'Vergleich gespeichert',
     'some_failed' => ':count Wettbewerber konnten nicht geladen werden und wurden übersprungen.',
 
+    'duplicate' => 'Duplizieren',
+    'duplicate_heading' => 'Vergleich duplizieren',
+    'copy_name' => ':name (Kopie)',
     'remove' => 'Entfernen',
     'removed' => 'Vergleich entfernt',
 

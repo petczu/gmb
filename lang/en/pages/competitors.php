@@ -44,6 +44,9 @@ return [
     'saved' => 'Competition saved',
     'some_failed' => ':count competitor(s) could not be fetched and were skipped.',
 
+    'duplicate' => 'Duplicate',
+    'duplicate_heading' => 'Duplicate comparison',
+    'copy_name' => ':name (copy)',
     'remove' => 'Remove',
     'removed' => 'Competition removed',
 
