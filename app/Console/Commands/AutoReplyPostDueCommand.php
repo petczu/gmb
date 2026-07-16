@@ -80,7 +80,10 @@ class AutoReplyPostDueCommand extends Command
                 $automation = $item->decided_by === null ? $service->matching($review) : null;
                 if ($automation !== null && $automation->respect_working_hours && is_array($automation->working_hours)) {
                     if (! $scheduler->isWithinWorkingHours(now(), $automation->working_hours, $tz)) {
-                        $next = $scheduler->nextWindowStart(now(), $automation->working_hours, $tz);
+                        // Normalize the location-tz instant to the app timezone so
+                        // Eloquent stores it as UTC (not the shifted wall-clock).
+                        $next = $scheduler->nextWindowStart(now(), $automation->working_hours, $tz)
+                            ->setTimezone(date_default_timezone_get());
                         $item->forceFill(['post_at' => $next])->save();
 
                         return;

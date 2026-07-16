@@ -37,7 +37,11 @@ class ReplyScheduler
             $at = $this->spreadIntoWindow($this->nextWindowStart($at, $workingHours, $tz), $workingHours);
         }
 
-        return $at;
+        // The instant is correct but still tagged with the location timezone;
+        // normalize to the app timezone (PHP's default, which Laravel sets from
+        // config('app.timezone')) so Eloquent stores it as UTC rather than
+        // formatting the local wall-clock time and shifting it by the offset.
+        return $at->setTimezone(date_default_timezone_get());
     }
 
     /**

@@ -97,6 +97,23 @@ class ReplySchedulerSpreadTest extends TestCase
         $this->assertLessThanOrEqual('17:43:00', $at->format('H:i:s'));
     }
 
+    public function test_result_is_normalized_to_the_app_timezone_for_storage(): void
+    {
+        $scheduler = new ReplyScheduler;
+        // 17:08 UTC = 21:08 in Dubai, inside the 10:00–01:00 window → post ~5–35
+        // min later. The returned Carbon must be tagged UTC (not Asia/Dubai) so
+        // Eloquent stores the instant correctly instead of shifting it +4h.
+        $from = Carbon::parse('2026-07-16 17:08:00', 'UTC');
+
+        $at = $scheduler->scheduleFor($this->overnightAutomation(), $from, 'Asia/Dubai');
+
+        // Tagged with the app/default timezone (UTC here), not Asia/Dubai, so
+        // Eloquent stores the instant without shifting it by the offset.
+        $this->assertSame(date_default_timezone_get(), $at->getTimezone()->getName());
+        $this->assertGreaterThanOrEqual('2026-07-16 17:13:00', $at->format('Y-m-d H:i:s'));
+        $this->assertLessThanOrEqual('2026-07-16 17:43:00', $at->format('Y-m-d H:i:s'));
+    }
+
     public function test_post_midnight_tail_is_still_inside_the_overnight_window(): void
     {
         $scheduler = new ReplyScheduler;
