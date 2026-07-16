@@ -111,7 +111,8 @@ class AutoReplyApproveFailureTest extends TestCase
 
         $item->refresh();
         $this->assertSame('failed', $item->status);
-        $this->assertStringContainsString('not found', $item->error);
+        // The stored reason is the human-readable message, not the raw 404.
+        $this->assertSame(__('resources/auto_reply.error_not_found'), $item->error);
         $this->assertSame(7, (int) $item->decided_by);
         $this->assertNotNull($item->decided_at);
 

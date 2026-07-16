@@ -10,6 +10,7 @@ use App\Models\Review;
 use App\Models\Workspace;
 use App\Services\Billing\AiUsageService;
 use App\Services\Reviews\ReviewProviderFactory;
+use App\Support\ReplyFailure;
 use Throwable;
 
 /**
@@ -118,7 +119,7 @@ class AutoReplyService
         } catch (Throwable $e) {
             $item->forceFill([
                 'status' => 'failed',
-                'error' => mb_substr($e->getMessage(), 0, 500),
+                'error' => ReplyFailure::humanize($e),
                 'decided_by' => $userId,
                 'decided_at' => now(),
             ])->save();

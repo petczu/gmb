@@ -12,6 +12,7 @@ use App\Services\Ai\AutomationService;
 use App\Services\Ai\ReplyScheduler;
 use App\Services\Notifications\NotificationCategory;
 use App\Services\Notifications\NotificationDispatcher;
+use App\Support\ReplyFailure;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -91,7 +92,7 @@ class AutoReplyPostDueCommand extends Command
                     $item->forceFill(['status' => 'published', 'decided_at' => now()])->save();
                     $posted++;
                 } catch (Throwable $e) {
-                    $item->forceFill(['status' => 'failed', 'error' => $e->getMessage()])->save();
+                    $item->forceFill(['status' => 'failed', 'error' => ReplyFailure::humanize($e)])->save();
                     Log::error('Auto-reply post-due failed', [
                         'workspace' => tenant('id'),
                         'queue_item' => $item->id,

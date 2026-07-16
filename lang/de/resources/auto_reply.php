@@ -54,6 +54,12 @@ return [
     'publish_failed_title' => 'Veröffentlichen fehlgeschlagen',
     'publish_not_found' => 'Google meldet, dass diese Bewertung nicht mehr existiert. Sie wurde eventuell vom Autor gelöscht, oder der Standort wurde unter einem neuen Konto neu verbunden. Der Entwurf wurde als fehlgeschlagen markiert.',
     'publish_error' => 'Die Antwort konnte nicht veröffentlicht werden. Der Entwurf wurde als fehlgeschlagen markiert: :message',
+
+    // Kurze, verständliche gespeicherte Fehlergründe (Tab „Fehlgeschlagen“)
+    'error_not_found' => 'Google konnte diese Bewertung oder diesen Standort für die Antwort nicht finden. Sie wurde eventuell entfernt, oder Antworten sind für diesen Standort nicht verfügbar.',
+    'error_rate_limited' => 'Google begrenzt gerade die Antwortrate. Es wird automatisch erneut versucht.',
+    'error_unauthorized' => 'Die Google-Verbindung ist hier nicht zum Antworten berechtigt. Verbinde das Konto neu und versuche es erneut.',
+    'error_generic' => 'Die Antwort konnte nicht veröffentlicht werden. Bitte versuche es später erneut.',
     'draft_rejected' => 'Entwurf abgelehnt',
 
     // Scheduled items
