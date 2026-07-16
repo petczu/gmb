@@ -43,10 +43,17 @@ class ReviewsTable
 
                 return $ids === [] ? $query : $query->whereIn('id', $ids);
             })
-            ->header(function () use ($table): ?View {
+            // Status tabs live INSIDE the table card (header slot); the page
+            // drops the default floating tabs block via content(). The email
+            // deep-link banner rides along in the same header.
+            ->header(function ($livewire) use ($table): View {
                 $ids = $table->getLivewire()->emailReviewIds ?? [];
 
-                return $ids === [] ? null : view('filament.app.resources.reviews-email-banner', ['count' => count($ids)]);
+                return view('filament.app.resources.reviews-header', [
+                    'tabs' => $livewire->getCachedTabs(),
+                    'activeTab' => $livewire->activeTab,
+                    'emailCount' => count($ids),
+                ]);
             })
             // Classic table on desktop; secondary columns hidden on small screens
             // so it stays readable on mobile without horizontal scroll.

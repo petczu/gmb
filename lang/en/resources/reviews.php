@@ -64,6 +64,13 @@ return [
     'generation_failed' => 'Generation failed',
     'reply_generated' => 'Reply generated',
 
+    // Status tabs (mirror the auto-reply approval queue)
+    'tab_all' => 'All',
+    'tab_needs_approval' => 'Needs approval',
+    'tab_scheduled' => 'Scheduled',
+    'tab_published' => 'Published',
+    'tab_failed' => 'Failed',
+
     // Deep-link banner from the new-reviews digest email
     'from_email' => '{1} Showing 1 review from your email notification|[2,*] Showing :count reviews from your email notification',
     'from_email_clear' => 'Show all reviews',

@@ -64,6 +64,13 @@ return [
     'generation_failed' => 'Generierung fehlgeschlagen',
     'reply_generated' => 'Antwort generiert',
 
+    // Status tabs (mirror the auto-reply approval queue)
+    'tab_all' => 'Alle',
+    'tab_needs_approval' => 'Freigabe nötig',
+    'tab_scheduled' => 'Geplant',
+    'tab_published' => 'Veröffentlicht',
+    'tab_failed' => 'Fehlgeschlagen',
+
     // Deep-link banner from the new-reviews digest email
     'from_email' => '{1} 1 Bewertung aus deiner E-Mail-Benachrichtigung|[2,*] :count Bewertungen aus deiner E-Mail-Benachrichtigung',
     'from_email_clear' => 'Alle Bewertungen anzeigen',
