@@ -116,6 +116,49 @@ class PlacesClient
         ];
     }
 
+    /**
+     * A place's latitude/longitude (a separate, cheap field mask), or null.
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    public function coordinates(string $placeId): ?array
+    {
+        $place = (array) $this->request()
+            ->withHeaders(['X-Goog-FieldMask' => 'location'])
+            ->get(self::BASE.'/places/'.$placeId)
+            ->throw()
+            ->json();
+
+        $location = $place['location'] ?? null;
+        if (! isset($location['latitude'], $location['longitude'])) {
+            return null;
+        }
+
+        return ['lat' => (float) $location['latitude'], 'lng' => (float) $location['longitude']];
+    }
+
+    /**
+     * IANA timezone id at a coordinate via the Google Time Zone API (e.g.
+     * "Asia/Dubai"), or null. Requires the Time Zone API enabled on the key.
+     */
+    public function timezoneAt(float $lat, float $lng): ?string
+    {
+        $response = (array) Http::acceptJson()
+            ->timeout(15)
+            ->connectTimeout(5)
+            ->get('https://maps.googleapis.com/maps/api/timezone/json', [
+                'location' => $lat.','.$lng,
+                'timestamp' => now()->timestamp,
+                'key' => (string) config('services.google.places_key'),
+            ])
+            ->throw()
+            ->json();
+
+        return ($response['status'] ?? '') === 'OK' && filled($response['timeZoneId'] ?? null)
+            ? (string) $response['timeZoneId']
+            : null;
+    }
+
     protected function request(): PendingRequest
     {
         return Http::withHeaders(['X-Goog-Api-Key' => (string) config('services.google.places_key')])

@@ -40,16 +40,12 @@ class RescheduleAutoRepliesCommand extends Command
             tenancy()->initialize($workspace);
 
             try {
-                $tz = is_string($workspace->timezone) && $workspace->timezone !== ''
-                    ? $workspace->timezone
-                    : (string) config('app.timezone', 'UTC');
-
                 $updated = 0;
                 AutoReplyQueueItem::query()
                     ->where('status', 'scheduled')
-                    ->with('review')
+                    ->with('review.location')
                     ->get()
-                    ->each(function (AutoReplyQueueItem $item) use ($automations, $scheduler, $tz, &$updated): void {
+                    ->each(function (AutoReplyQueueItem $item) use ($automations, $scheduler, $workspace, &$updated): void {
                         $review = $item->review;
                         if ($review === null) {
                             return;
@@ -60,6 +56,7 @@ class RescheduleAutoRepliesCommand extends Command
                             return;
                         }
 
+                        $tz = $automations->timezoneFor($workspace, $review);
                         $item->forceFill(['post_at' => $scheduler->scheduleFor($automation, now(), $tz)])->save();
                         $updated++;
                     });

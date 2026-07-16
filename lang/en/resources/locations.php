@@ -28,6 +28,13 @@ return [
     // Bulk hours editing
     'bulk_hours' => 'Edit hours',
 
+    // Per-location timezone (auto-detected, editable)
+    'set_timezone' => 'Set timezone',
+    'timezone_heading' => 'Location timezone',
+    'timezone' => 'Timezone',
+    'timezone_helper' => 'Auto-reply working hours are interpreted in this timezone. Auto-detected on connect; override here if wrong.',
+    'timezone_saved' => 'Timezone saved',
+
     // Location groups (filter + organize)
     'group' => 'Group',
     'groups' => 'Groups',

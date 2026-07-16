@@ -135,7 +135,7 @@ class AutomationService
         // Auto path: schedule the post for an "organic" time. A zero delay with
         // no working-hours constraint resolves to now (or earlier) → publish now,
         // preserving the previous instant-publish behaviour.
-        $postAt = $this->scheduler->scheduleFor($automation, now(), $this->workspaceTimezone($workspace));
+        $postAt = $this->scheduler->scheduleFor($automation, now(), $this->timezoneFor($workspace, $review));
         $source = $usesAi ? 'ai_auto' : 'manual';
 
         if ($postAt->lessThanOrEqualTo(now())) {
@@ -157,6 +157,21 @@ class AutomationService
             postAt: $postAt,
             agentId: $agentId,
         );
+    }
+
+    /**
+     * Timezone the reply's working hours are interpreted in: the review's own
+     * LOCATION timezone (so a multi-city workspace schedules each reply in the
+     * right local time), falling back to the workspace timezone, then UTC.
+     */
+    public function timezoneFor(Workspace $workspace, Review $review): string
+    {
+        $locationTz = $review->location?->timezone;
+        if (is_string($locationTz) && $locationTz !== '') {
+            return $locationTz;
+        }
+
+        return $this->workspaceTimezone($workspace);
     }
 
     /** Workspace timezone (stored in the tenant `data` JSON), UTC fallback. */

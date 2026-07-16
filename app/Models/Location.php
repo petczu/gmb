@@ -22,6 +22,7 @@ class Location extends Model
         'place_id',
         'name',
         'address',
+        'timezone',
         'phone',
         'website_url',
         'status',
