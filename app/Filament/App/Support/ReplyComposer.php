@@ -85,11 +85,16 @@ class ReplyComposer
             }
             $html .= '</div>';
 
-            // Fullscreen overlay rendered above the slide-over; click anywhere closes.
-            $html .= '<div x-cloak x-show="open" @click="open = false"'
+            // Fullscreen overlay, teleported to <body> so it is fixed to the
+            // viewport (the slide-over is transformed, which would otherwise
+            // trap position:fixed inside it and push the image to one side).
+            // Click anywhere closes.
+            $html .= '<template x-teleport="body">'
+                .'<div x-cloak x-show="open" @click="open = false"'
                 .' style="position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.8); display:flex; align-items:center; justify-content:center; padding:24px; cursor:zoom-out;">'
                 .'<img :src="src" alt="" style="max-width:92vw; max-height:88vh; object-fit:contain; border-radius:8px; box-shadow:0 8px 40px rgba(0,0,0,.5);">'
-                .'</div>';
+                .'</div>'
+                .'</template>';
             $html .= '</div>';
         }
 
