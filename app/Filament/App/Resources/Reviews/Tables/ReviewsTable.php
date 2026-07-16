@@ -85,6 +85,7 @@ class ReviewsTable
                     ->label(__('resources/reviews.col_review'))
                     ->wrap()
                     ->limit(70)
+                    ->description(fn (Review $record): ?string => ($n = (int) $record->photo_count) > 0 ? '📷 '.$n : null)
                     ->state(fn (Review $record): ?string => $record->originalText())
                     ->tooltip(fn (Review $record): ?string => $record->translatedText()
                         ? $record->originalText()."\n\n(Google: ".$record->translatedText().')'

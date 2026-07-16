@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Zernio\Api\ConnectApi;
 use Zernio\Api\GMBReviewsApi;
 use Zernio\ApiException;
@@ -29,8 +30,16 @@ class ZernioProvider implements ReviewProvider
 
     private ConnectApi $connect;
 
+    private string $accessToken;
+
+    /** Base ending with /v1, for raw calls the generated SDK model can't map. */
+    private string $reviewsBase;
+
     public function __construct(?string $accessToken)
     {
+        $this->accessToken = (string) $accessToken;
+        $this->reviewsBase = rtrim((string) config('services.reviews.zernio_base_url', 'https://zernio.com/api/v1'), '/');
+
         $config = Configuration::getDefaultConfiguration()->setAccessToken((string) $accessToken);
 
         // ZERNIO_BASE_URL ends with /v1; SDK operation paths already include
@@ -104,6 +113,10 @@ class ZernioProvider implements ReviewProvider
             );
             $locId = (string) ($response->getLocationId() ?? $locationExternalId ?? '');
 
+            // The generated SDK model drops the new photoCount/photos fields, so
+            // read them from the raw response for the same page and merge by id.
+            $photoMap = $this->photosForPage($accountId, $locationExternalId, $pageToken);
+
             foreach ($response->getReviews() ?? [] as $r) {
                 $createdAt = $r->getCreateTime() ? Carbon::instance($r->getCreateTime()) : null;
 
@@ -112,9 +125,11 @@ class ZernioProvider implements ReviewProvider
                 }
 
                 $reply = $r->getReviewReply();
+                $externalId = (string) ($r->getId() ?? $r->getName());
+                $photos = $photoMap[$externalId] ?? ['count' => 0, 'photos' => []];
 
                 $out[] = new ReviewData(
-                    externalId: (string) ($r->getId() ?? $r->getName()),
+                    externalId: $externalId,
                     locationExternalId: $locId,
                     rating: $this->rating($r),
                     authorName: $r->getReviewer()?->getDisplayName(),
@@ -123,6 +138,8 @@ class ZernioProvider implements ReviewProvider
                     createdAtExternal: $createdAt,
                     replyText: $reply?->getComment(),
                     repliedAt: $reply?->getUpdateTime() ? Carbon::instance($reply->getUpdateTime()) : null,
+                    photoCount: (int) $photos['count'],
+                    photos: $photos['photos'],
                 );
             }
 
@@ -130,6 +147,49 @@ class ZernioProvider implements ReviewProvider
         } while (! empty($pageToken));
 
         return $out;
+    }
+
+    /**
+     * Reviewer photos per review for one page of gmb-reviews, read from the raw
+     * response (the generated SDK model doesn't expose photoCount/photos yet).
+     * Best-effort: any failure yields no photo data. Keyed by review id and name.
+     *
+     * @return array<string, array{count: int, photos: list<string>}>
+     */
+    private function photosForPage(string $accountId, ?string $locationExternalId, ?string $pageToken): array
+    {
+        try {
+            $data = Http::withToken($this->accessToken)
+                ->acceptJson()
+                ->timeout(30)
+                ->connectTimeout(5)
+                ->get($this->reviewsBase.'/accounts/'.$accountId.'/gmb-reviews', array_filter([
+                    'locationId' => $locationExternalId,
+                    'pageSize' => 50,
+                    'pageToken' => $pageToken,
+                ]))
+                ->throw()
+                ->json();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $map = [];
+        foreach ((array) ($data['reviews'] ?? []) as $review) {
+            $photos = array_values(array_filter(array_map(
+                fn ($p): ?string => is_array($p) ? ($p['url'] ?? null) : null,
+                (array) ($review['photos'] ?? []),
+            )));
+
+            $entry = ['count' => (int) ($review['photoCount'] ?? count($photos)), 'photos' => $photos];
+            foreach ([$review['id'] ?? null, $review['name'] ?? null] as $key) {
+                if (filled($key)) {
+                    $map[(string) $key] = $entry;
+                }
+            }
+        }
+
+        return $map;
     }
 
     public function reply(string $accountId, string $reviewExternalId, string $comment, ?string $locationExternalId = null): void

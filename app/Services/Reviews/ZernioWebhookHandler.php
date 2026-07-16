@@ -114,11 +114,18 @@ class ZernioWebhookHandler
 
             $existing = Review::query()->where('external_review_id', $reviewExternalId)->first();
 
+            $photos = array_values(array_filter(array_map(
+                fn ($p): ?string => is_array($p) ? ($p['url'] ?? null) : null,
+                (array) ($review['photos'] ?? []),
+            )));
+
             $attributes = [
                 'location_id' => $location->id,
                 'author_name' => $review['reviewer']['name'] ?? null,
                 'rating' => isset($review['rating']) ? (int) $review['rating'] : null,
                 'text' => $review['text'] ?? null,
+                'photo_count' => (int) ($review['photoCount'] ?? count($photos)),
+                'photos' => $photos,
                 'created_at_external' => $this->parseDate($review['createdAt'] ?? null),
                 'synced_at' => now(),
             ];

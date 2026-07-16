@@ -98,6 +98,8 @@ class ReviewSync
                         'author_name' => $rd->authorName,
                         'rating' => $rd->rating,
                         'text' => $rd->text,
+                        'photo_count' => $rd->photoCount,
+                        'photos' => $rd->photos,
                         'review_link' => $rd->reviewLink,
                         'created_at_external' => $rd->createdAtExternal,
                         'synced_at' => now(),

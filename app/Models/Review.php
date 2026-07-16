@@ -23,6 +23,8 @@ class Review extends Model
         'author_name',
         'rating',
         'text',
+        'photo_count',
+        'photos',
         'review_link',
         'created_at_external',
         'reply_text',
@@ -34,6 +36,8 @@ class Review extends Model
 
     protected $casts = [
         'rating' => 'integer',
+        'photo_count' => 'integer',
+        'photos' => 'array',
         'created_at_external' => 'datetime',
         'replied_at' => 'datetime',
         'synced_at' => 'datetime',

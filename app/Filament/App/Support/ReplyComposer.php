@@ -70,7 +70,21 @@ class ReplyComposer
             }
         }
 
-        return new HtmlString($html.'</div>');
+        $html .= '</div>';
+
+        // Reviewer-uploaded photos (Google Business), click to open full size.
+        $photos = array_values(array_filter((array) ($review->photos ?? []), fn ($u): bool => is_string($u) && $u !== ''));
+        if ($photos !== []) {
+            $html .= '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">';
+            foreach (array_slice($photos, 0, 10) as $url) {
+                $html .= '<a href="'.e($url).'" target="_blank" rel="noopener">'
+                    .'<img src="'.e($url).'" alt="" loading="lazy" style="width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb;">'
+                    .'</a>';
+            }
+            $html .= '</div>';
+        }
+
+        return new HtmlString($html);
     }
 
     /** The "author · ★★★★★" heading label for the preview placeholder. */

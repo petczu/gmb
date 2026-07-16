@@ -21,5 +21,8 @@ final readonly class ReviewData
         public ?CarbonInterface $createdAtExternal = null,
         public ?string $replyText = null,
         public ?CarbonInterface $repliedAt = null,
+        public int $photoCount = 0,
+        /** @var list<string> reviewer-uploaded photo urls (Google Business only) */
+        public array $photos = [],
     ) {}
 }
