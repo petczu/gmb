@@ -125,6 +125,12 @@ class Posts extends Page implements HasTable
     /** 'calendar' | 'table', remembered per session. */
     public string $mode = 'calendar';
 
+    /** Filter the calendar/list to a single location (null = all). */
+    public ?int $locationFilter = null;
+
+    /** @var array<int, string>|null cached location id => name map */
+    protected ?array $locationNameMap = null;
+
     /** 'month' | 'week' inside calendar mode. */
     public string $calView = 'month';
 
@@ -254,6 +260,7 @@ class Posts extends Page implements HasTable
                 $q->whereBetween('scheduled_at', [$gridStart, $gridEnd])
                     ->orWhere(fn (Builder $qq) => $qq->whereNull('scheduled_at')->whereBetween('created_at', [$gridStart, $gridEnd]));
             })
+            ->when($this->locationFilter, fn (Builder $q): Builder => $q->whereJsonContains('location_ids', $this->locationFilter))
             ->orderBy('scheduled_at')
             ->orderBy('created_at')
             ->get()
@@ -288,6 +295,32 @@ class Posts extends Page implements HasTable
         }
 
         return array_values($weeks);
+    }
+
+    /** Location id => name for the calendar/list location filter. */
+    public function locationOptions(): array
+    {
+        return Location::query()->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    /** Short "which location" label for a post card (name, or "name +N"). */
+    public function locationLabel(Post $post): ?string
+    {
+        $ids = array_values(array_map('intval', (array) ($post->location_ids ?? [])));
+        if ($ids === []) {
+            return null;
+        }
+
+        $this->locationNameMap ??= Location::query()->pluck('name', 'id')->all();
+
+        $first = $this->locationNameMap[$ids[0]] ?? null;
+        if ($first === null) {
+            return null;
+        }
+
+        return count($ids) > 1
+            ? __('pages/posts.location_plus', ['name' => $first, 'count' => count($ids) - 1])
+            : $first;
     }
 
     // ── Sticky notes ────────────────────────────────────────────────────────
@@ -685,7 +718,8 @@ class Posts extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => Post::query())
+            ->query(fn (): Builder => Post::query()
+                ->when($this->locationFilter, fn (Builder $q): Builder => $q->whereJsonContains('location_ids', $this->locationFilter)))
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading(__('pages/posts.empty'))
             ->emptyStateDescription(__('pages/posts.empty_desc'))

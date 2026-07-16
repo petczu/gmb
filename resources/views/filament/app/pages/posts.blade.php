@@ -109,6 +109,15 @@
                 </div>
             @endif
 
+            @if (count($this->locationOptions()) > 1)
+                <select class="pc-btn" wire:model.live="locationFilter" style="min-width:11rem;">
+                    <option value="">{{ __('pages/posts.all_locations') }}</option>
+                    @foreach ($this->locationOptions() as $id => $name)
+                        <option value="{{ $id }}">{{ $name }}</option>
+                    @endforeach
+                </select>
+            @endif
+
             <div style="display:flex; align-items:center; gap:.5rem; margin-left:auto;">
                 @if ($this->mode === 'calendar')
                     {{-- Note tag filter: show/hide sticky notes by their tag --}}
@@ -316,6 +325,10 @@
                                     </span>
                                     @if (filled($post->caption) || filled($post->title))
                                         <span class="cap">{{ \Illuminate\Support\Str::limit($post->title ?: $post->caption, 60) }}</span>
+                                    @endif
+                                    @php $loc = $this->locationLabel($post); @endphp
+                                    @if ($loc)
+                                        <span class="loc" style="display:block; margin-top:.15rem; font-size:.7rem; color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📍 {{ $loc }}</span>
                                     @endif
                                 </button>
                             @endforeach

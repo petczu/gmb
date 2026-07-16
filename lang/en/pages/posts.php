@@ -75,6 +75,8 @@ return [
     'view_month' => 'Month',
     'view_week' => 'Week',
     'today' => 'Today',
+    'all_locations' => 'All locations',
+    'location_plus' => ':name +:count',
     'close' => 'Close',
     'location_count' => '{1} 1 location|[2,*] :count locations',
     'add_post' => 'Post',
