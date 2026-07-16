@@ -132,6 +132,8 @@ class ExternalPostImporter
             'image_url' => $data['image_url'] ?? null,
             'cta_url' => $data['url'] ?? null,
             'location_ids' => [$location->id],
+            // Imported posts didn't go out through us, so no Zernio listing ids.
+            'source_ids' => [],
             'status' => 'published',
             'scheduled_at' => $publishedAt,
             'origin' => 'imported',

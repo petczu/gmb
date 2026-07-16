@@ -42,7 +42,8 @@ class ExternalPostImporterTest extends TestCase
             $table->string('cta_type', 20)->nullable();
             $table->string('cta_url', 2048)->nullable();
             $table->string('image_url', 2048)->nullable();
-            $table->json('location_ids')->nullable();
+            $table->json('location_ids');
+            $table->json('source_ids');
             $table->dateTime('scheduled_at')->nullable();
             $table->string('status', 20)->default('draft');
             $table->string('origin', 20)->default('app');
