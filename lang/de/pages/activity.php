@@ -43,4 +43,5 @@ return [
     'action_listing_updated' => 'Google-Unternehmensprofil von :location aktualisiert',
     'action_competitor_added' => 'Wettbewerber :name wird jetzt beobachtet',
     'action_competitor_removed' => 'Beobachtung von Wettbewerber :name beendet',
+    'action_competitor_group_created' => 'Wettbewerbergruppe „:name“ erstellt',
 ];

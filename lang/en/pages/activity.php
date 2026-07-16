@@ -43,4 +43,5 @@ return [
     'action_listing_updated' => 'Updated the Google Business profile of :location',
     'action_competitor_added' => 'Started tracking competitor :name',
     'action_competitor_removed' => 'Stopped tracking competitor :name',
+    'action_competitor_group_created' => 'Created competitor group ":name"',
 ];

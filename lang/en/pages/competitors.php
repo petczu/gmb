@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'nav' => 'Competitors',
-    'title' => 'Competitor benchmark',
+    'title' => 'Competitors',
     'intro' => 'Track nearby businesses and compare their Google rating and review count with your locations. Numbers refresh automatically every day.',
 
     'empty' => 'No competitors yet.',
@@ -51,6 +51,19 @@ return [
     'copy_name' => ':name (copy)',
     'remove' => 'Remove',
     'removed' => 'Competitor removed',
+
+    // Groups (competitor groups + your own location groups)
+    'create_group' => 'Create group',
+    'group_heading' => 'Group competitors',
+    'group_need_two' => 'Pick at least two competitors to group.',
+    'group_created' => 'Group created',
+    'group_removed' => 'Group removed',
+    'ungroup' => 'Remove from group',
+    'ungrouped' => 'Removed from group',
+    'field_group_name' => 'Group name',
+    'field_group_competitors' => 'Competitors',
+    'field_group_competitors_helper' => 'These competitors combine into one line on the growth chart, with their reviews summed.',
+    'col_group' => 'Group',
 
     'col_new_reviews' => 'New reviews',
     'col_rating_trend' => 'Rating change',

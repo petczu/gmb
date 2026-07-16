@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'nav' => 'Wettbewerber',
-    'title' => 'Wettbewerbs-Vergleich',
+    'title' => 'Wettbewerber',
     'intro' => 'Beobachte Unternehmen in deiner Nähe und vergleiche deren Google-Bewertung und Anzahl der Rezensionen mit deinen Standorten. Die Zahlen werden täglich automatisch aktualisiert.',
 
     'empty' => 'Noch keine Wettbewerber.',
@@ -51,6 +51,19 @@ return [
     'copy_name' => ':name (Kopie)',
     'remove' => 'Entfernen',
     'removed' => 'Wettbewerber entfernt',
+
+    // Groups (competitor groups + your own location groups)
+    'create_group' => 'Gruppe erstellen',
+    'group_heading' => 'Wettbewerber gruppieren',
+    'group_need_two' => 'Wähle mindestens zwei Wettbewerber für eine Gruppe.',
+    'group_created' => 'Gruppe erstellt',
+    'group_removed' => 'Gruppe entfernt',
+    'ungroup' => 'Aus Gruppe entfernen',
+    'ungrouped' => 'Aus Gruppe entfernt',
+    'field_group_name' => 'Gruppenname',
+    'field_group_competitors' => 'Wettbewerber',
+    'field_group_competitors_helper' => 'Diese Wettbewerber werden im Wachstumsdiagramm zu einer Linie zusammengefasst, ihre Rezensionen werden summiert.',
+    'col_group' => 'Gruppe',
 
     'col_new_reviews' => 'Neue Bewertungen',
     'col_rating_trend' => 'Rating-Änderung',

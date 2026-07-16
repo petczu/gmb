@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\App\Widgets;
 
 use App\Models\CompetitorBattle;
+use App\Models\Location;
 use App\Services\Competitors\CompetitorTrends;
 use App\Services\Competitors\PlacesClient;
 use App\Support\DashboardPeriod;
@@ -35,8 +36,11 @@ class CompetitorGrowthChart extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    /** Distinct competitor line colours (the own line is always brand-primary). */
+    /** Distinct competitor line colours (own lines use the brand-blue family). */
     private const PALETTE = ['#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#0ea5e9', '#ec4899', '#84cc16', '#64748b'];
+
+    /** Own-side line colours, one per location (brand-blue/indigo family). */
+    private const YOU_PALETTE = ['#2d19ec', '#7c6cf5', '#4f46e5', '#0891b2', '#0d9488'];
 
     /** Growth (rebased to 0) vs Total (absolute counts). Default: growth. */
     public ?string $filter = 'growth';
@@ -102,42 +106,127 @@ class CompetitorGrowthChart extends ChartWidget
             $ownLocationIds = array_values(array_intersect($ownLocationIds, $period->locationIds));
         }
 
-        $series = app(CompetitorTrends::class)->growthSeries(
-            array_keys($names),
-            $ownLocationIds,
-            $period->start,
-            $period->end,
-            $this->filter === 'total' ? 'total' : 'growth',
-        );
+        $mode = $this->filter === 'total' ? 'total' : 'growth';
+        $trends = app(CompetitorTrends::class);
 
-        $datasets = [[
-            'label' => __('widgets.competitor_chart_you'),
-            'data' => $series['own'],
-            'borderColor' => '#2d19ec',
-            'backgroundColor' => 'rgba(45, 25, 236, 0.08)',
-            'borderWidth' => 3,
-            'pointRadius' => 0,
-            'tension' => 0.3,
-            'fill' => true,
-        ]];
+        // Competitor lines; the own side is computed separately, one line per
+        // location, so a single-location dashboard filter isolates that location
+        // instead of summing every own location into one "You" line.
+        $series = $trends->growthSeries(array_keys($names), [], $period->start, $period->end, $mode);
 
+        // Own side: one line per location so a single-location dashboard filter
+        // isolates that location instead of summing every own location.
+        $locationNames = Location::query()->whereIn('id', $ownLocationIds)->orderBy('name')->pluck('name', 'id');
+        $singleOwn = $locationNames->count() === 1;
+        $datasets = [];
+        $y = 0;
+        foreach ($locationNames as $locationId => $locationName) {
+            $datasets[] = $this->ownDataset(
+                (string) $locationName,
+                $trends->growthSeries([], [(int) $locationId], $period->start, $period->end, $mode)['own'],
+                $y++,
+                $singleOwn,
+            );
+        }
+
+        // Competitor side: a named battle is a group — its member places sum
+        // into one line; an unnamed battle draws one line per competitor place.
         $i = 0;
-        foreach ($series['places'] as $placeId => $values) {
-            $color = self::PALETTE[$i % count(self::PALETTE)];
-            $datasets[] = [
-                'label' => Str::limit((string) ($names[$placeId] ?? $placeId), 28),
-                'data' => $values,
-                'borderColor' => $color,
-                'backgroundColor' => 'transparent',
-                'borderWidth' => 2,
-                'pointRadius' => 0,
-                'tension' => 0.3,
-                'spanGaps' => true,
-            ];
-            $i++;
+        foreach ($battles as $battle) {
+            $placeIds = $battle->competitors
+                ->pluck('place_id')
+                ->filter()
+                ->map(fn ($p): string => (string) $p)
+                ->values();
+            if ($placeIds->isEmpty()) {
+                continue;
+            }
+
+            if (filled($battle->name)) {
+                $datasets[] = $this->competitorDataset(
+                    Str::limit($battle->displayName(), 28),
+                    $this->sumSeries($placeIds->map(fn (string $pid): array => $series['places'][$pid] ?? [])->all()),
+                    $i++,
+                );
+
+                continue;
+            }
+
+            foreach ($placeIds as $placeId) {
+                $datasets[] = $this->competitorDataset(
+                    Str::limit((string) ($names[$placeId] ?? $placeId), 28),
+                    $series['places'][$placeId] ?? [],
+                    $i++,
+                );
+            }
         }
 
         return ['datasets' => $datasets, 'labels' => $series['labels']];
+    }
+
+    /**
+     * @param  array<int, int|null>  $data
+     * @return array<string, mixed>
+     */
+    private function ownDataset(string $label, array $data, int $index, bool $fill): array
+    {
+        return [
+            'label' => Str::limit($label, 28),
+            'data' => $data,
+            'borderColor' => self::YOU_PALETTE[$index % count(self::YOU_PALETTE)],
+            'backgroundColor' => $fill ? 'rgba(45, 25, 236, 0.08)' : 'transparent',
+            'borderWidth' => 3,
+            'pointRadius' => 0,
+            'tension' => 0.3,
+            'fill' => $fill,
+        ];
+    }
+
+    /**
+     * @param  array<int, int|null>  $data
+     * @return array<string, mixed>
+     */
+    private function competitorDataset(string $label, array $data, int $index): array
+    {
+        return [
+            'label' => $label,
+            'data' => $data,
+            'borderColor' => self::PALETTE[$index % count(self::PALETTE)],
+            'backgroundColor' => 'transparent',
+            'borderWidth' => 2,
+            'pointRadius' => 0,
+            'tension' => 0.3,
+            'spanGaps' => true,
+        ];
+    }
+
+    /**
+     * Element-wise sum of several place series; an index is null only when every
+     * member is null there (so a genuine gap stays a gap, not a false zero).
+     *
+     * @param  array<int, array<int, int|null>>  $seriesList
+     * @return array<int, int|null>
+     */
+    private function sumSeries(array $seriesList): array
+    {
+        $length = 0;
+        foreach ($seriesList as $series) {
+            $length = max($length, count($series));
+        }
+
+        $out = [];
+        for ($idx = 0; $idx < $length; $idx++) {
+            $sum = null;
+            foreach ($seriesList as $series) {
+                $value = $series[$idx] ?? null;
+                if ($value !== null) {
+                    $sum = ($sum ?? 0) + $value;
+                }
+            }
+            $out[] = $sum;
+        }
+
+        return $out;
     }
 
     protected function getType(): string

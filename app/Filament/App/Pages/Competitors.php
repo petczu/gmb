@@ -15,6 +15,7 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -75,17 +76,6 @@ class Competitors extends Page implements HasTable
         return app(PlacesClient::class)->configured();
     }
 
-    /** Weighted competitor rating for the battle (by review count). */
-    protected function competitorRating(CompetitorBattle $battle): ?float
-    {
-        return CompetitorTrends::weightedRating(
-            $battle->competitors->map(fn (Competitor $c): array => [
-                'rating' => $c->rating !== null ? (float) $c->rating : null,
-                'reviews_count' => (int) $c->reviews_count,
-            ]),
-        );
-    }
-
     /** Weighted own rating across the battle's own locations. */
     protected function ownRating(CompetitorBattle $battle): ?float
     {
@@ -97,122 +87,152 @@ class Competitors extends Page implements HasTable
         );
     }
 
-    protected function competitorReviews(CompetitorBattle $battle): int
-    {
-        return (int) $battle->competitors->sum('reviews_count');
-    }
-
-    protected function battleName(CompetitorBattle $battle): string
-    {
-        return $battle->displayName();
-    }
-
     /**
-     * Per-competitor detail: rating, review count and (when DataForSEO
-     * supplied it) the 1-5 star distribution as horizontal bars, alongside
-     * the own side's rating for reference.
+     * One competitor's detail: rating, review count and (when DataForSEO
+     * supplied it) the 1-5 star distribution as horizontal bars, alongside the
+     * own side's rating for reference.
      */
-    protected function competitorDetailsHtml(CompetitorBattle $battle): string
+    protected function competitorDetailHtml(Competitor $competitor): string
     {
-        $ownRating = $this->ownRating($battle);
+        $battle = $competitor->battle;
+        $ownRating = $battle !== null ? $this->ownRating($battle) : null;
+        $ownName = $battle !== null
+            ? ($battle->ownLocations()->pluck('name')->implode(', ') ?: __('pages/competitors.you'))
+            : __('pages/competitors.you');
+
         $html = '<div style="display:flex; flex-direction:column; gap:1rem;">';
 
         // Own side header row.
         $html .= '<div style="display:flex; align-items:center; justify-content:space-between; padding:.6rem .8rem; border-radius:.6rem; background:rgb(45 25 236 / .06);">'
-            .'<span style="font-weight:700;">'.e($battle->ownLocations()->pluck('name')->implode(', ') ?: __('pages/competitors.you')).'</span>'
+            .'<span style="font-weight:700;">'.e($ownName).'</span>'
             .'<span style="font-weight:700;">'.($ownRating !== null ? number_format($ownRating, 1).' ★' : '—').'</span>'
             .'</div>';
 
-        foreach ($battle->competitors as $competitor) {
-            $rating = $competitor->rating !== null ? number_format((float) $competitor->rating, 1).' ★' : '—';
-            $reviews = trans_choice('pages/competitors.reviews_count', (int) $competitor->reviews_count, ['count' => number_format((int) $competitor->reviews_count)]);
+        $rating = $competitor->rating !== null ? number_format((float) $competitor->rating, 1).' ★' : '—';
+        $reviews = trans_choice('pages/competitors.reviews_count', (int) $competitor->reviews_count, ['count' => number_format((int) $competitor->reviews_count)]);
 
-            $html .= '<div style="border:1px solid rgb(0 0 0 / .08); border-radius:.6rem; padding:.7rem .85rem;">';
-            $html .= '<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.5rem;">'
-                .'<span style="font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'.e((string) $competitor->name).'</span>'
-                .'<span style="white-space:nowrap; color:#6b7280; font-size:.85rem;">'.e($rating).' · '.e($reviews).'</span>'
-                .'</div>';
+        $html .= '<div style="border:1px solid rgb(0 0 0 / .08); border-radius:.6rem; padding:.7rem .85rem;">';
+        $html .= '<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.5rem;">'
+            .'<span style="font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'.e((string) $competitor->name).'</span>'
+            .'<span style="white-space:nowrap; color:#6b7280; font-size:.85rem;">'.e($rating).' · '.e($reviews).'</span>'
+            .'</div>';
 
-            $dist = $competitor->rating_distribution;
-            if (is_array($dist) && array_sum($dist) > 0) {
-                $max = max($dist);
-                $colors = [5 => '#16a34a', 4 => '#84cc16', 3 => '#eab308', 2 => '#f97316', 1 => '#dc2626'];
-                for ($star = 5; $star >= 1; $star--) {
-                    $count = (int) ($dist[$star] ?? 0);
-                    $pct = $max > 0 ? round($count / $max * 100) : 0;
-                    $html .= '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.25rem;">'
-                        .'<span style="width:1.6rem; font-size:.75rem; color:#6b7280; text-align:right;">'.$star.'★</span>'
-                        .'<span style="flex:1; height:.55rem; border-radius:999px; background:rgb(0 0 0 / .06); overflow:hidden;">'
-                        .'<span style="display:block; height:100%; width:'.$pct.'%; background:'.$colors[$star].';"></span></span>'
-                        .'<span style="width:3rem; font-size:.75rem; color:#6b7280;">'.number_format($count).'</span>'
-                        .'</div>';
-                }
-            } else {
-                $html .= '<div style="font-size:.8rem; color:#9ca3af;">'.e(__('pages/competitors.no_distribution')).'</div>';
+        $dist = $competitor->rating_distribution;
+        if (is_array($dist) && array_sum($dist) > 0) {
+            $max = max($dist);
+            $colors = [5 => '#16a34a', 4 => '#84cc16', 3 => '#eab308', 2 => '#f97316', 1 => '#dc2626'];
+            for ($star = 5; $star >= 1; $star--) {
+                $count = (int) ($dist[$star] ?? 0);
+                $pct = $max > 0 ? round($count / $max * 100) : 0;
+                $html .= '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.25rem;">'
+                    .'<span style="width:1.6rem; font-size:.75rem; color:#6b7280; text-align:right;">'.$star.'★</span>'
+                    .'<span style="flex:1; height:.55rem; border-radius:999px; background:rgb(0 0 0 / .06); overflow:hidden;">'
+                    .'<span style="display:block; height:100%; width:'.$pct.'%; background:'.$colors[$star].';"></span></span>'
+                    .'<span style="width:3rem; font-size:.75rem; color:#6b7280;">'.number_format($count).'</span>'
+                    .'</div>';
             }
-
-            $html .= '</div>';
+        } else {
+            $html .= '<div style="font-size:.8rem; color:#9ca3af;">'.e(__('pages/competitors.no_distribution')).'</div>';
         }
 
-        $html .= '</div>';
+        $html .= '</div></div>';
 
         return $html;
+    }
+
+    /** Move a competitor out of its group into its own single (unnamed) battle. */
+    protected function ungroup(Competitor $competitor): void
+    {
+        $former = $competitor->battle;
+
+        $battle = new CompetitorBattle;
+        $battle->own_location_ids = Location::query()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $battle->save();
+
+        $competitor->update(['battle_id' => $battle->id]);
+
+        if ($former !== null) {
+            $remaining = $former->competitors()->count();
+            if ($remaining === 0) {
+                $former->delete();
+            } elseif ($remaining < 2) {
+                // A "group" of one is just a normal competitor again.
+                $former->update(['name' => null]);
+            }
+        }
+
+        Notification::make()->title(__('pages/competitors.ungrouped'))->success()->send();
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => CompetitorBattle::query()->has('competitors')->with('competitors'))
+            ->query(fn (): Builder => Competitor::query()->with('battle')->whereNotNull('place_id'))
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading(__('pages/competitors.empty'))
             ->emptyStateDescription(__('pages/competitors.empty_desc'))
             ->columns([
                 TextColumn::make('name')
-                    ->label(__('pages/competitors.col_battle'))
+                    ->label(__('pages/competitors.col_name'))
                     ->weight('medium')
-                    ->state(fn (CompetitorBattle $record): string => Str::limit($this->battleName($record), 38))
-                    ->tooltip(fn (CompetitorBattle $record): ?string => mb_strlen($this->battleName($record)) > 38 ? $this->battleName($record) : null)
-                    ->description(function (CompetitorBattle $record): ?HtmlString {
-                        $addresses = $record->competitors->pluck('address')->filter()->implode(' · ');
-                        if ($addresses === '') {
+                    ->description(function (Competitor $record): ?HtmlString {
+                        $address = (string) $record->address;
+                        if ($address === '') {
                             return null;
                         }
 
-                        return new HtmlString('<span title="'.e($addresses).'">'.e(Str::limit($addresses, 52)).'</span>');
+                        return new HtmlString('<span title="'.e($address).'">'.e(Str::limit($address, 52)).'</span>');
                     }),
+
+                TextColumn::make('group')
+                    ->label(__('pages/competitors.col_group'))
+                    ->badge()
+                    ->color('primary')
+                    ->placeholder('—')
+                    ->state(fn (Competitor $record): ?string => $record->battle !== null && filled($record->battle->name)
+                        ? (string) $record->battle->name
+                        : null),
 
                 TextColumn::make('rating')
                     ->label(__('pages/competitors.col_rating'))
-                    ->state(fn (CompetitorBattle $record): string => ($r = $this->competitorRating($record)) !== null ? number_format($r, 1).' ★' : '—')
-                    ->tooltip(__('pages/competitors.rating_weighted_hint')),
+                    ->state(fn (Competitor $record): string => $record->rating !== null ? number_format((float) $record->rating, 1).' ★' : '—'),
 
-                TextColumn::make('reviews')
+                TextColumn::make('reviews_count')
                     ->label(__('pages/competitors.col_reviews'))
-                    ->state(fn (CompetitorBattle $record): string => number_format($this->competitorReviews($record))),
+                    ->state(fn (Competitor $record): string => number_format((int) $record->reviews_count)),
             ])
             ->recordActions([
                 ActionGroup::make([
                     Action::make('view')
                         ->label(__('pages/competitors.view'))
                         ->icon(Heroicon::OutlinedChartBar)
-                        ->modalHeading(fn (CompetitorBattle $record): string => $this->battleName($record))
+                        ->modalHeading(fn (Competitor $record): string => (string) $record->name)
                         ->modalSubmitAction(false)
                         ->modalCancelActionLabel(__('pages/competitors.close'))
-                        ->schema(fn (CompetitorBattle $record): array => [
+                        ->schema(fn (Competitor $record): array => [
                             Placeholder::make('competitor_details')
                                 ->hiddenLabel()
-                                ->content(new HtmlString($this->competitorDetailsHtml($record))),
+                                ->content(new HtmlString($this->competitorDetailHtml($record))),
                         ]),
+
+                    Action::make('ungroup')
+                        ->label(__('pages/competitors.ungroup'))
+                        ->icon(Heroicon::OutlinedArrowUturnLeft)
+                        ->visible(fn (Competitor $record): bool => $record->battle !== null && filled($record->battle->name))
+                        ->action(fn (Competitor $record) => $this->ungroup($record)),
 
                     Action::make('remove')
                         ->label(__('pages/competitors.remove'))
                         ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->action(function (CompetitorBattle $record): void {
-                            ActivityLogger::log('competitor.battle_removed', ['name' => $this->battleName($record)]);
-                            $record->competitors()->delete();
+                        ->action(function (Competitor $record): void {
+                            $battle = $record->battle;
+                            ActivityLogger::log('competitor.removed', ['name' => (string) $record->name]);
                             $record->delete();
+                            if ($battle !== null && $battle->competitors()->count() === 0) {
+                                $battle->delete();
+                            }
                             Notification::make()->title(__('pages/competitors.removed'))->success()->send();
                         }),
                 ]),
@@ -225,7 +245,73 @@ class Competitors extends Page implements HasTable
                     ->modalHeading(__('pages/competitors.add_heading'))
                     ->schema($this->battleFormSchema())
                     ->action(fn (array $data) => $this->save($data)),
+
+                Action::make('create_group')
+                    ->label(__('pages/competitors.create_group'))
+                    ->icon(Heroicon::OutlinedRectangleGroup)
+                    ->color('gray')
+                    ->visible(fn (): bool => $this->isConfigured() && Competitor::query()->count() >= 2)
+                    ->modalHeading(__('pages/competitors.group_heading'))
+                    ->schema($this->groupFormSchema())
+                    ->action(fn (array $data) => $this->createGroup($data)),
             ]);
+    }
+
+    /** Group form: name plus the tracked competitors to combine into it. */
+    protected function groupFormSchema(): array
+    {
+        return [
+            TextInput::make('name')
+                ->label(__('pages/competitors.field_group_name'))
+                ->required()
+                ->maxLength(60),
+
+            Select::make('competitor_ids')
+                ->label(__('pages/competitors.field_group_competitors'))
+                ->multiple()
+                ->required()
+                ->minItems(2)
+                ->options(fn (): array => Competitor::query()->orderBy('name')->pluck('name', 'id')->all())
+                ->helperText(__('pages/competitors.field_group_competitors_helper')),
+        ];
+    }
+
+    /**
+     * Combine several tracked competitors into one named group by moving them
+     * into a fresh battle; any single-competitor battles left empty by the move
+     * are removed. The chart then draws the group as one summed line.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function createGroup(array $data): void
+    {
+        $ids = array_values(array_filter(array_map('intval', (array) ($data['competitor_ids'] ?? []))));
+        $competitors = Competitor::query()->whereIn('id', $ids)->get();
+        if ($competitors->count() < 2) {
+            Notification::make()->title(__('pages/competitors.group_need_two'))->warning()->send();
+
+            return;
+        }
+
+        $formerBattleIds = $competitors->pluck('battle_id')->filter()->unique()->all();
+        $ownIds = Location::query()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+        $battle = new CompetitorBattle;
+        $battle->name = trim((string) ($data['name'] ?? ''));
+        $battle->own_location_ids = $ownIds;
+        $battle->save();
+
+        Competitor::query()->whereIn('id', $ids)->update(['battle_id' => $battle->id]);
+
+        // Drop the now-empty single battles the competitors used to live in.
+        CompetitorBattle::query()
+            ->whereIn('id', $formerBattleIds)
+            ->whereDoesntHave('competitors')
+            ->delete();
+
+        ActivityLogger::log('competitor.group_created', ['name' => (string) $battle->name]);
+
+        Notification::make()->title(__('pages/competitors.group_created'))->success()->send();
     }
 
     /** Add form: one competitor place at a time (search Google Places). */
