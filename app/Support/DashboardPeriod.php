@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Models\LocationGroup;
 use Carbon\CarbonImmutable;
 
 /**
@@ -84,10 +85,9 @@ class DashboardPeriod
 
         // The dashboard sends an array (multi-select), report pages a scalar.
         // Normalize both into a list of ids; a single id also fills locationId
-        // for consumers that only support one location.
-        $locationIds = array_values(array_filter(
-            array_map('intval', array_filter((array) ($filters['location_id'] ?? []), fn ($id): bool => $id !== null && $id !== '')),
-        ));
+        // for consumers that only support one location. A "g:{id}" token is a
+        // location group — expand it to its member location ids.
+        $locationIds = self::expandLocationFilter((array) ($filters['location_id'] ?? []));
 
         return new self(
             start: $start,
@@ -99,6 +99,39 @@ class DashboardPeriod
             preset: (string) $preset,
             locationIds: $locationIds,
         );
+    }
+
+    /**
+     * Expand a raw location filter (integer location ids mixed with "g:{id}"
+     * group tokens) into a unique list of location ids.
+     *
+     * @param  array<int, mixed>  $values
+     * @return list<int>
+     */
+    private static function expandLocationFilter(array $values): array
+    {
+        $ids = [];
+        $groupIds = [];
+
+        foreach ($values as $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if (is_string($value) && str_starts_with($value, 'g:')) {
+                $groupIds[] = (int) substr($value, 2);
+
+                continue;
+            }
+            $ids[] = (int) $value;
+        }
+
+        if ($groupIds !== [] && tenancy()->initialized) {
+            foreach (LocationGroup::query()->whereIn('id', $groupIds)->get() as $group) {
+                $ids = array_merge($ids, $group->locationIds());
+            }
+        }
+
+        return array_values(array_unique(array_filter($ids)));
     }
 
     /** Whole days in the current window (inclusive), for adaptive bucketing/labels. */

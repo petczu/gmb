@@ -27,6 +27,17 @@ return [
 
     // Bulk hours editing
     'bulk_hours' => 'Edit hours',
+
+    // Location groups (filter + organize)
+    'group' => 'Group',
+    'groups' => 'Groups',
+    'groups_heading' => 'Location groups',
+    'groups_desc' => 'Group your locations into clusters. A group filters this list and appears in the dashboard and report location filter.',
+    'groups_save' => 'Save groups',
+    'groups_saved' => 'Groups saved',
+    'group_add' => 'Add group',
+    'group_name' => 'Group name',
+    'group_locations' => 'Locations',
     'bulk_hours_heading' => 'Edit hours on selected locations',
     'bulk_hours_desc' => 'The sections you switch on below are pushed to every selected Google profile. A pushed section replaces that profile\'s current set, sections left off stay untouched.',
     'bulk_hours_submit' => 'Apply to selected',

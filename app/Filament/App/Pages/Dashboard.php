@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\App\Pages;
 
 use App\Models\Location;
+use App\Models\LocationGroup;
 use App\Support\DashboardWidgets;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -201,6 +202,32 @@ class Dashboard extends BaseDashboard
             ->all();
     }
 
+    /**
+     * Location filter options: raw locations, plus any location groups as
+     * "g:{id}" tokens (grouped into their own optgroup) that DashboardPeriod
+     * expands to member locations.
+     *
+     * @return array<int|string, mixed>
+     */
+    protected function locationFilterOptions(): array
+    {
+        if (! tenancy()->initialized) {
+            return [];
+        }
+
+        $locations = Location::query()->orderBy('name')->pluck('name', 'id')->all();
+        $groups = LocationGroup::query()->orderBy('name')->get();
+
+        if ($groups->isEmpty()) {
+            return $locations;
+        }
+
+        return [
+            __('common.groups') => $groups->mapWithKeys(fn (LocationGroup $group): array => ['g:'.$group->id => $group->name])->all(),
+            __('common.locations') => $locations,
+        ];
+    }
+
     public function filtersForm(Schema $schema): Schema
     {
         return $schema->columns(1)->components([
@@ -222,9 +249,7 @@ class Dashboard extends BaseDashboard
                             ->label(__('common.location'))
                             ->placeholder(__('common.all_locations'))
                             ->multiple()
-                            ->options(fn (): array => tenancy()->initialized
-                                ? Location::query()->orderBy('name')->pluck('name', 'id')->all()
-                                : []),
+                            ->options(fn (): array => $this->locationFilterOptions()),
 
                         DatePicker::make('startDate')
                             ->label(__('common.from'))

@@ -11,6 +11,8 @@ return [
     'period' => 'Zeitraum',
     'location' => 'Standort',
     'all_locations' => 'Alle Standorte',
+    'groups' => 'Gruppen',
+    'locations' => 'Standorte',
     'anonymous' => 'Anonym',
 
     // Shared period option set (Dashboard + Reports + Schedules)

@@ -4,6 +4,7 @@ namespace App\Filament\App\Resources\Locations\Tables;
 
 use App\Filament\App\Pages\BusinessProfile;
 use App\Models\Location;
+use App\Models\LocationGroup;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Billing\LocationBilling;
@@ -12,6 +13,7 @@ use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class LocationsTable
@@ -94,6 +96,17 @@ class LocationsTable
                     ->placeholder(__('resources/locations.syncing'))
                     ->sortable()
                     ->visibleFrom('md'),
+            ])
+            ->filters([
+                // Organize the list by group: pick one to show only its members.
+                SelectFilter::make('group')
+                    ->label(__('resources/locations.group'))
+                    ->options(fn (): array => LocationGroup::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->query(function ($query, array $data) {
+                        $group = filled($data['value'] ?? null) ? LocationGroup::find($data['value']) : null;
+
+                        return $group === null ? $query : $query->whereIn('id', $group->locationIds());
+                    }),
             ])
             ->recordActions([
                 ActionGroup::make([

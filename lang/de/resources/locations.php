@@ -27,6 +27,17 @@ return [
 
     // Massenbearbeitung der Öffnungszeiten
     'bulk_hours' => 'Zeiten bearbeiten',
+
+    // Standortgruppen (Filter + Organisation)
+    'group' => 'Gruppe',
+    'groups' => 'Gruppen',
+    'groups_heading' => 'Standortgruppen',
+    'groups_desc' => 'Fasse deine Standorte zu Clustern zusammen. Eine Gruppe filtert diese Liste und erscheint im Standortfilter von Dashboard und Berichten.',
+    'groups_save' => 'Gruppen speichern',
+    'groups_saved' => 'Gruppen gespeichert',
+    'group_add' => 'Gruppe hinzufügen',
+    'group_name' => 'Gruppenname',
+    'group_locations' => 'Standorte',
     'bulk_hours_heading' => 'Zeiten für ausgewählte Standorte bearbeiten',
     'bulk_hours_desc' => 'Die unten aktivierten Bereiche werden auf jedes ausgewählte Google-Profil übertragen. Ein übertragener Bereich ersetzt die dort hinterlegten Zeiten, deaktivierte Bereiche bleiben unberührt.',
     'bulk_hours_submit' => 'Auf Auswahl anwenden',

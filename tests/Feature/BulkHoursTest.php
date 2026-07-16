@@ -104,6 +104,14 @@ class BulkHoursTest extends TestCase
             $table->timestamps();
         });
 
+        // The Locations table renders a "Group" filter querying this table.
+        Schema::create('location_groups', function ($table): void {
+            $table->increments('id');
+            $table->string('name');
+            $table->json('location_ids')->nullable();
+            $table->timestamps();
+        });
+
         Schema::create('external_calendars', function ($table): void {
             $table->increments('id');
             $table->string('name');
@@ -141,7 +149,7 @@ class BulkHoursTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (['scheduled_listing_updates', 'external_calendar_events', 'external_calendars', 'locations'] as $table) {
+        foreach (['scheduled_listing_updates', 'external_calendar_events', 'external_calendars', 'location_groups', 'locations'] as $table) {
             Schema::dropIfExists($table);
         }
         foreach (['workspace_user', 'role_has_permissions', 'model_has_roles', 'model_has_permissions', 'roles', 'permissions', 'users'] as $table) {
