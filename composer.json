@@ -24,7 +24,7 @@
         "stancl/tenancy": "^3.10",
         "symfony/http-client": "^8.1",
         "symfony/postmark-mailer": "^8.1",
-        "zernio-dev/zernio-php": "^0.0.297"
+        "zernio-dev/zernio-php": "dev-main"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

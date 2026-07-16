@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fb5c5a6548510aae78c08590f13f95c2",
+    "content-hash": "ca5082cdc8bfef18d8f1f51b9f000ab6",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -11545,16 +11545,16 @@
         },
         {
             "name": "zernio-dev/zernio-php",
-            "version": "0.0.297",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/zernio-dev/zernio-php.git",
-                "reference": "7d6b8c10467e0fc24f075a9bcd32cf10f4a8d92a"
+                "reference": "417d807ac36e80bebdd2dce50b9d2acf595e4006"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/zernio-dev/zernio-php/zipball/7d6b8c10467e0fc24f075a9bcd32cf10f4a8d92a",
-                "reference": "7d6b8c10467e0fc24f075a9bcd32cf10f4a8d92a",
+                "url": "https://api.github.com/repos/zernio-dev/zernio-php/zipball/417d807ac36e80bebdd2dce50b9d2acf595e4006",
+                "reference": "417d807ac36e80bebdd2dce50b9d2acf595e4006",
                 "shasum": ""
             },
             "require": {
@@ -11569,6 +11569,7 @@
                 "friendsofphp/php-cs-fixer": "^3.5",
                 "phpunit/phpunit": "^8.0 || ^9.0"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "files": [
@@ -11601,9 +11602,9 @@
             ],
             "support": {
                 "issues": "https://github.com/zernio-dev/zernio-php/issues",
-                "source": "https://github.com/zernio-dev/zernio-php/tree/v0.0.297"
+                "source": "https://github.com/zernio-dev/zernio-php/tree/main"
             },
-            "time": "2026-05-27T07:46:15+00:00"
+            "time": "2026-07-16T19:31:49+00:00"
         }
     ],
     "packages-dev": [
@@ -14171,7 +14172,8 @@
     "aliases": [],
     "minimum-stability": "beta",
     "stability-flags": {
-        "filament/filament": 10
+        "filament/filament": 10,
+        "zernio-dev/zernio-php": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
