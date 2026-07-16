@@ -79,10 +79,6 @@
                     <span class="cmp-spark">{{ $row['spark'] ?? '' }}</span>
                 </div>
             @endforeach
-
-            @if ($total > $maxRows)
-                <div class="cmp-hint">{{ __('widgets.competitors_more', ['count' => $total - $maxRows]) }}</div>
-            @endif
         @endif
     </x-filament::section>
     </div>

@@ -40,8 +40,6 @@ class CompetitorBenchmarkWidget extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
-    private const MAX_ROWS = 4;
-
     public static function canView(): bool
     {
         return tenancy()->initialized
@@ -74,7 +72,7 @@ class CompetitorBenchmarkWidget extends Widget
 
         $trends = app(CompetitorTrends::class);
 
-        $rows = $battles->take(self::MAX_ROWS)->map(function (CompetitorBattle $battle) use ($trends, $period): array {
+        $rows = $battles->map(function (CompetitorBattle $battle) use ($trends, $period): array {
             $summary = $trends->placesSummary(
                 $battle->competitors->pluck('place_id')->filter()->values()->all(),
                 $period->start,
@@ -108,8 +106,6 @@ class CompetitorBenchmarkWidget extends Widget
 
         return [
             'rows' => $rows,
-            'total' => $battles->count(),
-            'maxRows' => self::MAX_ROWS,
         ];
     }
 }
