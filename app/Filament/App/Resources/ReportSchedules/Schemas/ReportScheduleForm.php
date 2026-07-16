@@ -6,6 +6,9 @@ namespace App\Filament\App\Resources\ReportSchedules\Schemas;
 
 use App\Models\Competitor;
 use App\Models\Location;
+use App\Models\User;
+use App\Models\Workspace;
+use App\Services\Notifications\NotificationRecipients;
 use App\Support\ReportBlocks;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
@@ -15,6 +18,9 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class ReportScheduleForm
 {
@@ -98,12 +104,91 @@ class ReportScheduleForm
                     ->columns(2)
                     ->bulkToggleable(),
 
-                TagsInput::make('recipients')
-                    ->label(__('resources/report_schedules.recipients'))
+                // Recipients by role/member (Included minus Excluded, same
+                // model as the Notifications page) plus any external emails.
+                // Empty selection falls back to every workspace member.
+                Select::make('recipients.include')
+                    ->label(__('resources/report_schedules.recipients_include'))
+                    ->placeholder(__('resources/report_schedules.recipients_all'))
+                    ->multiple()
+                    ->options(fn (): array => self::recipientOptions()),
+
+                Select::make('recipients.exclude')
+                    ->label(__('resources/report_schedules.recipients_exclude'))
+                    ->placeholder(__('resources/report_schedules.recipients_none'))
+                    ->multiple()
+                    ->options(fn (): array => self::peopleOptions()),
+
+                TagsInput::make('recipients.emails')
+                    ->label(__('resources/report_schedules.recipients_emails'))
                     ->placeholder(__('resources/report_schedules.recipients_placeholder'))
                     ->nestedRecursiveRules(['email'])
                     ->helperText(__('resources/report_schedules.recipients_helper')),
             ]),
         ]);
+    }
+
+    /**
+     * Grouped recipient options for the "Included" select: role groups
+     * ("Everyone", per-role) plus individual members.
+     *
+     * @return array<string, array<int|string, string>>
+     */
+    protected static function recipientOptions(): array
+    {
+        $workspace = tenant();
+        if ($workspace === null) {
+            return [];
+        }
+
+        $groups = [NotificationRecipients::EVERYONE => __('pages/notifications.everyone')];
+        foreach (self::roleNames($workspace) as $role) {
+            $key = 'pages/notifications.group_'.$role;
+            $groups[NotificationRecipients::ROLE_PREFIX.$role] = Lang::has($key)
+                ? __($key)
+                : __('pages/notifications.group_role', ['role' => Str::headline($role)]);
+        }
+
+        return [
+            __('pages/notifications.groups') => $groups,
+            __('pages/notifications.people') => self::peopleOptions(),
+        ];
+    }
+
+    /**
+     * Individual members only (for the "Excluded" select).
+     *
+     * @return array<int, string>
+     */
+    protected static function peopleOptions(): array
+    {
+        $workspace = tenant();
+        if ($workspace === null) {
+            return [];
+        }
+
+        return $workspace->users()->get()->mapWithKeys(function (User $user): array {
+            $label = $user->name.' · '.$user->email;
+            if (($user->pivot->membership_type ?? null) === 'guest') {
+                $label .= ' ('.__('pages/notifications.guest').')';
+            }
+
+            return [$user->id => $label];
+        })->all();
+    }
+
+    /**
+     * Every role defined for this workspace, standard roles first.
+     *
+     * @return list<string>
+     */
+    protected static function roleNames(Workspace $workspace): array
+    {
+        $defined = Role::query()->where('team_id', $workspace->id)->pluck('name')->all();
+
+        return array_values(array_unique(array_merge(
+            array_values(array_intersect(['owner', 'admin', 'member', 'guest'], $defined)),
+            $defined,
+        )));
     }
 }

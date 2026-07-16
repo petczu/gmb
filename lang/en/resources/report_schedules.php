@@ -55,6 +55,11 @@ return [
     'location' => 'Location',
     'compare' => 'Compare to previous period',
     'recipients' => 'Recipients (emails)',
+    'recipients_include' => 'Send to',
+    'recipients_exclude' => 'Except',
+    'recipients_emails' => 'Extra emails',
+    'recipients_all' => 'All members',
+    'recipients_none' => 'No exceptions',
     'recipients_placeholder' => 'add email + Enter',
     'recipients_helper' => 'Leave empty to send to all workspace members.',
 ];

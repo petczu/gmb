@@ -55,6 +55,11 @@ return [
     'location' => 'Standort',
     'compare' => 'Mit Vorzeitraum vergleichen',
     'recipients' => 'Empfänger (E-Mails)',
+    'recipients_include' => 'Senden an',
+    'recipients_exclude' => 'Außer',
+    'recipients_emails' => 'Zusätzliche E-Mails',
+    'recipients_all' => 'Alle Mitglieder',
+    'recipients_none' => 'Keine Ausnahmen',
     'recipients_placeholder' => 'E-Mail eingeben + Enter',
     'recipients_helper' => 'Leer lassen, um an alle Workspace-Mitglieder zu senden.',
 ];

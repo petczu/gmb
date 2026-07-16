@@ -19,6 +19,26 @@ use Filament\Tables\Table;
 
 class ReportSchedulesTable
 {
+    /**
+     * Number of explicit recipients for the badge: included roles/people plus
+     * external emails (new shape), or the flat email list (legacy). Zero means
+     * "no explicit routing" → falls back to all members.
+     *
+     * @param  array<int|string, mixed>  $recipients
+     */
+    private static function recipientCount(array $recipients): int
+    {
+        $isStructured = array_key_exists('include', $recipients)
+            || array_key_exists('exclude', $recipients)
+            || array_key_exists('emails', $recipients);
+
+        if (! $isStructured) {
+            return count(array_filter($recipients, fn ($e): bool => is_string($e) && $e !== ''));
+        }
+
+        return count((array) ($recipients['include'] ?? [])) + count((array) ($recipients['emails'] ?? []));
+    }
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -51,13 +71,21 @@ class ReportSchedulesTable
                         ][$r->send_day] ?? ''])
                         : __('resources/report_schedules.frequency_monthly', ['day' => $r->send_day])),
 
-                TextColumn::make('period')->label(__('resources/report_schedules.col_period'))->badge()->visibleFrom('md'),
+                TextColumn::make('period')
+                    ->label(__('resources/report_schedules.col_period'))
+                    ->badge()
+                    ->formatStateUsing(fn (ReportSchedule $r): string => ((array) __('common.periods'))[$r->period] ?? (string) $r->period)
+                    ->visibleFrom('md'),
 
                 TextColumn::make('recipients')
                     ->label(__('resources/report_schedules.col_recipients'))
-                    ->formatStateUsing(fn (ReportSchedule $r): string => empty($r->recipients)
-                        ? __('resources/report_schedules.recipients_all')
-                        : __('resources/report_schedules.recipients_count', ['count' => count($r->recipients)]))
+                    ->formatStateUsing(function (ReportSchedule $r): string {
+                        $count = self::recipientCount((array) $r->recipients);
+
+                        return $count === 0
+                            ? __('resources/report_schedules.recipients_all')
+                            : __('resources/report_schedules.recipients_count', ['count' => $count]);
+                    })
                     ->visibleFrom('lg'),
 
                 TextColumn::make('last_sent_at')->label(__('resources/report_schedules.col_last_sent'))->since()->placeholder(__('resources/report_schedules.never'))->visibleFrom('md'),

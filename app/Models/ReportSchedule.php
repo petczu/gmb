@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Services\ActivityLog\ActivityLogger;
+use App\Services\Notifications\NotificationRecipients;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 /**
  * TENANT model — a recurring email delivery of the performance report.
@@ -87,12 +89,54 @@ class ReportSchedule extends Model
      */
     public function resolveRecipients(Workspace $workspace): array
     {
-        $explicit = array_values(array_filter((array) ($this->recipients ?? []), fn ($e): bool => is_string($e) && $e !== ''));
+        $recipients = (array) ($this->recipients ?? []);
 
-        if ($explicit !== []) {
-            return $explicit;
+        // Legacy shape: a flat list of email strings (no include/exclude/emails
+        // keys). Treat it as an explicit external-email list.
+        $isStructured = array_key_exists('include', $recipients)
+            || array_key_exists('exclude', $recipients)
+            || array_key_exists('emails', $recipients);
+
+        if (! $isStructured) {
+            $flat = array_values(array_filter($recipients, fn ($e): bool => is_string($e) && $e !== ''));
+
+            return $flat !== [] ? $flat : $this->allMemberEmails($workspace);
         }
 
-        return $workspace->users()->pluck('email')->filter()->values()->all();
+        $emails = array_values(array_filter((array) ($recipients['emails'] ?? []), fn ($e): bool => is_string($e) && $e !== ''));
+
+        // Role/member selection (Included minus Excluded), resolved to emails.
+        $memberEmails = [];
+        $include = array_values((array) ($recipients['include'] ?? []));
+        if ($include !== []) {
+            $members = $this->workspaceMembers($workspace);
+            $ids = app(NotificationRecipients::class)->resolveIds(
+                ['include' => $include, 'exclude' => array_values((array) ($recipients['exclude'] ?? []))],
+                $members,
+            );
+            $memberEmails = $members->whereIn('id', $ids)->pluck('email')->filter()->all();
+        }
+
+        $all = array_values(array_unique(array_merge($memberEmails, $emails)));
+
+        // Nothing configured at all → fall back to every workspace member.
+        return $all !== [] ? $all : $this->allMemberEmails($workspace);
+    }
+
+    /**
+     * The workspace's members. Extracted as a seam so recipient resolution can
+     * be unit-tested without provisioning the central membership tables.
+     *
+     * @return Collection<int, User>
+     */
+    protected function workspaceMembers(Workspace $workspace): Collection
+    {
+        return $workspace->users()->get();
+    }
+
+    /** @return array<int, string> */
+    private function allMemberEmails(Workspace $workspace): array
+    {
+        return $this->workspaceMembers($workspace)->pluck('email')->filter()->values()->all();
     }
 }
