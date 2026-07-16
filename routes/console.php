@@ -51,14 +51,21 @@ Schedule::command('listings:apply-scheduled')->dailyAt('00:20');
 // Onboarding email series: one due step per user per day (see DripSeries).
 Schedule::command('emails:drip')->dailyAt('10:00');
 
-// Daily competitor rating/review snapshot via the Google Places API (no-op
-// while GOOGLE_PLACES_API_KEY is unset). Daily granularity feeds the trends
-// on the Competitors page; cost is ~1 details call per competitor per day.
-Schedule::command('competitors:refresh')->dailyAt('06:00');
+// Daily: snapshot only connected own locations (free — synced data, no paid
+// lookups). Keeps the own side of the trends current every day.
+Schedule::command('competitors:refresh --connected-only')->dailyAt('06:00');
 
-// The full admin watchlist (bulk-discovered places) refreshes only weekly —
-// daily Place Details for hundreds of unused places burns the Places budget.
+// Weekly: the full paid pass — every tracked competitor plus the admin
+// watchlist (bulk-discovered places). Weekly keeps the DataForSEO/Places cost
+// down; competitor review counts move slowly, and exact per-day history can
+// come from the reviews backfill when enabled.
 Schedule::command('competitors:refresh --watchlist')->weeklyOn(1, '06:30');
+
+// Weekly top-up of individual competitor reviews (exact per-day history).
+// No-op unless DATAFORSEO_REVIEWS_ENABLED is set; --delta only fetches the
+// newest, so ongoing cost is negligible. The one-time full backfill is run
+// manually (competitors:backfill-reviews) when the add-on goes live.
+Schedule::command('competitors:backfill-reviews --delta')->weeklyOn(1, '07:00');
 
 // Global AI budget guard: emails super-admins at 80%/100% of
 // AI_MONTHLY_BUDGET_USD (no-op while unset).

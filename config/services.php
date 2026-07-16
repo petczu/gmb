@@ -30,6 +30,13 @@ return [
     'dataforseo' => [
         'login' => env('DATAFORSEO_LOGIN'),
         'password' => env('DATAFORSEO_PASSWORD'),
+        // Individual competitor reviews (backfill into place_reviews). Master
+        // switch for the paid Google Reviews endpoint; off by default. 'depth'
+        // caps reviews pulled per place (multiple of 10, Google tops out at
+        // 4490). 'priority' uses the faster/pricier queue.
+        'reviews_enabled' => env('DATAFORSEO_REVIEWS_ENABLED', false),
+        'reviews_depth' => (int) env('DATAFORSEO_REVIEWS_DEPTH', 700),
+        'reviews_priority' => env('DATAFORSEO_REVIEWS_PRIORITY', false),
     ],
 
     'google' => [

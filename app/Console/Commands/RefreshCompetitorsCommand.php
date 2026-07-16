@@ -26,7 +26,8 @@ class RefreshCompetitorsCommand extends Command
 {
     protected $signature = 'competitors:refresh
         {workspace? : Workspace id or slug; omit for all}
-        {--watchlist : Also refresh the admin watchlist (tracked_places) that no tenant uses}';
+        {--watchlist : Also refresh the admin watchlist (tracked_places) that no tenant uses}
+        {--connected-only : Snapshot only connected own locations (free, no paid competitor lookups) — the daily pass}';
 
     protected $description = 'Refresh competitor ratings/review counts from the Google Places API';
 
@@ -58,7 +59,9 @@ class RefreshCompetitorsCommand extends Command
         // The admin watchlist (tracked_places, potentially hundreds of rows
         // from bulk discovery) joins only with --watchlist: refreshing places
         // no tenant uses every day is what burns the Places budget.
-        $placeIds = $this->option('watchlist')
+        $connectedOnly = (bool) $this->option('connected-only');
+
+        $placeIds = (! $connectedOnly && $this->option('watchlist'))
             ? TrackedPlace::query()->pluck('place_id')->all()
             : [];
 
@@ -66,8 +69,12 @@ class RefreshCompetitorsCommand extends Command
         $connected = [];
 
         foreach ($workspaces as $workspace) {
-            $this->inTenant($workspace, function () use (&$placeIds, &$connected): void {
-                $placeIds = array_merge($placeIds, Competitor::query()->pluck('place_id')->all());
+            $this->inTenant($workspace, function () use (&$placeIds, &$connected, $connectedOnly): void {
+                // The daily pass snapshots only connected places (free); paid
+                // competitor lookups run in the weekly full pass.
+                if (! $connectedOnly) {
+                    $placeIds = array_merge($placeIds, Competitor::query()->pluck('place_id')->all());
+                }
 
                 Location::query()
                     ->whereNotNull('place_id')->where('place_id', '!=', '')
@@ -81,6 +88,11 @@ class RefreshCompetitorsCommand extends Command
                         ];
                     });
             });
+        }
+
+        // Daily pass: snapshot exactly the connected places (all free).
+        if ($connectedOnly) {
+            $placeIds = array_keys($connected);
         }
 
         // Pass 2 — ONE details call per place, one central snapshot per day.
