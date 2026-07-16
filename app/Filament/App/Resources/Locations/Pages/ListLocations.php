@@ -10,8 +10,6 @@ use App\Models\Workspace;
 use App\Services\Reviews\ReviewSync;
 use App\Services\Reviews\ZernioConnectionManager;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -40,42 +38,31 @@ class ListLocations extends ListRecords
                 ->schema(HoursBulkEdit::schema())
                 ->action(fn (array $data) => HoursBulkEdit::apply($data)),
 
-            // Location groups: name a cluster of locations, then filter the list
-            // or the dashboard/report location filter by it. Create, rename,
-            // re-scope and delete all in one modal.
-            Action::make('groups')
-                ->label(__('resources/locations.groups'))
+            // Create a group: name a cluster of locations. A location belongs to
+            // one group at a time; the group tags its members in the list and is
+            // selectable in the dashboard/report location filter. Manage a group
+            // per row (ungroup) like the Competitors page.
+            Action::make('createGroup')
+                ->label(__('resources/locations.create_group'))
                 ->icon(Heroicon::OutlinedRectangleGroup)
                 ->color('gray')
-                ->visible(fn (): bool => Location::query()->exists())
-                ->modalHeading(__('resources/locations.groups_heading'))
-                ->modalDescription(__('resources/locations.groups_desc'))
-                ->modalSubmitActionLabel(__('resources/locations.groups_save'))
-                ->fillForm(fn (): array => ['groups' => LocationGroup::query()->orderBy('name')->get()
-                    ->map(fn (LocationGroup $group): array => [
-                        'id' => $group->id,
-                        'name' => $group->name,
-                        'location_ids' => $group->locationIds(),
-                    ])->all()])
+                ->visible(fn (): bool => Location::query()->count() >= 2)
+                ->modalHeading(__('resources/locations.group_heading'))
+                ->modalSubmitActionLabel(__('resources/locations.group_create'))
                 ->schema([
-                    Repeater::make('groups')
-                        ->hiddenLabel()
-                        ->addActionLabel(__('resources/locations.group_add'))
-                        ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
-                        ->schema([
-                            Hidden::make('id'),
-                            TextInput::make('name')
-                                ->label(__('resources/locations.group_name'))
-                                ->required()
-                                ->maxLength(60),
-                            Select::make('location_ids')
-                                ->label(__('resources/locations.group_locations'))
-                                ->multiple()
-                                ->required()
-                                ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all()),
-                        ]),
+                    TextInput::make('name')
+                        ->label(__('resources/locations.group_name'))
+                        ->required()
+                        ->maxLength(60),
+                    Select::make('location_ids')
+                        ->label(__('resources/locations.group_locations'))
+                        ->multiple()
+                        ->required()
+                        ->minItems(2)
+                        ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->helperText(__('resources/locations.group_locations_helper')),
                 ])
-                ->action(fn (array $data) => $this->saveGroups($data)),
+                ->action(fn (array $data) => $this->createGroup($data)),
 
             // OAuth connect, pick which location(s) to track in the picker.
             Action::make('connect')
@@ -115,38 +102,30 @@ class ListLocations extends ListRecords
     }
 
     /**
-     * Reconcile the groups repeater against stored LocationGroups: update rows
-     * that carry an id, create rows without one, and delete any group the user
-     * removed from the list.
+     * Create one named group from the chosen locations. A location belongs to a
+     * single group, so the members are first detached from any group they were
+     * already in (emptied groups are removed), mirroring the Competitors page.
      *
      * @param  array<string, mixed>  $data
      */
-    private function saveGroups(array $data): void
+    private function createGroup(array $data): void
     {
-        $keptIds = [];
+        $name = trim((string) ($data['name'] ?? ''));
+        $ids = array_values(array_filter(array_map('intval', (array) ($data['location_ids'] ?? []))));
 
-        foreach (($data['groups'] ?? []) as $row) {
-            $name = trim((string) ($row['name'] ?? ''));
-            if ($name === '') {
-                continue;
-            }
+        if ($name === '' || count($ids) < 2) {
+            Notification::make()->title(__('resources/locations.group_need_two'))->warning()->send();
 
-            $ids = array_values(array_filter(array_map('intval', (array) ($row['location_ids'] ?? []))));
-
-            $group = filled($row['id'] ?? null) ? LocationGroup::find($row['id']) : null;
-            if ($group !== null) {
-                $group->update(['name' => $name, 'location_ids' => $ids]);
-            } else {
-                $group = LocationGroup::create(['name' => $name, 'location_ids' => $ids]);
-            }
-
-            $keptIds[] = $group->id;
+            return;
         }
 
-        // Anything not present in the submitted list was removed by the user.
-        LocationGroup::query()->whereNotIn('id', $keptIds ?: [0])->delete();
+        foreach ($ids as $id) {
+            LocationGroup::detachLocation($id);
+        }
 
-        Notification::make()->title(__('resources/locations.groups_saved'))->success()->send();
+        LocationGroup::create(['name' => $name, 'location_ids' => $ids]);
+
+        Notification::make()->title(__('resources/locations.group_created'))->success()->send();
     }
 
     private function workspace(): Workspace

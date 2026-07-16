@@ -43,6 +43,13 @@ class LocationsTable
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('group')
+                    ->label(__('resources/locations.group'))
+                    ->badge()
+                    ->color('primary')
+                    ->placeholder('—')
+                    ->state(fn (Location $record): ?string => LocationGroup::forLocation((int) $record->id)?->name),
+
                 TextColumn::make('address')
                     ->limit(45)
                     ->tooltip(fn (Location $record): ?string => mb_strlen((string) $record->address) > 45 ? $record->address : null)
@@ -115,6 +122,15 @@ class LocationsTable
                         ->icon(Heroicon::OutlinedPencilSquare)
                         ->visible(fn (): bool => auth()->user()?->can('edit_business_info') ?? false)
                         ->url(fn (Location $record): string => BusinessProfile::getUrl().'?location='.$record->id),
+
+                    Action::make('ungroup')
+                        ->label(__('resources/locations.ungroup'))
+                        ->icon(Heroicon::OutlinedArrowUturnLeft)
+                        ->visible(fn (Location $record): bool => LocationGroup::forLocation((int) $record->id) !== null)
+                        ->action(function (Location $record): void {
+                            LocationGroup::detachLocation((int) $record->id);
+                            Notification::make()->title(__('resources/locations.ungrouped'))->success()->send();
+                        }),
 
                     Action::make('disconnect')
                         ->label(__('resources/locations.disconnect'))
