@@ -109,48 +109,53 @@
                 </div>
             @endif
 
-            @if (count($this->locationOptions()) > 1)
-                <select class="pc-btn" wire:model.live="locationFilter" style="min-width:11rem;">
-                    <option value="">{{ __('pages/posts.all_locations') }}</option>
-                    @foreach ($this->locationOptions() as $id => $name)
-                        <option value="{{ $id }}">{{ $name }}</option>
-                    @endforeach
-                </select>
-            @endif
-
             <div style="display:flex; align-items:center; gap:.5rem; margin-left:auto;">
-                @if ($this->mode === 'calendar')
-                    {{-- Note tag filter: show/hide sticky notes by their tag --}}
-                    @php $noteTags = $this->noteTags(); @endphp
-                    @if ($noteTags !== [])
-                        <div x-data="{ open: false }" style="position:relative;">
-                            <button type="button" class="pc-btn" @click="open = !open" style="display:inline-flex; align-items:center; gap:.4rem;">
-                                <svg style="width:1rem; height:1rem; opacity:.7;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"/></svg>
-                                {{ __('pages/posts.notes_filter') }}
-                                @if ($this->hiddenNoteTags !== [])
-                                    <span style="display:inline-flex; align-items:center; justify-content:center; min-width:1.05rem; height:1.05rem; border-radius:999px; background:#2d19ec; color:#fff; font-size:.65rem; font-weight:700;">{{ count($this->hiddenNoteTags) }}</span>
-                                @endif
-                            </button>
+                {{-- Unified Filter: locations (multi-select) + note tags --}}
+                @php
+                    $filterTags = $this->mode === 'calendar' ? $this->noteTags() : [];
+                    $hasLocationFilter = count($this->locationOptions()) > 1;
+                    $activeFilters = count($this->locationFilter) + count($this->hiddenNoteTags);
+                @endphp
+                @if ($hasLocationFilter || $filterTags !== [])
+                    <div x-data="{ open: false }" style="position:relative;">
+                        <button type="button" class="pc-btn" @click="open = !open" style="display:inline-flex; align-items:center; gap:.4rem;">
+                            <svg style="width:1rem; height:1rem; opacity:.7;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.792 2.938A49.069 49.069 0 0 1 12 2.25c2.797 0 5.54.236 8.209.688a1.857 1.857 0 0 1 1.541 1.836v1.044a3 3 0 0 1-.879 2.121l-6.182 6.182a1.5 1.5 0 0 0-.439 1.061v2.927a3 3 0 0 1-1.658 2.684l-1.757.878A.75.75 0 0 1 9.75 21v-5.818a1.5 1.5 0 0 0-.44-1.06L3.13 7.938a3 3 0 0 1-.879-2.121V4.773c0-.897.64-1.683 1.542-1.835Z"/></svg>
+                            {{ __('pages/posts.filter') }}
+                            @if ($activeFilters > 0)
+                                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:1.05rem; height:1.05rem; border-radius:999px; background:#2d19ec; color:#fff; font-size:.65rem; font-weight:700;">{{ $activeFilters }}</span>
+                            @endif
+                        </button>
 
-                            <div class="pc-pop" x-show="open" x-cloak @click.outside="open = false">
-                                <div class="head"><b>{{ __('pages/posts.notes_filter_title') }}</b></div>
+                        <div class="pc-pop" x-show="open" x-cloak @click.outside="open = false">
+                            @if ($hasLocationFilter)
+                                <div class="head"><b>{{ __('pages/posts.field_locations') }}</b></div>
+                                @foreach ($this->locationOptions() as $id => $name)
+                                    <label class="row" style="cursor:pointer;">
+                                        <input type="checkbox" value="{{ $id }}" wire:model.live="locationFilter" style="cursor:pointer;">
+                                        <span class="nm">{{ $name }}</span>
+                                    </label>
+                                @endforeach
+                            @endif
+
+                            @if ($filterTags !== [])
+                                <div class="head" style="{{ $hasLocationFilter ? 'margin-top:.7rem;' : '' }}"><b>{{ __('pages/posts.notes_filter_title') }}</b></div>
                                 <div class="sub">{{ __('pages/posts.notes_filter_hint') }}</div>
-
-                                @foreach ($noteTags as $tag)
+                                @foreach ($filterTags as $tag)
                                     <label class="row" style="cursor:pointer;">
                                         <input type="checkbox" @checked(! in_array($tag, $this->hiddenNoteTags, true)) wire:click="toggleNoteTagFilter(@js($tag))" style="cursor:pointer;">
                                         <span class="nm"># {{ $tag }}</span>
                                     </label>
                                 @endforeach
-
                                 <label class="row" style="cursor:pointer;">
                                     <input type="checkbox" @checked(! in_array(\App\Filament\App\Pages\Posts::UNTAGGED, $this->hiddenNoteTags, true)) wire:click="toggleNoteTagFilter('{{ \App\Filament\App\Pages\Posts::UNTAGGED }}')" style="cursor:pointer;">
                                     <span class="nm" style="color:#6b7280;">{{ __('pages/posts.notes_filter_untagged') }}</span>
                                 </label>
-                            </div>
+                            @endif
                         </div>
-                    @endif
+                    </div>
+                @endif
 
+                @if ($this->mode === 'calendar')
                     {{-- External calendars: direct add when none yet, else a popover --}}
                     @if ($calendars->isEmpty())
                         <button type="button" class="pc-btn" wire:click="mountAction('addCalendar')" style="display:inline-flex; align-items:center; gap:.35rem;">

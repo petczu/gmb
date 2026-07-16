@@ -125,8 +125,8 @@ class Posts extends Page implements HasTable
     /** 'calendar' | 'table', remembered per session. */
     public string $mode = 'calendar';
 
-    /** Filter the calendar/list to a single location (null = all). */
-    public ?int $locationFilter = null;
+    /** Filter the calendar/list to these locations (empty = all). @var list<int> */
+    public array $locationFilter = [];
 
     /** @var array<int, string>|null cached location id => name map */
     protected ?array $locationNameMap = null;
@@ -260,7 +260,11 @@ class Posts extends Page implements HasTable
                 $q->whereBetween('scheduled_at', [$gridStart, $gridEnd])
                     ->orWhere(fn (Builder $qq) => $qq->whereNull('scheduled_at')->whereBetween('created_at', [$gridStart, $gridEnd]));
             })
-            ->when($this->locationFilter, fn (Builder $q): Builder => $q->whereJsonContains('location_ids', $this->locationFilter))
+            ->when($this->locationFilter !== [], fn (Builder $q): Builder => $q->where(function (Builder $qq): void {
+                foreach ($this->locationFilter as $id) {
+                    $qq->orWhereJsonContains('location_ids', (int) $id);
+                }
+            }))
             ->orderBy('scheduled_at')
             ->orderBy('created_at')
             ->get()
@@ -751,7 +755,11 @@ class Posts extends Page implements HasTable
     {
         return $table
             ->query(fn (): Builder => Post::query()
-                ->when($this->locationFilter, fn (Builder $q): Builder => $q->whereJsonContains('location_ids', $this->locationFilter)))
+                ->when($this->locationFilter !== [], fn (Builder $q): Builder => $q->where(function (Builder $qq): void {
+                    foreach ($this->locationFilter as $id) {
+                        $qq->orWhereJsonContains('location_ids', (int) $id);
+                    }
+                })))
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading(__('pages/posts.empty'))
             ->emptyStateDescription(__('pages/posts.empty_desc'))

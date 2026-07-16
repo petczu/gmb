@@ -108,6 +108,7 @@ return [
     'note_tag' => '# Tag',
     'note_delete' => 'Notiz löschen',
     'note_delete_confirm' => 'Diese Notiz löschen?',
+    'filter' => 'Filter',
     'notes_filter' => 'Notizen',
     'notes_filter_title' => 'Notizen nach Tag',
     'notes_filter_hint' => 'Abgewählte Tags werden im Kalender ausgeblendet.',
