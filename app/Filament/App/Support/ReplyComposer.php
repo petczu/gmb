@@ -87,13 +87,14 @@ class ReplyComposer
 
             // Fullscreen overlay, teleported to <body> so it is fixed to the
             // viewport (the slide-over is transformed, which would otherwise
-            // trap position:fixed inside it and push the image to one side).
-            // Explicit 100vw/100vh guarantees full-viewport size regardless of
-            // the containing block. Click anywhere closes.
+            // trap position:fixed inside it). The image is centered with an
+            // absolute transform rather than flexbox on the overlay: Alpine's
+            // x-show clears the overlay's inline `display`, which would drop a
+            // `display:flex` and knock the image to the corner. Click closes.
             $html .= '<template x-teleport="body">'
                 .'<div x-cloak x-show="open" @click="open = false"'
-                .' style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:99999; background:rgba(0,0,0,.8); display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; cursor:zoom-out;">'
-                .'<img :src="src" alt="" style="max-width:92vw; max-height:88vh; object-fit:contain; border-radius:8px; box-shadow:0 8px 40px rgba(0,0,0,.5);">'
+                .' style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:99999; background:rgba(0,0,0,.8); cursor:zoom-out;">'
+                .'<img :src="src" alt="" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); max-width:92vw; max-height:88vh; object-fit:contain; border-radius:8px; box-shadow:0 8px 40px rgba(0,0,0,.5);">'
                 .'</div>'
                 .'</template>';
             $html .= '</div>';
