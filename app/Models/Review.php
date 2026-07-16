@@ -55,6 +55,14 @@ class Review extends Model
                     'location' => $review->location?->name,
                     'source' => $review->reply_source,
                 ], $review);
+
+                // A reply just landed (by any path — manual, AI, automation,
+                // MCP, or an external reply reconciled from Google). Retire any
+                // still-open auto-reply queue item for this review so it doesn't
+                // linger in "Scheduled" until its post_at eventually arrives.
+                $review->queueItems()
+                    ->whereIn('status', ['scheduled', 'pending'])
+                    ->update(['status' => 'skipped', 'decided_at' => now()]);
             }
         });
     }
