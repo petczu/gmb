@@ -199,6 +199,39 @@ class PostsCalendarTest extends TestCase
         $this->assertSame(0, PostNote::query()->count());
     }
 
+    public function test_notes_can_be_dragged_to_another_day(): void
+    {
+        PostNote::create(['date' => now()->toDateString(), 'body' => 'Move me']);
+        $note = PostNote::query()->sole();
+
+        Livewire::test(Posts::class)
+            ->call('moveNote', $note->id, now()->addDays(3)->toDateString());
+
+        $this->assertSame(now()->addDays(3)->toDateString(), $note->refresh()->date->toDateString());
+
+        // Garbage dates are ignored.
+        Livewire::test(Posts::class)->call('moveNote', $note->id, 'not-a-date');
+        $this->assertSame(now()->addDays(3)->toDateString(), $note->refresh()->date->toDateString());
+    }
+
+    public function test_only_draft_posts_can_be_dragged_to_another_day(): void
+    {
+        $base = ['type' => 'update', 'caption' => 'X', 'location_ids' => [], 'source_ids' => []];
+        $draft = Post::create($base + ['status' => 'draft', 'scheduled_at' => now()->setTime(10, 0)]);
+        $published = Post::create($base + ['status' => 'published', 'scheduled_at' => now()->setTime(10, 0)]);
+
+        $component = Livewire::test(Posts::class);
+        $target = now()->addDays(2)->toDateString();
+
+        // The draft moves, keeping its time of day.
+        $component->call('moveDraft', $draft->id, $target);
+        $this->assertSame($target.' 10:00', $draft->refresh()->scheduled_at->format('Y-m-d H:i'));
+
+        // A published post stays where it is.
+        $component->call('moveDraft', $published->id, $target);
+        $this->assertSame(now()->toDateString().' 10:00', $published->refresh()->scheduled_at->format('Y-m-d H:i'));
+    }
+
     public function test_note_tags_are_offered_for_reuse(): void
     {
         PostNote::create(['date' => now()->toDateString(), 'tag' => 'campaign']);

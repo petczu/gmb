@@ -56,6 +56,11 @@
             .pc-more { font-size:.7rem; color:#6b7280; padding-left:.2rem; }
 
             .pc-note { border-radius:.5rem; padding:.4rem .45rem .3rem; margin-bottom:.3rem; }
+            /* Drag & drop: notes + draft posts can be dragged onto another day. */
+            .pc-note[draggable="true"], .pc-card.draft { cursor:grab; }
+            .pc-note.dragging, .pc-card.dragging { opacity:.45; }
+            .pc-day.drop { outline:2px dashed #2d19ec; outline-offset:-2px; background:rgb(45 25 236 / .04); }
+            .dark .pc-day.drop { background:rgb(45 25 236 / .12); }
             .pc-note textarea { width:100%; border:0; background:transparent; resize:none; font-size:.74rem; line-height:1.35; color:#3f3f46; outline:none; min-height:2.2rem; overflow:hidden; }
             .pc-note-foot { display:flex; align-items:center; gap:.3rem; }
             .pc-note-foot .sw { width:.95rem; height:.95rem; border-radius:999px; border:1px solid rgb(0 0 0 / .15); cursor:pointer; flex:none; }
@@ -221,7 +226,18 @@
 
                 @foreach ($weeks as $week)
                     @foreach ($week as $day)
-                        <div class="pc-day {{ $day['inMonth'] ? '' : 'out' }}">
+                        {{-- Drop target: notes and DRAFT posts can be dragged onto
+                             another day (payload "note:{id}" / "draft:{id}"). --}}
+                        <div class="pc-day {{ $day['inMonth'] ? '' : 'out' }}"
+                            x-data
+                            @dragover.prevent="$event.dataTransfer.dropEffect = 'move'; $el.classList.add('drop')"
+                            @dragleave="if (! $el.contains($event.relatedTarget)) $el.classList.remove('drop')"
+                            @drop.prevent="
+                                $el.classList.remove('drop');
+                                const [kind, id] = $event.dataTransfer.getData('text/plain').split(':');
+                                if (kind === 'note') $wire.moveNote(+id, '{{ $day['date']->format('Y-m-d') }}');
+                                if (kind === 'draft') $wire.moveDraft(+id, '{{ $day['date']->format('Y-m-d') }}');
+                            ">
                             @unless ($isWeekView)
                                 <div class="pc-daynum">
                                     @if ($day['isToday'])<span class="today">{{ $day['date']->day }}</span>@else{{ $day['date']->day }}@endif
@@ -243,7 +259,16 @@
 
                             @foreach ($day['notes'] as $note)
                                 @php [$noteBg, $noteAccent] = $noteColors[$note->color] ?? $noteColors['yellow']; @endphp
-                                <div class="pc-note" style="background:{{ $noteBg }};" wire:key="note-{{ $note->id }}" x-data="{ pal: false }">
+                                {{-- Draggable to another day; dragging is disabled
+                                     while a field inside is focused so text
+                                     selection keeps working. --}}
+                                <div class="pc-note" style="background:{{ $noteBg }};" wire:key="note-{{ $note->id }}"
+                                    x-data="{ pal: false, editing: false }"
+                                    :draggable="! editing"
+                                    @focusin="editing = true"
+                                    @focusout="editing = false"
+                                    @dragstart="$event.dataTransfer.setData('text/plain', 'note:{{ $note->id }}'); $event.dataTransfer.effectAllowed = 'move'; $el.classList.add('dragging')"
+                                    @dragend="$el.classList.remove('dragging')">
                                     <textarea
                                         placeholder="{{ __('pages/posts.note_placeholder') }}"
                                         x-init="$el.style.height = $el.scrollHeight + 'px'"
@@ -272,7 +297,13 @@
 
                             @foreach ($day['posts']->take($postLimit) as $post)
                                 <button type="button" class="pc-card {{ $post->status === 'draft' ? 'draft' : '' }}" style="border-left-color: {{ $statusColors[$post->status] ?? '#9ca3af' }};"
-                                    wire:click="showPost({{ $post->id }})">
+                                    wire:click="showPost({{ $post->id }})"
+                                    @if ($post->status === 'draft')
+                                        {{-- Only drafts move: everything else lives on Google already. --}}
+                                        draggable="true"
+                                        @dragstart="$event.dataTransfer.setData('text/plain', 'draft:{{ $post->id }}'); $event.dataTransfer.effectAllowed = 'move'; $el.classList.add('dragging')"
+                                        @dragend="$el.classList.remove('dragging')"
+                                    @endif>
                                     @if ($post->image_url)
                                         <img src="{{ $post->image_url }}" alt="" loading="lazy">
                                     @endif

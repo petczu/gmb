@@ -331,6 +331,43 @@ class Posts extends Page implements HasTable
         PostNote::query()->whereKey($noteId)->delete();
     }
 
+    // ── Drag & drop (notes + draft posts onto another day) ─────────────────
+
+    public function moveNote(int $noteId, string $date): void
+    {
+        $day = $this->parseDay($date);
+        if ($day === null) {
+            return;
+        }
+
+        PostNote::query()->whereKey($noteId)->update(['date' => $day->toDateString()]);
+    }
+
+    /** Only drafts are movable: published/scheduled posts live on Google already. */
+    public function moveDraft(int $postId, string $date): void
+    {
+        $day = $this->parseDay($date);
+        $draft = Post::query()->whereKey($postId)->where('status', 'draft')->first();
+        if ($day === null || $draft === null) {
+            return;
+        }
+
+        // Keep the time of day, change only the date.
+        $current = $draft->scheduled_at ?? $draft->created_at;
+        $draft->forceFill([
+            'scheduled_at' => $day->setTime((int) $current->format('H'), (int) $current->format('i')),
+        ])->save();
+    }
+
+    private function parseDay(string $date): ?CarbonImmutable
+    {
+        try {
+            return CarbonImmutable::createFromFormat('Y-m-d', $date)->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /** The note whose delete-confirmation modal is open. */
     public ?int $deletingNoteId = null;
 
