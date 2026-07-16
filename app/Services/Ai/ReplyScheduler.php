@@ -58,12 +58,21 @@ class ReplyScheduler
             return $local;
         }
 
-        $windowMinutes = $this->toMinutes($wh['end']) - $this->toMinutes($wh['start']);
+        $windowMinutes = $this->windowLength($wh);
         if ($windowMinutes <= 1) {
             return $local;
         }
 
         return $local->addMinutes(mt_rand(0, $windowMinutes - 1))->addSeconds(mt_rand(0, 59));
+    }
+
+    /** Window length in minutes, handling windows that cross midnight (end <= start). */
+    private function windowLength(array $wh): int
+    {
+        $start = $this->toMinutes($wh['start']);
+        $end = $this->toMinutes($wh['end']);
+
+        return $end > $start ? $end - $start : 1440 - $start + $end;
     }
 
     /**
@@ -72,14 +81,28 @@ class ReplyScheduler
     public function isWithinWorkingHours(CarbonInterface $t, array $wh, string $tz): bool
     {
         $local = Carbon::instance($t->toDateTime())->setTimezone($tz);
+        $minutes = $local->hour * 60 + $local->minute;
+        $start = $this->toMinutes($wh['start']);
+        $end = $this->toMinutes($wh['end']);
 
-        if (! in_array($local->dayOfWeekIso, $wh['days'], true)) {
-            return false;
+        // Same-day window (e.g. 10:00–18:00).
+        if ($start < $end) {
+            return in_array($local->dayOfWeekIso, $wh['days'], true)
+                && $minutes >= $start && $minutes < $end;
         }
 
-        $minutes = $local->hour * 60 + $local->minute;
+        // Overnight window (end <= start, e.g. 10:00–01:00): the evening portion
+        // [start, 24:00) belongs to today; the early-morning tail [0, end)
+        // belongs to the PREVIOUS day's window.
+        if ($minutes >= $start) {
+            return in_array($local->dayOfWeekIso, $wh['days'], true);
+        }
 
-        return $minutes >= $this->toMinutes($wh['start']) && $minutes < $this->toMinutes($wh['end']);
+        if ($minutes < $end) {
+            return in_array($local->copy()->subDay()->dayOfWeekIso, $wh['days'], true);
+        }
+
+        return false;
     }
 
     /**
@@ -92,9 +115,17 @@ class ReplyScheduler
     public function nextWindowStart(CarbonInterface $t, array $wh, string $tz): CarbonInterface
     {
         $local = Carbon::instance($t->toDateTime())->setTimezone($tz);
-        $startMinutes = $this->toMinutes($wh['start']);
-        $endMinutes = $this->toMinutes($wh['end']);
 
+        // Already inside a window (including an overnight window's post-midnight
+        // tail) — keep the current time.
+        if ($this->isWithinWorkingHours($local, $wh, $tz)) {
+            return $local;
+        }
+
+        $startMinutes = $this->toMinutes($wh['start']);
+
+        // Otherwise the next window opens at the earliest working-day start at or
+        // after now (scan forward up to a week).
         for ($i = 0; $i < 8; $i++) {
             $day = $local->copy()->addDays($i)->startOfDay();
 
@@ -103,20 +134,9 @@ class ReplyScheduler
             }
 
             $windowStart = $day->copy()->addMinutes($startMinutes);
-
-            // Same day: only usable if we are still before the window closes.
-            if ($i === 0) {
-                $nowMinutes = $local->hour * 60 + $local->minute;
-                if ($nowMinutes >= $endMinutes) {
-                    continue;
-                }
-                if ($nowMinutes >= $startMinutes) {
-                    // Already inside the window — keep the current time.
-                    return $local;
-                }
+            if ($windowStart->gte($local)) {
+                return $windowStart;
             }
-
-            return $windowStart;
         }
 
         // No working day configured within a week — fall back to the input.
