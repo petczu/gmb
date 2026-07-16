@@ -52,16 +52,13 @@ class CompetitorBattle extends Model
             return (string) $this->name;
         }
 
-        $own = $this->ownLocations()->sortBy('name')->pluck('name');
-        $competitorCount = $this->competitors->count();
-
-        if ($own->isEmpty() || $competitorCount === 0) {
-            return __('pages/competitors.untitled_battle');
+        // No user-given name (the page is a flat competitor list): use the
+        // competitor place name(s).
+        $competitorNames = $this->competitors->pluck('name')->filter();
+        if ($competitorNames->isNotEmpty()) {
+            return $competitorNames->implode(', ');
         }
 
-        return trans_choice('pages/competitors.default_battle_name', $competitorCount, [
-            'location' => $own->count() === 1 ? $own->first() : __('pages/competitors.own_locations_count', ['count' => $own->count()]),
-            'count' => $competitorCount,
-        ]);
+        return __('pages/competitors.untitled_battle');
     }
 }

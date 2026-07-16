@@ -36,11 +36,25 @@ class CompetitorBattleTrendsTest extends TestCase
             $table->unsignedInteger('reviews_count')->default(0);
             $table->unique(['place_id', 'day']);
         });
+
+        Schema::connection('mysql')->create('place_reviews', function ($table): void {
+            $table->increments('id');
+            $table->string('place_id');
+            $table->string('review_id');
+            $table->decimal('rating', 2, 1)->nullable();
+            $table->dateTime('reviewed_at')->nullable();
+            $table->string('author')->nullable();
+            $table->text('text')->nullable();
+            $table->string('language', 8)->nullable();
+            $table->timestamps();
+            $table->unique(['place_id', 'review_id']);
+        });
     }
 
     protected function tearDown(): void
     {
         CarbonImmutable::setTestNow();
+        Schema::connection('mysql')->dropIfExists('place_reviews');
         Schema::connection('mysql')->dropIfExists('place_snapshots');
         parent::tearDown();
     }
@@ -52,6 +66,15 @@ class CompetitorBattleTrendsTest extends TestCase
             'day' => $day,
             'rating' => $rating,
             'reviews_count' => $reviews,
+        ]);
+    }
+
+    private function review(string $placeId, string $reviewedAt, string $reviewId): void
+    {
+        DB::connection('mysql')->table('place_reviews')->insert([
+            'place_id' => $placeId,
+            'review_id' => $reviewId,
+            'reviewed_at' => $reviewedAt,
         ]);
     }
 
@@ -117,5 +140,29 @@ class CompetitorBattleTrendsTest extends TestCase
         // Total: absolute review counts.
         $total = app(CompetitorTrends::class)->growthSeries(['p1'], [], $start, $end, 'total');
         $this->assertSame([100, 105, 112], $total['places']['p1']);
+    }
+
+    public function test_growth_series_uses_backfilled_reviews_for_full_history(): void
+    {
+        // Backfilled reviews (exact dates) cover days snapshots never saw.
+        $this->review('p1', '2026-07-08 09:00:00', 'a');
+        $this->review('p1', '2026-07-08 15:00:00', 'b');
+        $this->review('p1', '2026-07-09 10:00:00', 'c');
+        $this->review('p1', '2026-07-10 11:00:00', 'd');
+        // Real current total is higher than what we captured (older reviews
+        // beyond the 4490 cap): lift Total mode up to it.
+        $this->snapshot('p1', '2026-07-10', 4.5, 1000);
+
+        $start = CarbonImmutable::parse('2026-07-08');
+        $end = CarbonImmutable::parse('2026-07-10');
+
+        // Growth: cumulative NEW reviews since the window start (2 on day 1).
+        $growth = app(CompetitorTrends::class)->growthSeries(['p1'], [], $start, $end, 'growth');
+        $this->assertSame([2, 3, 4], $growth['places']['p1']);
+
+        // Total: captured cumulative lifted to the real total (1000 = 4 captured
+        // + 996 older) → 998, 999, 1000.
+        $total = app(CompetitorTrends::class)->growthSeries(['p1'], [], $start, $end, 'total');
+        $this->assertSame([998, 999, 1000], $total['places']['p1']);
     }
 }

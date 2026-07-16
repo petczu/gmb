@@ -10,15 +10,11 @@ use App\Models\Location;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Competitors\CompetitorTrends;
 use App\Services\Competitors\PlacesClient;
-use App\Support\DashboardPeriod;
-use App\Support\Sparkline;
 use BackedEnum;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -33,10 +29,12 @@ use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * Competitor benchmark, organised as named "battles": a group of the
- * workspace's own locations compared against a group of competitor places.
- * Ratings aggregate weighted by review count. Daily snapshots
- * (competitors:refresh) feed the period trends.
+ * Competitor benchmark: a flat list of tracked competitor places with their
+ * Google rating and review count. Backed by the competitor_battles model
+ * (each row is a battle scoped to all own locations, so the dashboard growth
+ * chart still has a "You" side), but the page surfaces no head-to-head
+ * comparison and no trends — you just add competitors, view details, or
+ * remove them. Growth over time lives on the dashboard chart.
  */
 class Competitors extends Page implements HasTable
 {
@@ -51,18 +49,6 @@ class Competitors extends Page implements HasTable
     protected static ?string $slug = 'competitors';
 
     protected string $view = 'filament.app.pages.competitors';
-
-    public string $trendPeriod = 'last_30';
-
-    public ?string $trendFrom = null;
-
-    public ?string $trendTo = null;
-
-    /** @var array<int, array{reviews_delta: ?int, rating_delta: ?float, prev_reviews_delta: ?int, spark: list<int>}> */
-    private array $trendCache = [];
-
-    /** @var array<int, int> own new reviews per battle for the window */
-    private array $ownCache = [];
 
     public static function getNavigationLabel(): string
     {
@@ -87,44 +73,6 @@ class Competitors extends Page implements HasTable
     public function isConfigured(): bool
     {
         return app(PlacesClient::class)->configured();
-    }
-
-    protected function trendWindow(): DashboardPeriod
-    {
-        return DashboardPeriod::fromFilters([
-            'period' => $this->trendPeriod,
-            'startDate' => $this->trendFrom,
-            'endDate' => $this->trendTo,
-        ]);
-    }
-
-    protected function trendStart(): CarbonImmutable
-    {
-        return $this->trendWindow()->start;
-    }
-
-    protected function trendEnd(): CarbonImmutable
-    {
-        return $this->trendWindow()->end;
-    }
-
-    /**
-     * @return array{reviews_delta: ?int, rating_delta: ?float, prev_reviews_delta: ?int, spark: list<int>}
-     */
-    protected function trendFor(CompetitorBattle $battle): array
-    {
-        return $this->trendCache[$battle->id]
-            ??= app(CompetitorTrends::class)->placesSummary(
-                $battle->competitors->pluck('place_id')->filter()->values()->all(),
-                $this->trendStart(),
-                $this->trendEnd(),
-            );
-    }
-
-    protected function ownNewReviews(CompetitorBattle $battle): int
-    {
-        return $this->ownCache[$battle->id]
-            ??= app(CompetitorTrends::class)->ownNewReviewsForMany($battle->ownLocationIds(), $this->trendStart(), $this->trendEnd());
     }
 
     /** Weighted competitor rating for the battle (by review count). */
@@ -152,12 +100,6 @@ class Competitors extends Page implements HasTable
     protected function competitorReviews(CompetitorBattle $battle): int
     {
         return (int) $battle->competitors->sum('reviews_count');
-    }
-
-    /** Tiny inline sparkline of the aggregated review-count snapshots. */
-    protected function sparkSvg(array $values): ?HtmlString
-    {
-        return Sparkline::svg($values);
     }
 
     protected function battleName(CompetitorBattle $battle): string
@@ -231,12 +173,12 @@ class Competitors extends Page implements HasTable
                     ->state(fn (CompetitorBattle $record): string => Str::limit($this->battleName($record), 38))
                     ->tooltip(fn (CompetitorBattle $record): ?string => mb_strlen($this->battleName($record)) > 38 ? $this->battleName($record) : null)
                     ->description(function (CompetitorBattle $record): ?HtmlString {
-                        $names = $record->competitors->pluck('name')->filter()->implode(', ');
-                        if ($names === '') {
+                        $addresses = $record->competitors->pluck('address')->filter()->implode(' · ');
+                        if ($addresses === '') {
                             return null;
                         }
 
-                        return new HtmlString('<span title="'.e($names).'">'.e(Str::limit($names, 52)).'</span>');
+                        return new HtmlString('<span title="'.e($addresses).'">'.e(Str::limit($addresses, 52)).'</span>');
                     }),
 
                 TextColumn::make('rating')
@@ -247,89 +189,6 @@ class Competitors extends Page implements HasTable
                 TextColumn::make('reviews')
                     ->label(__('pages/competitors.col_reviews'))
                     ->state(fn (CompetitorBattle $record): string => number_format($this->competitorReviews($record))),
-
-                TextColumn::make('vs')
-                    ->label(__('pages/competitors.col_vs'))
-                    ->badge()
-                    ->state(fn (CompetitorBattle $record): string => $this->comparison($record))
-                    ->color(fn (CompetitorBattle $record): string => $this->comparisonColor($record)),
-
-                TextColumn::make('new_reviews')
-                    ->label(__('pages/competitors.col_new_reviews'))
-                    ->state(function (CompetitorBattle $record): string {
-                        $delta = $this->trendFor($record)['reviews_delta'];
-
-                        return $delta === null
-                            ? __('pages/competitors.collecting')
-                            : ($delta > 0 ? '+'.$delta : (string) $delta);
-                    })
-                    ->description(function (CompetitorBattle $record): ?string {
-                        $trend = $this->trendFor($record);
-                        if ($trend['reviews_delta'] === null) {
-                            return null;
-                        }
-
-                        $parts = [__('pages/competitors.you_delta', ['delta' => '+'.$this->ownNewReviews($record)])];
-                        if ($trend['prev_reviews_delta'] !== null) {
-                            $parts[] = __('pages/competitors.prev_delta', [
-                                'delta' => ($trend['prev_reviews_delta'] > 0 ? '+' : '').$trend['prev_reviews_delta'],
-                            ]);
-                        }
-
-                        return implode(' · ', $parts);
-                    })
-                    ->color(function (CompetitorBattle $record): string {
-                        $delta = $this->trendFor($record)['reviews_delta'];
-
-                        return $delta === null ? 'gray' : ($this->ownNewReviews($record) >= $delta ? 'success' : 'danger');
-                    })
-                    ->tooltip(__('pages/competitors.trend_hint')),
-
-                TextColumn::make('rating_trend')
-                    ->label(__('pages/competitors.col_rating_trend'))
-                    // Secondary metric — hidden below large screens so the core
-                    // comparison columns fit without horizontal scroll.
-                    ->visibleFrom('lg')
-                    ->state(function (CompetitorBattle $record): ?string {
-                        $delta = $this->trendFor($record)['rating_delta'];
-
-                        return match (true) {
-                            $delta === null => null,
-                            abs($delta) < 0.005 => __('pages/competitors.no_change'),
-                            $delta > 0 => '+'.number_format($delta, 2).' ★',
-                            default => number_format($delta, 2).' ★',
-                        };
-                    })
-                    ->placeholder('—')
-                    ->color(function (CompetitorBattle $record): string {
-                        $delta = $this->trendFor($record)['rating_delta'];
-
-                        return match (true) {
-                            $delta === null || abs($delta) < 0.005 => 'gray',
-                            $delta > 0 => 'warning',
-                            default => 'success',
-                        };
-                    }),
-
-                TextColumn::make('spark')
-                    ->label(__('pages/competitors.col_trend'))
-                    ->visibleFrom('xl')
-                    ->state(fn (CompetitorBattle $record): ?HtmlString => $this->sparkSvg($this->trendFor($record)['spark']))
-                    ->placeholder('—')
-                    ->html(),
-
-                TextColumn::make('own')
-                    ->label(__('pages/competitors.col_location'))
-                    // Redundant in the row (own locations show in the battle
-                    // description and the "View details" modal) — off by default,
-                    // still available via the column manager.
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->state(function (CompetitorBattle $record): string {
-                        $names = $record->ownLocations()->pluck('name')->implode(', ');
-
-                        return $names === '' ? '—' : Str::limit($names, 24);
-                    })
-                    ->tooltip(fn (CompetitorBattle $record): ?string => $record->ownLocations()->pluck('name')->implode(', ') ?: null),
             ])
             ->recordActions([
                 ActionGroup::make([
@@ -344,36 +203,6 @@ class Competitors extends Page implements HasTable
                                 ->hiddenLabel()
                                 ->content(new HtmlString($this->competitorDetailsHtml($record))),
                         ]),
-
-                    Action::make('edit')
-                        ->label(__('pages/competitors.edit'))
-                        ->icon(Heroicon::OutlinedPencilSquare)
-                        ->visible(fn (): bool => $this->isConfigured())
-                        ->modalHeading(__('pages/competitors.edit_heading'))
-                        ->fillForm(fn (CompetitorBattle $record): array => [
-                            'name' => $record->name,
-                            'own_location_ids' => $record->ownLocationIds(),
-                            'place_ids' => $record->competitors->pluck('place_id')->all(),
-                        ])
-                        ->schema($this->battleFormSchema())
-                        ->action(fn (array $data, CompetitorBattle $record) => $this->save($data, $record)),
-
-                    Action::make('duplicate')
-                        ->label(__('pages/competitors.duplicate'))
-                        ->icon(Heroicon::OutlinedDocumentDuplicate)
-                        ->visible(fn (): bool => $this->isConfigured())
-                        // Opens the create form pre-filled from the source. It is
-                        // NOT a silent DB clone: a place can be tracked only once
-                        // per own location (unique location_id+place_id), so the
-                        // user typically switches the location before saving.
-                        ->modalHeading(__('pages/competitors.duplicate_heading'))
-                        ->fillForm(fn (CompetitorBattle $record): array => [
-                            'name' => __('pages/competitors.copy_name', ['name' => $this->battleName($record)]),
-                            'own_location_ids' => $record->ownLocationIds(),
-                            'place_ids' => $record->competitors->pluck('place_id')->all(),
-                        ])
-                        ->schema($this->battleFormSchema())
-                        ->action(fn (array $data) => $this->save($data, null)),
 
                     Action::make('remove')
                         ->label(__('pages/competitors.remove'))
@@ -403,21 +232,6 @@ class Competitors extends Page implements HasTable
     protected function battleFormSchema(): array
     {
         return [
-            TextInput::make('name')
-                ->label(__('pages/competitors.field_name'))
-                ->maxLength(120)
-                ->placeholder(__('pages/competitors.field_name_placeholder')),
-
-            Select::make('own_location_ids')
-                ->label(__('pages/competitors.field_your_locations'))
-                ->multiple()
-                ->required()
-                ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
-                ->default(fn (): array => Location::query()->count() === 1
-                    ? [(int) Location::query()->value('id')]
-                    : [])
-                ->helperText(__('pages/competitors.field_your_locations_helper')),
-
             Select::make('place_ids')
                 ->label(__('pages/competitors.field_places'))
                 ->multiple()
@@ -478,11 +292,14 @@ class Competitors extends Page implements HasTable
      */
     protected function save(array $data, ?CompetitorBattle $battle): void
     {
-        $ownIds = array_values(array_map('intval', (array) ($data['own_location_ids'] ?? [])));
         $placeIds = array_values(array_unique(array_filter((array) ($data['place_ids'] ?? []))));
 
+        // No comparison UI any more: own locations are auto-scoped to ALL of the
+        // workspace's locations (keeps the dashboard "You vs competitors" growth
+        // chart working) and the name is derived from the competitor place.
+        $ownIds = Location::query()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
         $battle ??= new CompetitorBattle;
-        $battle->name = filled($data['name'] ?? null) ? trim((string) $data['name']) : null;
         $battle->own_location_ids = $ownIds;
         $battle->save();
 
@@ -533,44 +350,5 @@ class Competitors extends Page implements HasTable
         ActivityLogger::log('competitor.battle_saved', ['name' => $this->battleName($battle->fresh('competitors'))]);
 
         Notification::make()->title(__('pages/competitors.saved'))->success()->send();
-    }
-
-    /** Weighted own rating vs weighted competitor rating for the battle. */
-    protected function comparison(CompetitorBattle $battle): string
-    {
-        $own = $this->ownRating($battle);
-        $competitor = $this->competitorRating($battle);
-
-        if ($own === null || $competitor === null) {
-            return __('pages/competitors.vs_unknown');
-        }
-
-        $delta = round($own - $competitor, 1);
-
-        if (abs($delta) < 0.05) {
-            return __('pages/competitors.vs_tied');
-        }
-
-        return $delta > 0
-            ? __('pages/competitors.vs_ahead', ['delta' => number_format(abs($delta), 1)])
-            : __('pages/competitors.vs_behind', ['delta' => number_format(abs($delta), 1)]);
-    }
-
-    protected function comparisonColor(CompetitorBattle $battle): string
-    {
-        $own = $this->ownRating($battle);
-        $competitor = $this->competitorRating($battle);
-
-        if ($own === null || $competitor === null) {
-            return 'gray';
-        }
-
-        $delta = $own - $competitor;
-
-        return match (true) {
-            $delta > 0.05 => 'success',
-            $delta < -0.05 => 'danger',
-            default => 'gray',
-        };
     }
 }

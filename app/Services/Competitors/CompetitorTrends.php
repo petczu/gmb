@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Services\Competitors;
 
 use App\Models\Competitor;
+use App\Models\PlaceReview;
 use App\Models\PlaceSnapshot;
 use App\Models\Review;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 /**
@@ -276,8 +278,33 @@ class CompetitorTrends
             $own[] = $running;
         }
 
-        // Competitors: snapshot growth vs the window baseline, carried forward.
         $placeIds = array_values(array_unique(array_filter($placeIds)));
+
+        // Prefer the exact per-day history from the individual reviews backfill
+        // (place_reviews) — it covers the whole window, unlike snapshots which
+        // only exist since we started collecting. Snapshots are the fallback
+        // for places that have no backfilled reviews yet.
+        // Cover the whole last chart day ($end may be its midnight).
+        $reviewStamps = PlaceReview::query()
+            ->whereIn('place_id', $placeIds)
+            ->whereNotNull('reviewed_at')
+            ->where('reviewed_at', '<=', $end->endOfDay())
+            ->orderBy('reviewed_at')
+            ->get(['place_id', 'reviewed_at'])
+            ->groupBy('place_id');
+
+        // True current totals (absolute) from the latest snapshot per place —
+        // used to lift the captured-review cumulative up to the real level in
+        // Total mode (the backfill only holds the newest ~4490 reviews).
+        $latestTotals = PlaceSnapshot::query()
+            ->whereIn('place_id', $placeIds)
+            ->where('day', '<=', $end)
+            ->orderBy('day')
+            ->get(['place_id', 'reviews_count'])
+            ->groupBy('place_id')
+            ->map(fn (Collection $rows): int => (int) $rows->last()->reviews_count)
+            ->all();
+
         $snapshots = PlaceSnapshot::query()
             ->whereIn('place_id', $placeIds)
             ->where('day', '<=', $end)
@@ -287,6 +314,21 @@ class CompetitorTrends
 
         $places = [];
         foreach ($placeIds as $placeId) {
+            /** @var Collection<int, PlaceReview>|null $reviews */
+            $reviews = $reviewStamps->get($placeId);
+            if ($reviews !== null && $reviews->isNotEmpty()) {
+                $places[$placeId] = $this->placeSeriesFromReviews(
+                    $reviews->pluck('reviewed_at')->all(),
+                    $days,
+                    $start,
+                    $total,
+                    $latestTotals[$placeId] ?? null,
+                );
+
+                continue;
+            }
+
+            // Fallback: snapshot growth vs the window baseline, carried forward.
             /** @var Collection<int, PlaceSnapshot> $rows */
             $rows = $snapshots->get($placeId, collect());
             $baseline = $rows->last(fn (PlaceSnapshot $sn): bool => $sn->day->lte($start))
@@ -308,5 +350,55 @@ class CompetitorTrends
         }
 
         return ['labels' => $labels, 'own' => $own, 'places' => $places];
+    }
+
+    /**
+     * A competitor's per-day line from captured review timestamps (exact).
+     * Growth = new reviews since the window start; Total = the real running
+     * total, lifted so the captured newest-N cumulative meets the current
+     * absolute count from the latest snapshot.
+     *
+     * @param  list<CarbonInterface|null>  $reviewedAt  review timestamps (ascending)
+     * @param  list<CarbonImmutable>  $days
+     * @return list<int>
+     */
+    private function placeSeriesFromReviews(array $reviewedAt, array $days, CarbonImmutable $start, bool $total, ?int $latestTotal): array
+    {
+        $stamps = [];
+        foreach ($reviewedAt as $t) {
+            if ($t !== null) {
+                $stamps[] = $t->getTimestamp();
+            }
+        }
+        sort($stamps);
+        $captured = count($stamps);
+
+        // Reviews already on the books before the window (the growth baseline).
+        $startTs = $start->startOfDay()->getTimestamp();
+        $baseline = 0;
+        foreach ($stamps as $ts) {
+            if ($ts < $startTs) {
+                $baseline++;
+            } else {
+                break;
+            }
+        }
+
+        // Lift factor for Total: real current total minus what we captured.
+        $lift = ($latestTotal ?? $captured) - $captured;
+
+        $series = [];
+        $ptr = 0;
+        $cum = 0;
+        foreach ($days as $day) {
+            $dayEnd = $day->endOfDay()->getTimestamp();
+            while ($ptr < $captured && $stamps[$ptr] <= $dayEnd) {
+                $cum++;
+                $ptr++;
+            }
+            $series[] = $total ? $lift + $cum : max(0, $cum - $baseline);
+        }
+
+        return $series;
     }
 }

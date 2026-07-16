@@ -5,24 +5,6 @@
             <div style="font-size:.92rem;">{{ __('pages/competitors.not_configured_body') }}</div>
         </div>
     @else
-        <div class="hint-box" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-            <span>{{ __('pages/competitors.intro') }}</span>
-            <span style="display:inline-flex; align-items:center; gap:.5rem; flex-shrink:0; flex-wrap:wrap;">
-                <select wire:model.live="trendPeriod" class="ctl-input">
-                    @foreach (__('common.periods') as $key => $label)
-                        <option value="{{ $key }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-                @if ($this->trendPeriod === 'custom')
-                    <input type="date" wire:model.live="trendFrom" max="{{ now()->toDateString() }}"
-                           class="ctl-input" style="padding:.35rem .6rem;">
-                    <span style="color:#9ca3af;">–</span>
-                    <input type="date" wire:model.live="trendTo" max="{{ now()->toDateString() }}"
-                           class="ctl-input" style="padding:.35rem .6rem;">
-                @endif
-            </span>
-        </div>
-
         {{ $this->table }}
     @endif
 </x-filament-panels::page>
