@@ -210,9 +210,14 @@ class CompetitorTrends
     }
 
     /**
-     * Daily review GROWTH lines for a battle chart: one series per competitor
-     * place plus the own side, all rebased to 0 at the window start so a
+     * Daily review lines for the competitor chart: one series per competitor
+     * place plus the own side.
+     *
+     * $mode 'growth' (default): rebased to 0 at the window start so a
      * 7,000-review incumbent and a 300-review own profile share one scale.
+     * $mode 'total': absolute review counts, so the lines sit at their real
+     * level and you see standing + growth (legend toggles hide the giants).
+     *
      * Competitor values carry forward over snapshot gaps and are null before
      * the first known snapshot; the own line is exact (reviews table).
      *
@@ -220,8 +225,9 @@ class CompetitorTrends
      * @param  list<int>  $ownLocationIds
      * @return array{labels: list<string>, own: list<int>, places: array<string, list<int|null>>}
      */
-    public function growthSeries(array $placeIds, array $ownLocationIds, CarbonImmutable $start, CarbonImmutable $end): array
+    public function growthSeries(array $placeIds, array $ownLocationIds, CarbonImmutable $start, CarbonImmutable $end, string $mode = 'growth'): array
     {
+        $total = $mode === 'total';
         $end = $end->min(CarbonImmutable::today()->endOfDay());
         $days = [];
         for ($d = $start->startOfDay(); $d->lte($end); $d = $d->addDay()) {
@@ -253,8 +259,13 @@ class CompetitorTrends
             ->groupBy(fn (Review $r): string => optional($r->created_at_external)->format('Y-m-d') ?? '')
             ->map->count();
 
+        // In total mode, seed the own line with the review count already on
+        // the books before the window so the line sits at its real level.
+        $running = $total && $ownLocationIds !== []
+            ? Review::query()->whereIn('location_id', $ownLocationIds)->where('created_at_external', '<', $start)->count()
+            : 0;
+
         $own = [];
-        $running = 0;
         $cursor = $start->startOfDay();
         foreach ($days as $day) {
             // Sum every real day up to this (possibly thinned) point.
@@ -284,9 +295,14 @@ class CompetitorTrends
             $series = [];
             foreach ($days as $day) {
                 $latest = $rows->last(fn (PlaceSnapshot $sn): bool => $sn->day->lte($day->endOfDay()));
-                $series[] = ($latest !== null && $baseline !== null)
-                    ? max(0, $latest->reviews_count - $baseline->reviews_count)
-                    : null;
+                if ($latest === null) {
+                    $series[] = null;
+
+                    continue;
+                }
+                $series[] = $total
+                    ? (int) $latest->reviews_count
+                    : ($baseline !== null ? max(0, $latest->reviews_count - $baseline->reviews_count) : null);
             }
             $places[$placeId] = $series;
         }

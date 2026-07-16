@@ -100,4 +100,22 @@ class CompetitorBattleTrendsTest extends TestCase
         $this->assertNull($summary['reviews_delta']);
         $this->assertSame([], $summary['spark']);
     }
+
+    public function test_growth_series_rebases_or_keeps_absolute_by_mode(): void
+    {
+        $this->snapshot('p1', '2026-07-08', 4.5, 100);
+        $this->snapshot('p1', '2026-07-09', 4.5, 105);
+        $this->snapshot('p1', '2026-07-10', 4.5, 112);
+
+        $start = CarbonImmutable::parse('2026-07-08');
+        $end = CarbonImmutable::parse('2026-07-10');
+
+        // Growth: rebased to 0 at the window start.
+        $growth = app(CompetitorTrends::class)->growthSeries(['p1'], [], $start, $end, 'growth');
+        $this->assertSame([0, 5, 12], $growth['places']['p1']);
+
+        // Total: absolute review counts.
+        $total = app(CompetitorTrends::class)->growthSeries(['p1'], [], $start, $end, 'total');
+        $this->assertSame([100, 105, 112], $total['places']['p1']);
+    }
 }

@@ -61,5 +61,8 @@ return [
     // Competitor growth chart
     'competitor_chart_title' => 'Competitor review growth',
     'competitor_chart_desc' => 'New reviews since the start of the period. Click a name in the legend to show or hide its line.',
+    'competitor_chart_desc_total' => 'Total reviews over time. Click a name in the legend to show or hide its line.',
+    'competitor_chart_mode_growth' => 'Growth',
+    'competitor_chart_mode_total' => 'Total',
     'competitor_chart_you' => 'You',
 ];

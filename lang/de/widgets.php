@@ -61,5 +61,8 @@ return [
     // Mitbewerber-Wachstumsdiagramm
     'competitor_chart_title' => 'Bewertungszuwachs im Vergleich',
     'competitor_chart_desc' => 'Neue Bewertungen seit Beginn des Zeitraums. Klick auf einen Namen in der Legende blendet die Linie ein oder aus.',
+    'competitor_chart_desc_total' => 'Gesamtzahl der Bewertungen im Zeitverlauf. Klick auf einen Namen in der Legende blendet die Linie ein oder aus.',
+    'competitor_chart_mode_growth' => 'Zuwachs',
+    'competitor_chart_mode_total' => 'Gesamt',
     'competitor_chart_you' => 'Ihr',
 ];

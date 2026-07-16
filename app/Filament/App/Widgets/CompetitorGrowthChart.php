@@ -38,6 +38,9 @@ class CompetitorGrowthChart extends ChartWidget
     /** Distinct competitor line colours (the own line is always brand-primary). */
     private const PALETTE = ['#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#0ea5e9', '#ec4899', '#84cc16', '#64748b'];
 
+    /** Growth (rebased to 0) vs Total (absolute counts). Default: growth. */
+    public ?string $filter = 'growth';
+
     public function getHeading(): ?string
     {
         return __('widgets.competitor_chart_title');
@@ -45,7 +48,17 @@ class CompetitorGrowthChart extends ChartWidget
 
     public function getDescription(): ?string
     {
-        return __('widgets.competitor_chart_desc');
+        return $this->filter === 'total'
+            ? __('widgets.competitor_chart_desc_total')
+            : __('widgets.competitor_chart_desc');
+    }
+
+    protected function getFilters(): ?array
+    {
+        return [
+            'growth' => __('widgets.competitor_chart_mode_growth'),
+            'total' => __('widgets.competitor_chart_mode_total'),
+        ];
     }
 
     public static function canView(): bool
@@ -87,6 +100,7 @@ class CompetitorGrowthChart extends ChartWidget
             $ownLocationIds,
             $period->start,
             $period->end,
+            $this->filter === 'total' ? 'total' : 'growth',
         );
 
         $datasets = [[
@@ -129,7 +143,9 @@ class CompetitorGrowthChart extends ChartWidget
         return [
             // The legend is the line toggle — keep it visible.
             'plugins' => ['legend' => ['display' => true, 'position' => 'bottom', 'labels' => ['usePointStyle' => true, 'boxHeight' => 6]]],
-            'scales' => ['y' => ['beginAtZero' => true, 'ticks' => ['precision' => 0]]],
+            // Total mode: don't force zero — so hiding a large competitor via
+            // the legend lets the axis rescale to the remaining lines.
+            'scales' => ['y' => ['beginAtZero' => $this->filter !== 'total', 'ticks' => ['precision' => 0]]],
             'interaction' => ['mode' => 'index', 'intersect' => false],
         ];
     }
