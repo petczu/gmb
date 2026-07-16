@@ -86,6 +86,7 @@ return [
     'save_draft' => 'Als Entwurf speichern',
 
     // Importierte Google-Beiträge
+    'view' => 'Ansehen',
     'duplicate_draft' => 'Als Entwurf duplizieren',
     'duplicated_draft' => 'Entwurf erstellt',
     'draft_heading' => 'Entwurf bearbeiten',

@@ -86,6 +86,7 @@ return [
     'save_draft' => 'Save draft',
 
     // Imported Google posts
+    'view' => 'View',
     'duplicate_draft' => 'Duplicate as draft',
     'duplicated_draft' => 'Draft created',
     'draft_heading' => 'Edit draft',

@@ -692,27 +692,59 @@ class Posts extends Page implements HasTable
         $when = $post->scheduled_at ?? $post->created_at;
         $statusColors = ['published' => '#16a34a', 'scheduled' => '#0ea5e9', 'failed' => '#dc2626', 'in_progress' => '#d97706', 'draft' => '#9ca3af'];
 
-        $html = '';
-        if ($post->image_url) {
-            $html .= '<img src="'.e($post->image_url).'" alt="" style="width:100%; max-height:16rem; object-fit:cover; border-radius:.6rem; margin-bottom:.9rem;">';
+        $dates = null;
+        if (in_array($post->type, ['offer', 'event'], true) && ($post->starts_at || $post->ends_at)) {
+            $fmt = fn ($v): ?string => $v ? CarbonImmutable::parse($v)->translatedFormat('M j') : null;
+            $dates = trim(($fmt($post->starts_at) ?? '…').' – '.($fmt($post->ends_at) ?? '…'));
         }
-        $html .= '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.6rem; font-size:.8rem; color:#6b7280;">'
+        $cta = (string) ($post->cta_type ?? '');
+        if ($post->type === 'offer') {
+            $cta = 'learn_more';
+        }
+
+        // Status meta line, then the same Google-style card as the composer.
+        $html = '<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.7rem; font-size:.8rem; color:#6b7280;">'
             .'<span style="display:inline-block; width:.55rem; height:.55rem; border-radius:999px; background:'.($statusColors[$post->status] ?? '#9ca3af').';"></span>'
             .e(__('pages/posts.status_'.$post->status))
             .' · '.e($when->translatedFormat('D, j M Y · H:i'))
             .' · '.e(trans_choice('pages/posts.location_count', count($post->location_ids ?? []), ['count' => count($post->location_ids ?? [])]))
             .'</div>';
-        if (filled($post->title)) {
-            $html .= '<div style="font-weight:700; margin-bottom:.35rem;">'.e($post->title).'</div>';
-        }
-        if (filled($post->caption)) {
-            $html .= '<div style="white-space:pre-wrap; font-size:.92rem; line-height:1.55;">'.e($post->caption).'</div>';
-        }
+
+        $html .= $this->googlePreviewCard([
+            'name' => $this->businessNameLabel($post->location_ids ?? []),
+            'date' => $when->translatedFormat('M j, Y'),
+            'logoUrl' => $this->workspaceLogoUrl(),
+            'imageUrl' => filled($post->image_url) ? $post->image_url : null,
+            'title' => $post->title,
+            'dates' => $dates,
+            'caption' => $post->caption,
+            'captionPlaceholder' => false,
+            'voucher' => $post->type === 'offer' ? $post->voucher_code : null,
+            'cta' => filled($cta) ? $cta : null,
+        ]);
+
         if (filled($post->error)) {
             $html .= '<div style="margin-top:.8rem; padding:.6rem .8rem; border-radius:.5rem; background:#fef2f2; color:#991b1b; font-size:.85rem;">'.e($post->error).'</div>';
         }
 
         return $html;
+    }
+
+    /** @param  array<int, int|string>  $locationIds */
+    private function businessNameLabel(array $locationIds): string
+    {
+        $ids = array_values(array_map('intval', $locationIds));
+        $names = Location::query()->whereIn('id', $ids)->orderBy('name')->pluck('name');
+        $first = $names->first() ?? __('pages/posts.preview_business');
+
+        return $names->count() > 1 ? $first.' +'.($names->count() - 1) : (string) $first;
+    }
+
+    private function workspaceLogoUrl(): ?string
+    {
+        $workspaceId = session('current_workspace_id');
+
+        return $workspaceId ? Workspace::find($workspaceId)?->logoUrl() : null;
     }
 
     public function table(Table $table): Table
@@ -780,6 +812,26 @@ class Posts extends Page implements HasTable
                     ]),
             ])
             ->recordActions([
+                Action::make('view')
+                    ->label(__('pages/posts.view'))
+                    ->icon(Heroicon::OutlinedEye)
+                    ->color('gray')
+                    ->modalHeading(fn (Post $record): string => __('pages/posts.type_'.$record->type))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel(__('pages/posts.close'))
+                    ->schema(fn (Post $record): array => [
+                        Placeholder::make('post_details')
+                            ->hiddenLabel()
+                            ->content(new HtmlString($this->postDetailsHtml($record->id))),
+                    ])
+                    ->extraModalFooterActions(fn (Post $record): array => [
+                        Action::make('duplicateDraft')
+                            ->label(__('pages/posts.duplicate_draft'))
+                            ->icon(Heroicon::OutlinedDocumentDuplicate)
+                            ->action(fn () => $this->duplicateAsDraft($record->id))
+                            ->cancelParentActions(),
+                    ]),
+
                 Action::make('delete')
                     ->label(__('pages/posts.delete'))
                     ->icon(Heroicon::OutlinedTrash)
@@ -901,6 +953,78 @@ class Posts extends Page implements HasTable
     }
 
     /** Live preview of the composed post, styled like the card on Google Maps. */
+    /**
+     * The Google-Maps-style post card from normalized data. Shared by the
+     * read-only post view (postDetailsHtml) so it matches the composer preview.
+     *
+     * @param  array{name:string,date:string,logoUrl:?string,imageUrl:?string,title:?string,dates:?string,caption:?string,captionPlaceholder?:bool,voucher:?string,cta:?string}  $d
+     */
+    private function googlePreviewCard(array $d): string
+    {
+        $name = (string) ($d['name'] ?? '');
+        $logoUrl = $d['logoUrl'] ?? null;
+        $imageUrl = $d['imageUrl'] ?? null;
+
+        $avatar = $logoUrl !== null
+            ? '<img src="'.e($logoUrl).'" alt="" style="width:2.4rem; height:2.4rem; border-radius:999px; object-fit:cover;">'
+            : '<span style="display:inline-flex; align-items:center; justify-content:center; width:2.4rem; height:2.4rem; border-radius:999px; background:#202124; color:#fff; font-weight:700;">'.e(mb_strtoupper(mb_substr($name, 0, 1))).'</span>';
+
+        $html = '<div style="max-width:26rem; border:1px solid rgb(0 0 0 / .08); border-radius:.75rem; overflow:hidden; background:#fff; color:#202124; box-shadow:0 1px 3px rgb(0 0 0 / .1);">';
+
+        $html .= '<div style="display:flex; align-items:center; gap:.65rem; padding:.75rem .9rem;">'
+            .'<span style="position:relative; flex:none; line-height:0;">'.$avatar
+            .'<svg viewBox="0 0 24 24" fill="#1a73e8" style="position:absolute; right:-.15rem; bottom:-.15rem; width:.95rem; height:.95rem; background:#fff; border-radius:999px;"><path d="M12 2 9.19 4.63l-3.83.44-.44 3.83L2.29 11.7l2.63 2.81-.44 3.83 3.83.44L11.12 21.7l2.81-2.63 3.83.44.44-3.83 2.63-2.81-2.63-2.81.44-3.83-3.83-.44L12 2zm-1.4 13.3-2.9-2.9 1.06-1.06 1.84 1.83 4.64-4.63 1.06 1.06-5.7 5.7z"/></svg>'
+            .'</span>'
+            .'<span style="flex:1; min-width:0;">'
+            .'<span style="display:block; font-weight:700; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">'.e($name).'</span>'
+            .'<span style="display:block; font-size:.76rem; color:#5f6368;">'.e((string) ($d['date'] ?? '')).'</span>'
+            .'</span>'
+            .'<span style="flex:none; display:inline-flex; align-items:center; gap:.7rem; color:#5f6368;">'
+            .'<svg style="width:1.05rem; height:1.05rem;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"/></svg>'
+            .'<svg style="width:1.05rem; height:1.05rem;" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>'
+            .'</span>'
+            .'</div>';
+
+        if ($imageUrl !== null) {
+            $html .= '<img src="'.e($imageUrl).'" alt="" style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover;">';
+        } else {
+            $html .= '<div style="width:100%; aspect-ratio:2/1; background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 12px,#e5e7eb 12px,#e5e7eb 24px); display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:.8rem;">'.e(__('pages/posts.preview_no_image')).'</div>';
+        }
+
+        $html .= '<div style="padding:.9rem .9rem .35rem;">';
+
+        if (filled($d['title'] ?? null)) {
+            $html .= '<div style="font-weight:700; font-size:.95rem; margin-bottom:.25rem;">'.e((string) $d['title']).'</div>';
+        }
+        if (filled($d['dates'] ?? null)) {
+            $html .= '<div style="font-size:.8rem; color:#5f6368; margin-bottom:.35rem;">'.e((string) $d['dates']).'</div>';
+        }
+        if (filled($d['caption'] ?? null)) {
+            $html .= '<div style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit((string) $d['caption'], 600)).'</div>';
+        } elseif (! empty($d['captionPlaceholder'])) {
+            $html .= '<div style="font-size:.9rem; color:#c0c3c9;">'.e(__('pages/posts.preview_placeholder')).'</div>';
+        }
+
+        if (filled($d['voucher'] ?? null)) {
+            $html .= '<div style="margin-top:.7rem; padding:.5rem .7rem; border:1px dashed #9ca3af; border-radius:.5rem; text-align:center; font-family:monospace; font-size:.85rem; letter-spacing:.1em;">'.e((string) $d['voucher']).'</div>';
+        }
+
+        $html .= '</div>';
+
+        $cta = (string) ($d['cta'] ?? '');
+        if (filled($cta)) {
+            $html .= '<div style="margin-top:.55rem; border-top:1px solid rgb(0 0 0 / .07); padding:.75rem; text-align:center;">'
+                .'<span style="color:#0d766e; font-weight:600; font-size:.9rem;">'.e(__('pages/posts.cta_'.$cta)).'</span>'
+                .'</div>';
+        } else {
+            $html .= '<div style="height:.55rem;"></div>';
+        }
+
+        $html .= '</div>';
+
+        return $html;
+    }
+
     protected function previewHtml(Get $get): string
     {
         $locationIds = array_map('intval', (array) $get('locations'));
