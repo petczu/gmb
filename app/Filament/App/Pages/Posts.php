@@ -125,8 +125,8 @@ class Posts extends Page implements HasTable
     /** 'calendar' | 'table', remembered per session. */
     public string $mode = 'calendar';
 
-    /** Filter the calendar/list to these locations (empty = all). @var list<int> */
-    public array $locationFilter = [];
+    /** Locations hidden from the calendar/list (checked = shown). @var list<int> */
+    public array $hiddenLocations = [];
 
     /** @var array<int, string>|null cached location id => name map */
     protected ?array $locationNameMap = null;
@@ -260,11 +260,7 @@ class Posts extends Page implements HasTable
                 $q->whereBetween('scheduled_at', [$gridStart, $gridEnd])
                     ->orWhere(fn (Builder $qq) => $qq->whereNull('scheduled_at')->whereBetween('created_at', [$gridStart, $gridEnd]));
             })
-            ->when($this->locationFilter !== [], fn (Builder $q): Builder => $q->where(function (Builder $qq): void {
-                foreach ($this->locationFilter as $id) {
-                    $qq->orWhereJsonContains('location_ids', (int) $id);
-                }
-            }))
+            ->tap(fn (Builder $q) => $this->applyLocationFilter($q))
             ->orderBy('scheduled_at')
             ->orderBy('created_at')
             ->get()
@@ -305,6 +301,38 @@ class Posts extends Page implements HasTable
     public function locationOptions(): array
     {
         return Location::query()->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    /** Toggle a location's visibility (checked = shown, like the note-tag filter). */
+    public function toggleLocationFilter(int $locationId): void
+    {
+        $this->hiddenLocations = in_array($locationId, $this->hiddenLocations, true)
+            ? array_values(array_diff($this->hiddenLocations, [$locationId]))
+            : [...$this->hiddenLocations, $locationId];
+    }
+
+    /** Restrict posts to the locations still ticked (empty hidden set = all shown). */
+    protected function applyLocationFilter(Builder $q): Builder
+    {
+        if ($this->hiddenLocations === []) {
+            return $q;
+        }
+
+        $visible = array_values(array_diff(
+            array_map('intval', array_keys($this->locationOptions())),
+            $this->hiddenLocations,
+        ));
+
+        return $q->where(function (Builder $qq) use ($visible): void {
+            if ($visible === []) {
+                $qq->whereRaw('1 = 0');
+
+                return;
+            }
+            foreach ($visible as $id) {
+                $qq->orWhereJsonContains('location_ids', $id);
+            }
+        });
     }
 
     /** Short "which location" label for a post card (name, or "name +N"). */
@@ -754,12 +782,7 @@ class Posts extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => Post::query()
-                ->when($this->locationFilter !== [], fn (Builder $q): Builder => $q->where(function (Builder $qq): void {
-                    foreach ($this->locationFilter as $id) {
-                        $qq->orWhereJsonContains('location_ids', (int) $id);
-                    }
-                })))
+            ->query(fn (): Builder => Post::query()->tap(fn (Builder $q) => $this->applyLocationFilter($q)))
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading(__('pages/posts.empty'))
             ->emptyStateDescription(__('pages/posts.empty_desc'))

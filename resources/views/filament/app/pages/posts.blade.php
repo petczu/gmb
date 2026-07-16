@@ -114,7 +114,7 @@
                 @php
                     $filterTags = $this->mode === 'calendar' ? $this->noteTags() : [];
                     $hasLocationFilter = count($this->locationOptions()) > 1;
-                    $activeFilters = count($this->locationFilter) + count($this->hiddenNoteTags);
+                    $activeFilters = count($this->hiddenLocations) + count($this->hiddenNoteTags);
                 @endphp
                 @if ($hasLocationFilter || $filterTags !== [])
                     <div x-data="{ open: false }" style="position:relative;">
@@ -131,7 +131,7 @@
                                 <div class="head"><b>{{ __('pages/posts.field_locations') }}</b></div>
                                 @foreach ($this->locationOptions() as $id => $name)
                                     <label class="row" style="cursor:pointer;">
-                                        <input type="checkbox" value="{{ $id }}" wire:model.live="locationFilter" style="cursor:pointer;">
+                                        <input type="checkbox" @checked(! in_array((int) $id, $this->hiddenLocations, true)) wire:click="toggleLocationFilter({{ (int) $id }})" style="cursor:pointer;">
                                         <span class="nm">{{ $name }}</span>
                                     </label>
                                 @endforeach
