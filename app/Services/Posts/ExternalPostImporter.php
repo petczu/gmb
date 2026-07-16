@@ -83,12 +83,17 @@ class ExternalPostImporter
 
             foreach ($result['posts'] as $post) {
                 $post = (array) $post;
+                // External posts come back in Zernio's post shape: the platform
+                // id/url/date live under platforms[]; media under mediaItems[].
+                $platform = (array) ($post['platforms'][0] ?? []);
+                $mediaItems = is_array($post['mediaItems'] ?? null) ? $post['mediaItems'] : [];
+
                 $stored += $this->store($location, [
-                    'platform_post_id' => (string) ($post['platformPostId'] ?? ''),
+                    'platform_post_id' => (string) ($platform['platformPostId'] ?? ($post['_id'] ?? '')),
                     'content' => (string) ($post['content'] ?? ''),
-                    'image_url' => $post['mediaUrl'] ?? ($post['thumbnailUrl'] ?? null),
-                    'url' => $post['platformPostUrl'] ?? null,
-                    'published_at' => $post['publishedAt'] ?? null,
+                    'image_url' => $mediaItems[0]['url'] ?? null,
+                    'url' => $platform['platformPostUrl'] ?? null,
+                    'published_at' => $platform['publishedAt'] ?? ($post['scheduledFor'] ?? null),
                 ]) ? 1 : 0;
             }
 
