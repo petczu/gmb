@@ -128,7 +128,8 @@ class ExternalPostImporter
 
         Post::create([
             'type' => 'update',
-            'caption' => (string) ($data['content'] ?? ''),
+            // Collapse the 3+ blank lines Google local posts often carry.
+            'caption' => (string) preg_replace('/\n{3,}/', "\n\n", (string) ($data['content'] ?? '')),
             'image_url' => $data['image_url'] ?? null,
             'cta_url' => $data['url'] ?? null,
             'location_ids' => [$location->id],

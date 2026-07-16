@@ -1000,7 +1000,9 @@ class Posts extends Page implements HasTable
             $html .= '<div style="font-size:.8rem; color:#5f6368; margin-bottom:.35rem;">'.e((string) $d['dates']).'</div>';
         }
         if (filled($d['caption'] ?? null)) {
-            $html .= '<div style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit((string) $d['caption'], 600)).'</div>';
+            // Collapse the 3+ blank lines Google/imported posts often carry.
+            $caption = (string) preg_replace('/\n{3,}/', "\n\n", (string) $d['caption']);
+            $html .= '<div style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit($caption, 600)).'</div>';
         } elseif (! empty($d['captionPlaceholder'])) {
             $html .= '<div style="font-size:.9rem; color:#c0c3c9;">'.e(__('pages/posts.preview_placeholder')).'</div>';
         }
