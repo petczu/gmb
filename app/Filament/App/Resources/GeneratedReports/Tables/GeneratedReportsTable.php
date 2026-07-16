@@ -14,6 +14,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -38,19 +39,28 @@ class GeneratedReportsTable
                     ->url(fn (): string => Reports::getUrl()),
             ])
             ->columns([
-                TextColumn::make('title')->label(__('resources/generated_reports.col_business'))->searchable()->sortable(),
+                // Wrap + cap: report titles can be very long (multiple locations,
+                // Arabic names) and would otherwise push the actions column off
+                // the right edge on narrow screens.
+                TextColumn::make('title')->label(__('resources/generated_reports.col_business'))
+                    ->searchable()->sortable()
+                    ->wrap()
+                    ->limit(90),
 
                 TextColumn::make('period_label')->label(__('resources/generated_reports.col_period'))->badge(),
 
+                // Extra columns only appear on xl+: the app sidebar eats ~250px,
+                // so at md/lg the row already overflows and pushes the actions
+                // (⋮) off-screen. Below xl we keep just Business + Period + ⋮.
                 TextColumn::make('language')
                     ->label(__('resources/generated_reports.col_language'))
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => strtoupper($state))
-                    ->visibleFrom('md'),
+                    ->visibleFrom('xl'),
 
-                TextColumn::make('generated_by_name')->label(__('resources/generated_reports.col_by'))->placeholder('—')->visibleFrom('lg'),
+                TextColumn::make('generated_by_name')->label(__('resources/generated_reports.col_by'))->placeholder('—')->visibleFrom('2xl'),
 
-                TextColumn::make('created_at')->label(__('resources/generated_reports.col_generated'))->dateTime('M j, Y · H:i')->sortable()->visibleFrom('md'),
+                TextColumn::make('created_at')->label(__('resources/generated_reports.col_generated'))->dateTime('M j, Y · H:i')->sortable()->visibleFrom('xl'),
             ])
             ->recordActions([
                 ActionGroup::make([
@@ -116,6 +126,17 @@ class GeneratedReportsTable
                     ->label(__('resources/generated_reports.password'))
                     ->password()
                     ->revealable()
+                    // Stop the browser/password managers from autofilling a
+                    // saved credential into this "set a share password" field —
+                    // otherwise Save would silently store an unintended password.
+                    ->autocomplete('new-password')
+                    ->extraInputAttributes(['data-lpignore' => 'true', 'data-1p-ignore' => 'true'])
+                    ->hintAction(
+                        Action::make('generatePassword')
+                            ->label(__('resources/generated_reports.generate_password'))
+                            ->icon(Heroicon::OutlinedSparkles)
+                            ->action(fn (Set $set) => $set('password', Str::password(16))),
+                    )
                     ->helperText(__('resources/generated_reports.password_helper')),
 
                 DatePicker::make('access_from')->label(__('resources/generated_reports.access_from'))->native(false)

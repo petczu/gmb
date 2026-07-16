@@ -27,6 +27,7 @@ return [
     'copy' => 'Kopieren',
     'password' => 'Passwort',
     'password_helper' => 'Leer lassen für kein Passwort. Eine Eingabe setzt/ersetzt es; das Leeren entfernt das Passwort.',
+    'generate_password' => 'Generieren',
     'access_from' => 'Zugänglich ab',
     'access_from_helper' => 'Optional. Der Link funktioniert vor diesem Datum nicht.',
     'access_until' => 'Zugänglich bis',

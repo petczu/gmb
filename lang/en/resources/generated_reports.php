@@ -27,6 +27,7 @@ return [
     'copy' => 'Copy',
     'password' => 'Password',
     'password_helper' => 'Leave blank for no password. Entering a value sets/replaces it; clearing it removes the password.',
+    'generate_password' => 'Generate',
     'access_from' => 'Accessible from',
     'access_from_helper' => 'Optional. The link does not work before this date.',
     'access_until' => 'Accessible until',
