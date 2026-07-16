@@ -53,6 +53,10 @@ class AppPanelProvider extends PanelProvider
             ->id('app')
             ->path('')
             ->default()
+            // In-app bell: new reviews, failed posts, approvals, billing, etc.
+            // are pushed here alongside their emails (see NotificationDispatcher).
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->login(Login::class)
             // "Forgot password?" flow (email a reset link). Needed because
             // email-code / Google sign-ups get a random password they never see.
