@@ -95,6 +95,13 @@ class CompetitorGrowthChart extends ChartWidget
 
         $period = DashboardPeriod::fromFilters($this->pageFilters);
 
+        // Respect the dashboard location filter for the "You" line: battles are
+        // auto-scoped to all locations, so without this it would always count
+        // every location even when one is selected.
+        if ($period->locationIds !== []) {
+            $ownLocationIds = array_values(array_intersect($ownLocationIds, $period->locationIds));
+        }
+
         $series = app(CompetitorTrends::class)->growthSeries(
             array_keys($names),
             $ownLocationIds,
