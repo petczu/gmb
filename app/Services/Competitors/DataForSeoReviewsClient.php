@@ -28,32 +28,6 @@ class DataForSeoReviewsClient
             && filled(config('services.dataforseo.password'));
     }
 
-    /**
-     * Fetch up to $depth newest reviews for a place. Posts a task and polls
-     * until DataForSEO has it ready (or the wait budget runs out).
-     *
-     * @return list<array{review_id: string, rating: ?float, reviewed_at: ?CarbonImmutable, author: ?string, text: ?string, language: ?string}>
-     */
-    public function fetch(string $placeId, ?int $depth = null, int $maxWaitSeconds = 120): array
-    {
-        $taskId = $this->postTask($placeId, $depth);
-
-        $deadline = $maxWaitSeconds;
-        while ($deadline > 0) {
-            $items = $this->getTask($taskId);
-            if ($items !== null) {
-                return $items;
-            }
-
-            // Standard queue turnaround is minutes; back off between polls.
-            $wait = 5;
-            $this->sleep($wait);
-            $deadline -= $wait;
-        }
-
-        throw new \RuntimeException('DataForSEO reviews task not ready in time for '.$placeId);
-    }
-
     /** Create a reviews task; returns its id. */
     public function postTask(string $placeId, ?int $depth = null): string
     {
@@ -151,12 +125,6 @@ class DataForSeoReviewsClient
 
         // Multiples of ten; Google exposes at most 4490.
         return (int) max(10, min(4490, (int) (ceil($depth / 10) * 10)));
-    }
-
-    /** Extracted so tests can stub out the wait. */
-    protected function sleep(int $seconds): void
-    {
-        sleep($seconds);
     }
 
     protected function request(): PendingRequest

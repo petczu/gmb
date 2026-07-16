@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Jobs\BackfillPlaceReviewsJob;
 use App\Models\Competitor;
-use App\Models\PlaceReview;
 use App\Models\Workspace;
 use App\Services\Competitors\DataForSeoReviewsClient;
-use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
-use Throwable;
 
 /**
  * Pull individual competitor reviews (with exact dates) into the central
@@ -56,31 +53,14 @@ class BackfillCompetitorReviewsCommand extends Command
             ? (int) $this->option('depth')
             : ($this->option('delta') ? 100 : null);
 
-        $totalNew = 0;
-        $failed = 0;
-
+        // The reviews endpoint is async (standard queue up to ~45 min). Hand
+        // each place to a queued job so this returns immediately and no worker
+        // blocks — the job posts the task, then polls itself to completion.
         foreach ($placeIds as $placeId) {
-            try {
-                $reviews = $client->fetch($placeId, $depth);
-            } catch (Throwable $e) {
-                $failed++;
-                $this->warn(sprintf('  %s: %s', $placeId, $e->getMessage()));
-                Log::warning('Competitor reviews backfill failed', ['place' => $placeId, 'error' => $e->getMessage()]);
-
-                continue;
-            }
-
-            $new = $this->store($placeId, $reviews);
-            $totalNew += $new;
-            $this->line(sprintf('  %s: %d reviews (%d new)', $placeId, count($reviews), $new));
+            BackfillPlaceReviewsJob::dispatch($placeId, $depth);
         }
 
-        $this->info(sprintf(
-            'Reviews backfill done: %d places, %d new reviews stored, %d failed.',
-            count($placeIds),
-            $totalNew,
-            $failed,
-        ));
+        $this->info(sprintf('Dispatched %d review backfill job(s). Results arrive as DataForSEO completes each task.', count($placeIds)));
 
         return self::SUCCESS;
     }
@@ -108,35 +88,6 @@ class BackfillCompetitorReviewsCommand extends Command
         }
 
         return array_values(array_unique(array_filter($placeIds)));
-    }
-
-    /**
-     * Upsert reviews for a place; returns how many were newly inserted.
-     *
-     * @param  list<array{review_id: string, rating: ?float, reviewed_at: ?CarbonImmutable, author: ?string, text: ?string, language: ?string}>  $reviews
-     */
-    private function store(string $placeId, array $reviews): int
-    {
-        $new = 0;
-
-        foreach ($reviews as $review) {
-            $model = PlaceReview::updateOrCreate(
-                ['place_id' => $placeId, 'review_id' => $review['review_id']],
-                [
-                    'rating' => $review['rating'],
-                    'reviewed_at' => $review['reviewed_at'],
-                    'author' => $review['author'],
-                    'text' => $review['text'],
-                    'language' => $review['language'],
-                ],
-            );
-
-            if ($model->wasRecentlyCreated) {
-                $new++;
-            }
-        }
-
-        return $new;
     }
 
     private function inTenant(Workspace $workspace, callable $callback): void
