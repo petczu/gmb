@@ -44,6 +44,50 @@ class ZernioRestClient
     }
 
     /**
+     * List a social account's external (natively-published) posts, paginated.
+     * source=external returns posts published directly on the platform, not
+     * through Zernio (e.g. Google Business localPosts created in the Google UI).
+     *
+     * @return array{posts: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     *
+     * @throws RequestException
+     */
+    public function listExternalPosts(string $accountId, int $page = 1, int $limit = 100): array
+    {
+        $response = (array) $this->request()
+            ->get('/posts', [
+                'source' => 'external',
+                'accountId' => $accountId,
+                'page' => $page,
+                'limit' => $limit,
+            ])
+            ->throw()
+            ->json();
+
+        return [
+            'posts' => (array) ($response['posts'] ?? []),
+            'pagination' => (array) ($response['pagination'] ?? []),
+        ];
+    }
+
+    /**
+     * Trigger an on-demand sync of an account's latest external posts so a
+     * freshly published post is retrievable within seconds instead of waiting
+     * for the background sync (which refreshes each account every ~90 minutes).
+     *
+     * @return array<string, mixed>
+     *
+     * @throws RequestException
+     */
+    public function syncExternalPosts(string $accountId): array
+    {
+        return (array) $this->request()
+            ->post('/posts/sync-external', ['accountId' => $accountId])
+            ->throw()
+            ->json();
+    }
+
+    /**
      * GBP location details (hours, description, phone, website, status).
      *
      * @return array<string, mixed>

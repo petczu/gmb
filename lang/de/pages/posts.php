@@ -82,6 +82,10 @@ return [
 
     // Entwürfe
     'save_draft' => 'Als Entwurf speichern',
+
+    // Importierte Google-Beiträge
+    'duplicate_draft' => 'Als Entwurf duplizieren',
+    'duplicated_draft' => 'Entwurf erstellt',
     'draft_heading' => 'Entwurf bearbeiten',
     'draft_saved' => 'Entwurf gespeichert',
     'draft_delete' => 'Entwurf löschen',

@@ -552,7 +552,37 @@ class Posts extends Page implements HasTable
                 Placeholder::make('post_details')
                     ->hiddenLabel()
                     ->content(new HtmlString($this->postDetailsHtml((int) $this->viewingPostId))),
+            ])
+            ->extraModalFooterActions(fn (): array => [
+                Action::make('duplicateDraft')
+                    ->label(__('pages/posts.duplicate_draft'))
+                    ->icon(Heroicon::OutlinedDocumentDuplicate)
+                    ->action(fn () => $this->duplicateAsDraft((int) $this->viewingPostId))
+                    ->cancelParentActions(),
             ]);
+    }
+
+    /** Copy any post (including an imported Google one) into a fresh draft. */
+    public function duplicateAsDraft(int $postId): void
+    {
+        $post = Post::find($postId);
+        if ($post === null) {
+            return;
+        }
+
+        Post::create([
+            'type' => in_array($post->type, ['update', 'offer', 'event', 'photo'], true) ? $post->type : 'update',
+            'caption' => $post->caption,
+            'title' => $post->title,
+            'image_url' => $post->image_url,
+            'cta_type' => $post->cta_type,
+            'cta_url' => $post->cta_url,
+            'location_ids' => $post->location_ids,
+            'status' => 'draft',
+            'origin' => 'app',
+        ]);
+
+        Notification::make()->title(__('pages/posts.duplicated_draft'))->success()->send();
     }
 
     /** Drafts reopen in the full composer: publish, keep as draft, or discard. */

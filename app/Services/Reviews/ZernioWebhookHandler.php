@@ -14,6 +14,7 @@ use App\Models\Review;
 use App\Models\Workspace;
 use App\Services\Notifications\NotificationCategory;
 use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Posts\ExternalPostImporter;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -48,6 +49,11 @@ class ZernioWebhookHandler
 
             case 'account.disconnected':
                 $this->updateAccountStatus($payload, 'revoked');
+                break;
+
+            case 'post.external.created':
+            case 'post.external.updated':
+                $this->handleExternalPost($payload);
                 break;
 
             case 'webhook.test':
@@ -193,6 +199,55 @@ class ZernioWebhookHandler
                 'workspace' => $workspace->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * Ingest a natively-published Google post (post.external.created/updated)
+     * into the owning workspace as an imported, published Post so it appears on
+     * the calendar. Deduped on the platform id, so an update event is a no-op
+     * once the post is already stored.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function handleExternalPost(array $payload): void
+    {
+        $accountId = $payload['account']['id'] ?? null;
+        if ($accountId === null) {
+            return;
+        }
+
+        $account = GoogleAccount::query()->where('zernio_account_id', $accountId)->first();
+        $workspace = $account?->workspace;
+        if ($workspace === null) {
+            return;
+        }
+
+        $post = $payload['post'] ?? [];
+        if (! is_array($post) || trim((string) ($post['id'] ?? '')) === '') {
+            return;
+        }
+
+        $previous = tenant();
+        tenancy()->initialize($workspace);
+
+        try {
+            $location = Location::query()->where('zernio_account_id', $accountId)->first();
+            if ($location === null) {
+                return;
+            }
+
+            $mediaItems = is_array($post['mediaItems'] ?? null) ? $post['mediaItems'] : [];
+
+            app(ExternalPostImporter::class)->store($location, [
+                'platform_post_id' => (string) $post['id'],
+                'content' => (string) ($post['content'] ?? ''),
+                'image_url' => $post['thumbnailUrl'] ?? ($mediaItems[0]['url'] ?? null),
+                'url' => $post['url'] ?? null,
+                'published_at' => $post['publishedAt'] ?? null,
+            ]);
+        } finally {
+            $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();
         }
     }
 
