@@ -22,6 +22,9 @@ return [
     'review_text' => 'Bewertungstext',
     'with_text' => 'Mit Text',
     'rating_only' => 'Nur Sterne',
+    'photos' => 'Fotos',
+    'with_photos' => 'Mit Fotos',
+    'without_photos' => 'Ohne Fotos',
 
     // Reply action
     'edit_reply' => 'Antwort bearbeiten',

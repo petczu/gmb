@@ -22,6 +22,9 @@ return [
     'review_text' => 'Review text',
     'with_text' => 'With text',
     'rating_only' => 'Rating only',
+    'photos' => 'Photos',
+    'with_photos' => 'With photos',
+    'without_photos' => 'Without photos',
 
     // Reply action
     'edit_reply' => 'Edit reply',

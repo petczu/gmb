@@ -167,6 +167,17 @@ class ReviewsTable
                         true: fn ($query) => $query->whereNotNull('text')->where('text', '!=', ''),
                         false: fn ($query) => $query->where(fn ($q) => $q->whereNull('text')->orWhere('text', '')),
                     ),
+
+                // Reviews that include customer photos (photo_count > 0).
+                TernaryFilter::make('has_photos')
+                    ->label(__('resources/reviews.photos'))
+                    ->placeholder(__('common.all'))
+                    ->trueLabel(__('resources/reviews.with_photos'))
+                    ->falseLabel(__('resources/reviews.without_photos'))
+                    ->queries(
+                        true: fn ($query) => $query->where('photo_count', '>', 0),
+                        false: fn ($query) => $query->where(fn ($q) => $q->whereNull('photo_count')->orWhere('photo_count', '<=', 0)),
+                    ),
             ])
             ->recordActions([
                 ActionGroup::make([
