@@ -57,7 +57,7 @@ class NotificationDispatcher
 
             // In-app bell for members who can actually sign in (guests can't).
             if (! $isGuest) {
-                $this->toDatabase($user, $mailable);
+                $this->toDatabase($user, $mailable, $category);
             }
         }
     }
@@ -65,9 +65,11 @@ class NotificationDispatcher
     /**
      * Mirror the email as an in-app database notification (the panel bell),
      * reusing the mailable's subject as the title and its CTA url as the link.
-     * Best-effort: a bell failure must never break the (already sent) email.
+     * An icon + color keyed to the event type makes the panel scannable at a
+     * glance. Best-effort: a bell failure must never break the (already sent)
+     * email.
      */
-    private function toDatabase(User $user, Mailable $mailable): void
+    private function toDatabase(User $user, Mailable $mailable, string $category): void
     {
         try {
             $title = trim((string) $mailable->envelope()->subject);
@@ -75,7 +77,12 @@ class NotificationDispatcher
                 return;
             }
 
-            $notification = Notification::make()->title($title);
+            [$icon, $color] = $this->presentation($mailable, $category);
+
+            $notification = Notification::make()
+                ->title($title)
+                ->icon($icon)
+                ->iconColor($color);
 
             $url = $this->mailableUrl($mailable);
             if ($url !== null) {
@@ -91,6 +98,41 @@ class NotificationDispatcher
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Icon + color for the bell entry. Keyed first on the specific mailable so
+     * each event reads distinctly (a failed reply looks different from a new
+     * review), then falling back to the category so any future mail still gets
+     * a sensible glyph.
+     *
+     * @return array{0: string, 1: string} [heroicon, color]
+     */
+    private function presentation(Mailable $mailable, string $category): array
+    {
+        return match (class_basename($mailable)) {
+            'NewReviewsMail' => ['heroicon-o-star', 'success'],
+            'NegativeReviewMail' => ['heroicon-o-face-frown', 'danger'],
+            'ReviewGoalReachedMail' => ['heroicon-o-trophy', 'success'],
+            'ReviewGoalProgressMail' => ['heroicon-o-chart-bar', 'info'],
+            'ReviewAnomalyMail' => ['heroicon-o-exclamation-triangle', 'warning'],
+            'ReviewCoachingMail' => ['heroicon-o-academic-cap', 'info'],
+            'ApprovalsPendingMail' => ['heroicon-o-inbox-arrow-down', 'warning'],
+            'ReplyFailedMail', 'PostFailedMail' => ['heroicon-o-exclamation-circle', 'danger'],
+            'AccountDisconnectedMail' => ['heroicon-o-link-slash', 'danger'],
+            'SyncRestoredMail', 'LocationSyncedMail' => ['heroicon-o-arrow-path', 'success'],
+            'LocationConnectedMail' => ['heroicon-o-map-pin', 'success'],
+            'ScheduledReportMail' => ['heroicon-o-document-chart-bar', 'info'],
+            'PaymentSucceededMail', 'PaymentFailedMail', 'AutoRechargeFailedMail' => ['heroicon-o-credit-card', 'warning'],
+            'AiBudgetAlertMail', 'AiLimitReachedMail' => ['heroicon-o-cpu-chip', 'warning'],
+            'TrialEndingMail' => ['heroicon-o-clock', 'warning'],
+            default => match ($category) {
+                NotificationCategory::REVIEW_GROWTH => ['heroicon-o-arrow-trending-up', 'success'],
+                NotificationCategory::REPUTATION => ['heroicon-o-star', 'warning'],
+                NotificationCategory::BILLING => ['heroicon-o-credit-card', 'warning'],
+                default => ['heroicon-o-bell', 'primary'],
+            },
+        };
     }
 
     /** The CTA url from a templated mailable's placeholder data, if any. */

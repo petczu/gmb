@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\Notifications\NotificationCategory;
 use App\Services\Notifications\NotificationDispatcher;
 use Filament\Notifications\DatabaseNotification;
 use Illuminate\Mail\Mailable;
@@ -47,7 +48,7 @@ class InAppNotificationTest extends TestCase
     {
         $dispatcher = app(NotificationDispatcher::class);
         $method = new ReflectionMethod($dispatcher, 'toDatabase');
-        $method->invoke($dispatcher, $user, $mailable);
+        $method->invoke($dispatcher, $user, $mailable, NotificationCategory::OPERATIONS);
     }
 
     public function test_it_sends_a_bell_notification_for_the_member(): void
