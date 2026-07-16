@@ -72,15 +72,24 @@ class ReplyComposer
 
         $html .= '</div>';
 
-        // Reviewer-uploaded photos (Google Business), click to open full size.
+        // Reviewer-uploaded photos (Google Business). Click a thumbnail to open
+        // it full size in an in-place lightbox, so the reply slide-over stays put.
         $photos = array_values(array_filter((array) ($review->photos ?? []), fn ($u): bool => is_string($u) && $u !== ''));
         if ($photos !== []) {
+            $html .= '<div x-data="{ open: false, src: \'\' }" @keydown.escape.window="open = false">';
             $html .= '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">';
             foreach (array_slice($photos, 0, 10) as $url) {
-                $html .= '<a href="'.e($url).'" target="_blank" rel="noopener">'
-                    .'<img src="'.e($url).'" alt="" loading="lazy" style="width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb;">'
-                    .'</a>';
+                $html .= '<img src="'.e($url).'" alt="" loading="lazy"'
+                    .' @click="src = \''.e($url).'\'; open = true"'
+                    .' style="width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; cursor:zoom-in;">';
             }
+            $html .= '</div>';
+
+            // Fullscreen overlay rendered above the slide-over; click anywhere closes.
+            $html .= '<div x-cloak x-show="open" @click="open = false"'
+                .' style="position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.8); display:flex; align-items:center; justify-content:center; padding:24px; cursor:zoom-out;">'
+                .'<img :src="src" alt="" style="max-width:92vw; max-height:88vh; object-fit:contain; border-radius:8px; box-shadow:0 8px 40px rgba(0,0,0,.5);">'
+                .'</div>';
             $html .= '</div>';
         }
 
