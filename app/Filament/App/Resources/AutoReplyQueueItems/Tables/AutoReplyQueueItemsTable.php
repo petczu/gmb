@@ -23,7 +23,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -36,22 +35,15 @@ class AutoReplyQueueItemsTable
     {
         return $table
             ->defaultSort('created_at', 'desc')
-            // Status tabs live INSIDE the table card (header slot), not as a
-            // separate floating block above it. See ListAutoReplyQueueItems::
-            // getTabs() for the tab definitions.
-            ->header(fn ($livewire): View => view('filament.app.resources.auto-reply-tabs', [
-                'tabs' => $livewire->getCachedTabs(),
-                'activeTab' => $livewire->activeTab,
-            ]))
-            ->searchable(AutoReplyQueueItem::query()->exists())
+            ->searchable(AutoReplyQueueItem::query()->where('status', 'pending')->exists())
             ->emptyStateIcon(Heroicon::OutlinedInboxStack)
             ->emptyStateHeading(__('resources/auto_reply.empty_heading'))
             ->emptyStateDescription(__('resources/auto_reply.empty_desc'))
-            // Manual generations from the reply modal are usage records, not
-            // approvals — keep those (`draft`) out. `scheduled` items ARE shown:
-            // they're queued for an organic post time and the owner needs to see
-            // (and be able to cancel or fast-track) what is about to go out.
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', '!=', 'draft')->with('review.location'))
+            // Approvals is strictly the "waiting for a human" queue: only
+            // `pending` drafts. Scheduled/published/failed auto-replies and the
+            // full review history live on the Reviews page, so this page no
+            // longer duplicates them.
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'pending')->with('review.location'))
             ->columns([
                 TextColumn::make('review.location.name')
                     ->label(__('resources/auto_reply.col_location'))
@@ -85,30 +77,6 @@ class AutoReplyQueueItemsTable
                     ->tooltip(fn (AutoReplyQueueItem $record): string => $record->generated_text)
                     ->visibleFrom('md'),
 
-                TextColumn::make('status')
-                    ->label(__('resources/auto_reply.col_status'))
-                    ->badge()
-                    // Failed drafts carry the publish error; scheduled ones their
-                    // post time. Surface both on hover.
-                    ->tooltip(fn (AutoReplyQueueItem $record): ?string => match ($record->status) {
-                        'failed' => $record->error,
-                        'scheduled' => $record->post_at
-                            ? __('resources/auto_reply.scheduled_for', ['time' => $record->post_at
-                                ->copy()
-                                ->setTimezone(Auth::user()?->timezone ?: config('app.timezone'))
-                                ->translatedFormat('j. M Y, H:i')])
-                            : null,
-                        default => null,
-                    })
-                    ->formatStateUsing(fn (string $state): string => __('resources/auto_reply.status_'.$state))
-                    ->color(fn (string $state): string => match ($state) {
-                        'published' => 'success',
-                        'pending' => 'warning',
-                        'scheduled' => 'info',
-                        'failed' => 'danger',
-                        default => 'gray',
-                    }),
-
                 TextColumn::make('model')
                     ->label(__('resources/auto_reply.col_source'))
                     ->formatStateUsing(fn (?string $state): string => $state ? __('resources/auto_reply.source_ai') : __('resources/auto_reply.source_template'))
@@ -119,9 +87,6 @@ class AutoReplyQueueItemsTable
                 TextColumn::make('created_at')->label(__('resources/auto_reply.col_generated'))->since()->sortable()->visibleFrom('md'),
             ])
             ->filters([
-                // The status split lives in the page tabs (see
-                // ListAutoReplyQueueItems::getTabs), not in a filter.
-
                 // Review date window (filters through the related review).
                 Filter::make('date')
                     ->label(__('resources/auto_reply.filter_date'))
@@ -167,29 +132,21 @@ class AutoReplyQueueItemsTable
                         ->when(($data['value'] ?? null) === 'ai', fn (Builder $q): Builder => $q->whereNotNull('model'))
                         ->when(($data['value'] ?? null) === 'template', fn (Builder $q): Builder => $q->whereNull('model'))),
             ])
-            // Pending drafts (a decision is due) and scheduled ones (fast-track
-            // or cancel) get a checkbox; published/skipped rows have nothing
-            // left to decide.
-            ->checkIfRecordIsSelectableUsing(fn (AutoReplyQueueItem $record): bool => in_array($record->status, ['pending', 'scheduled'], true))
+            // Pending drafts (a decision is due) get a checkbox.
+            ->checkIfRecordIsSelectableUsing(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
             ->toolbarActions([
                 BulkAction::make('approveSelected')
-                    // On the Scheduled tab these items are already approved;
-                    // the same fast-track then simply reads "Publish now".
-                    ->label(fn ($livewire): string => ($livewire->activeTab ?? null) === 'scheduled'
-                        ? __('resources/auto_reply.publish_now_selected')
-                        : __('resources/auto_reply.approve_selected'))
+                    ->label(__('resources/auto_reply.approve_selected'))
                     ->icon(Heroicon::OutlinedCheck)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->modalDescription(fn ($livewire): string => ($livewire->activeTab ?? null) === 'scheduled'
-                        ? __('resources/auto_reply.bulk_publish_now_confirm')
-                        : __('resources/auto_reply.bulk_approve_confirm'))
+                    ->modalDescription(__('resources/auto_reply.bulk_approve_confirm'))
                     ->deselectRecordsAfterCompletion()
                     ->action(function (Collection $records): void {
                         $queued = 0;
 
                         foreach ($records as $record) {
-                            if (! in_array($record->status, ['pending', 'scheduled'], true)) {
+                            if ($record->status !== 'pending') {
                                 continue;
                             }
 
@@ -219,9 +176,7 @@ class AutoReplyQueueItemsTable
                     }),
 
                 BulkAction::make('rejectSelected')
-                    ->label(fn ($livewire): string => ($livewire->activeTab ?? null) === 'scheduled'
-                        ? __('resources/auto_reply.cancel_scheduled_selected')
-                        : __('resources/auto_reply.reject_selected'))
+                    ->label(__('resources/auto_reply.reject_selected'))
                     ->icon(Heroicon::OutlinedXMark)
                     ->color('danger')
                     ->requiresConfirmation()
@@ -232,7 +187,7 @@ class AutoReplyQueueItemsTable
                         $count = 0;
 
                         foreach ($records as $record) {
-                            if (! in_array($record->status, ['pending', 'scheduled'], true)) {
+                            if ($record->status !== 'pending') {
                                 continue;
                             }
                             $service->reject($record, Auth::id());
@@ -255,7 +210,7 @@ class AutoReplyQueueItemsTable
                     ->slideOver()
                     ->modalWidth(Width::Large)
                     ->modalHeading(__('resources/auto_reply.review_reply'))
-                    ->visible(fn (AutoReplyQueueItem $record): bool => in_array($record->status, ['pending', 'scheduled', 'failed'], true) && $record->review !== null)
+                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending' && $record->review !== null)
                     ->fillForm(fn (AutoReplyQueueItem $record): array => [
                         'generated_text' => $record->generated_text,
                         // Preselect the agent that actually generated this draft.
@@ -330,8 +285,7 @@ class AutoReplyQueueItemsTable
                     ->color('success')
                     ->iconButton()
                     ->tooltip(__('resources/auto_reply.approve'))
-                    // Failed items may be retried (e.g. after a transient error).
-                    ->visible(fn (AutoReplyQueueItem $record): bool => in_array($record->status, ['pending', 'failed'], true))
+                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
                     ->requiresConfirmation()
                     ->action(function (AutoReplyQueueItem $record): void {
                         $workspace = Workspace::find(session('current_workspace_id'));
@@ -353,54 +307,11 @@ class AutoReplyQueueItemsTable
                     ->color('danger')
                     ->iconButton()
                     ->tooltip(__('resources/auto_reply.reject'))
-                    ->visible(fn (AutoReplyQueueItem $record): bool => in_array($record->status, ['pending', 'failed'], true))
+                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'pending')
                     ->requiresConfirmation()
                     ->action(function (AutoReplyQueueItem $record): void {
                         app(AutoReplyService::class)->reject($record, Auth::id());
                         Notification::make()->title(__('resources/auto_reply.draft_rejected'))->success()->send();
-                    }),
-
-                // Scheduled items: skip the organic delay, or call the reply off
-                // before it goes out. Fast-tracking just moves post_at to "now";
-                // the post-due scheduler picks it up on its next run.
-                Action::make('postNow')
-                    ->label(__('resources/auto_reply.post_now'))
-                    ->icon(Heroicon::OutlinedPaperAirplane)
-                    ->color('success')
-                    ->iconButton()
-                    ->tooltip(__('resources/auto_reply.post_now'))
-                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'scheduled')
-                    ->requiresConfirmation()
-                    ->modalDescription(__('resources/auto_reply.post_now_confirm'))
-                    // A single item publishes INLINE (one API call), so the row
-                    // leaves the Scheduled tab immediately; only bulk approvals
-                    // go through the queued fast-track.
-                    ->action(function (AutoReplyQueueItem $record): void {
-                        $workspace = Workspace::findOrFail(session('current_workspace_id'));
-
-                        try {
-                            app(AutoReplyService::class)->approve($workspace, $record, Auth::id());
-                        } catch (\Throwable $e) {
-                            self::notifyPublishFailure($e);
-
-                            return;
-                        }
-
-                        Notification::make()->title(__('resources/auto_reply.reply_published'))->success()->send();
-                    }),
-
-                Action::make('cancelScheduled')
-                    ->label(__('resources/auto_reply.cancel_scheduled'))
-                    ->icon(Heroicon::OutlinedXMark)
-                    ->color('danger')
-                    ->iconButton()
-                    ->tooltip(__('resources/auto_reply.cancel_scheduled'))
-                    ->visible(fn (AutoReplyQueueItem $record): bool => $record->status === 'scheduled')
-                    ->requiresConfirmation()
-                    ->modalDescription(__('resources/auto_reply.cancel_scheduled_confirm'))
-                    ->action(function (AutoReplyQueueItem $record): void {
-                        app(AutoReplyService::class)->reject($record, Auth::id());
-                        Notification::make()->title(__('resources/auto_reply.schedule_cancelled'))->success()->send();
                     }),
             ]);
     }
