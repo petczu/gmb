@@ -21,9 +21,13 @@ class AssignCompetitorCitiesCommand extends Command
 {
     protected $signature = 'competitors:assign-cities
         {workspace? : Limit to a single workspace id or slug}
-        {--dry-run : Show what would change without saving}';
+        {--dry-run : Show what would change without saving}
+        {--all : Also re-scope competitors already narrowed to specific locations (use after adding a location)}';
 
-    protected $description = 'Assign each competitor to its nearest own location (city) by distance';
+    protected $description = 'Assign each competitor to the own locations in its city (by distance)';
+
+    /** Own locations within this radius of a competitor count as its city. */
+    private const CITY_RADIUS_KM = 35.0;
 
     public function handle(PlacesClient $places): int
     {
@@ -79,6 +83,7 @@ class AssignCompetitorCitiesCommand extends Command
 
         $competitors = Competitor::query()->with('battle')->whereNotNull('place_id')->get();
         $dry = (bool) $this->option('dry-run');
+        $rescopeAll = (bool) $this->option('all');
         $changed = 0;
 
         foreach ($competitors as $competitor) {
@@ -87,10 +92,12 @@ class AssignCompetitorCitiesCommand extends Command
                 continue; // grouped battles are intentional — leave them.
             }
 
-            // Only touch still-unscoped battles (default = all locations).
+            // Default: only touch still-unscoped battles (all locations). With
+            // --all, also re-scope already-narrowed ones (e.g. after adding a
+            // location so its city picks up the new sibling).
             $current = $battle->ownLocationIds();
             sort($current);
-            if ($current !== $allIds) {
+            if (! $rescopeAll && $current !== $allIds) {
                 continue;
             }
 
@@ -101,24 +108,40 @@ class AssignCompetitorCitiesCommand extends Command
                 continue;
             }
 
+            // City = every own location within CITY_RADIUS_KM of the competitor
+            // (so a two-location city binds to both); fall back to the single
+            // nearest if none fall inside the radius.
             $nearestId = null;
             $nearestKm = INF;
+            $cityIds = [];
             foreach ($points as $locationId => $point) {
                 $km = $this->distanceKm($coords, $point['coords']);
                 if ($km < $nearestKm) {
                     $nearestKm = $km;
                     $nearestId = $locationId;
                 }
+                if ($km <= self::CITY_RADIUS_KM) {
+                    $cityIds[] = $locationId;
+                }
             }
 
             if ($nearestId === null) {
                 continue;
             }
+            if ($cityIds === []) {
+                $cityIds = [$nearestId];
+            }
+            sort($cityIds);
 
-            $this->line(sprintf('  · %s → %s (%.1f km)%s', $competitor->name, $points[$nearestId]['name'], $nearestKm, $dry ? ' [dry-run]' : ''));
+            if ($cityIds === $current) {
+                continue; // already correct
+            }
+
+            $names = implode(', ', array_map(fn (int $id): string => $points[$id]['name'] ?? (string) $id, $cityIds));
+            $this->line(sprintf('  · %s → %s (nearest %.1f km)%s', $competitor->name, $names, $nearestKm, $dry ? ' [dry-run]' : ''));
 
             if (! $dry) {
-                $battle->update(['own_location_ids' => [$nearestId]]);
+                $battle->update(['own_location_ids' => $cityIds]);
                 $competitor->update(['location_id' => $nearestId]);
             }
             $changed++;
