@@ -16,6 +16,8 @@ return [
     'status_unverified' => 'Not verified',
 
     'section_basics' => 'Profile',
+    'field_logo' => 'Location logo',
+    'field_logo_helper' => 'Shown on the Google post preview. Falls back to the workspace logo when empty.',
     'field_description' => 'Business description',
     'field_description_helper' => 'Shown on your Google profile. Up to 750 characters. The form loads the current live values from Google.',
     'field_phone' => 'Phone number',

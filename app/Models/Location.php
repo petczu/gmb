@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * TENANT model — lives in the per-workspace DB. Uses the default connection,
@@ -24,6 +25,7 @@ class Location extends Model
         'name',
         'address',
         'timezone',
+        'logo_path',
         'phone',
         'website_url',
         'status',
@@ -46,5 +48,13 @@ class Location extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    /** Uploaded location logo URL (used on the post preview card), or null. */
+    public function logoUrl(): ?string
+    {
+        return $this->logo_path
+            ? Storage::disk('uploads')->url($this->logo_path)
+            : null;
     }
 }

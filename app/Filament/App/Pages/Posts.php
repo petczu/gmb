@@ -747,7 +747,7 @@ class Posts extends Page implements HasTable
         $html .= $this->googlePreviewCard([
             'name' => $this->businessNameLabel($post->location_ids ?? []),
             'date' => $when->translatedFormat('M j, Y'),
-            'logoUrl' => $this->workspaceLogoUrl(),
+            'logoUrl' => $this->previewLogoUrl($post->location_ids ?? []),
             'imageUrl' => filled($post->image_url) ? $post->image_url : null,
             'title' => $post->title,
             'dates' => $dates,
@@ -779,6 +779,25 @@ class Posts extends Page implements HasTable
         $workspaceId = session('current_workspace_id');
 
         return $workspaceId ? Workspace::find($workspaceId)?->logoUrl() : null;
+    }
+
+    /**
+     * Logo for the preview card: the first selected location's own logo, or the
+     * workspace logo when the location has none.
+     *
+     * @param  array<int, int|string>  $locationIds
+     */
+    private function previewLogoUrl(array $locationIds): ?string
+    {
+        $ids = array_values(array_map('intval', $locationIds));
+
+        foreach (Location::query()->whereIn('id', $ids)->orderBy('name')->get() as $location) {
+            if (($url = $location->logoUrl()) !== null) {
+                return $url;
+            }
+        }
+
+        return $this->workspaceLogoUrl();
     }
 
     public function table(Table $table): Table
@@ -1068,8 +1087,7 @@ class Posts extends Page implements HasTable
         $name = $names->first() ?? __('pages/posts.preview_business');
         $extra = $names->count() > 1 ? ' +'.($names->count() - 1) : '';
 
-        $workspaceId = session('current_workspace_id');
-        $logoUrl = $workspaceId ? Workspace::find($workspaceId)?->logoUrl() : null;
+        $logoUrl = $this->previewLogoUrl($locationIds);
 
         $image = $get('image');
         $image = is_array($image) ? collect($image)->first() : $image;

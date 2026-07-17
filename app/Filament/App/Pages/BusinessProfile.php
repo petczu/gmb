@@ -11,6 +11,7 @@ use App\Services\Zernio\ZernioRestClient;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -130,6 +131,7 @@ class BusinessProfile extends Page implements HasForms
         $stored = $location->listing_data ?? [];
 
         $this->form->fill([
+            'logo_path' => $location->logo_path,
             'description' => $stored['description'] ?? null,
             'phone' => $location->phone,
             'additional_phones' => $stored['additional_phones'] ?? [],
@@ -158,6 +160,7 @@ class BusinessProfile extends Page implements HasForms
         $stored = $location->listing_data ?? [];
 
         $this->form->fill([
+            'logo_path' => $location->logo_path,
             'description' => $live['description'] ?? $stored['description'] ?? null,
             'phone' => $live['phone'] ?? $location->phone,
             'additional_phones' => $live['additional_phones'] ?? $stored['additional_phones'] ?? [],
@@ -296,6 +299,14 @@ class BusinessProfile extends Page implements HasForms
             ->components([
                 Section::make(__('pages/business_profile.section_basics'))
                     ->schema([
+                        // Our own field (not pushed to Google): shown on the post
+                        // preview card, falling back to the workspace logo.
+                        FileUpload::make('logo_path')
+                            ->label(__('pages/business_profile.field_logo'))
+                            ->image()
+                            ->disk('uploads')
+                            ->directory('logos')
+                            ->helperText(__('pages/business_profile.field_logo_helper')),
                         Textarea::make('description')
                             ->label(__('pages/business_profile.field_description'))
                             ->rows(5)
@@ -425,11 +436,15 @@ class BusinessProfile extends Page implements HasForms
 
         $state = $this->form->getState();
 
-        // Timezone is our own field, not a Google/Zernio property — persist it
-        // regardless of the listing push (and keep it out of the push payload).
+        // Timezone and logo are our own fields, not Google/Zernio properties —
+        // persist them regardless of the listing push (and keep them out of the
+        // push payload).
         $tz = $state['timezone'] ?? null;
-        $location->forceFill(['timezone' => filled($tz) ? $tz : null])->save();
-        unset($state['timezone']);
+        $location->forceFill([
+            'timezone' => filled($tz) ? $tz : null,
+            'logo_path' => filled($state['logo_path'] ?? null) ? $state['logo_path'] : null,
+        ])->save();
+        unset($state['timezone'], $state['logo_path']);
 
         if (blank($location->zernio_account_id) || blank($location->external_id)) {
             Notification::make()->title(__('pages/business_profile.unmatched'))->danger()->send();

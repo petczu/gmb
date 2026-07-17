@@ -16,6 +16,8 @@ return [
     'status_unverified' => 'Nicht verifiziert',
 
     'section_basics' => 'Profil',
+    'field_logo' => 'Standort-Logo',
+    'field_logo_helper' => 'Wird in der Google-Post-Vorschau angezeigt. Ohne Angabe wird das Workspace-Logo verwendet.',
     'field_description' => 'Unternehmensbeschreibung',
     'field_description_helper' => 'Wird auf deinem Google-Profil angezeigt. Bis zu 750 Zeichen. Das Formular lädt die aktuellen Live-Werte von Google.',
     'field_phone' => 'Telefonnummer',
