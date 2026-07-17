@@ -6,6 +6,7 @@ namespace App\Filament\App\Widgets;
 
 use App\Models\CompetitorBattle;
 use App\Models\Location;
+use App\Models\LocationGroup;
 use App\Services\Competitors\CompetitorTrends;
 use App\Services\Competitors\PlacesClient;
 use App\Support\DashboardPeriod;
@@ -114,16 +115,36 @@ class CompetitorGrowthChart extends ChartWidget
         // instead of summing every own location into one "You" line.
         $series = $trends->growthSeries(array_keys($names), [], $period->start, $period->end, $mode);
 
-        // Own side: one line per location so a single-location dashboard filter
-        // isolates that location instead of summing every own location.
+        // Own side: locations that belong to a location group sum into one line
+        // named after the group; anything left ungrouped draws its own line
+        // (mirrors the competitor side, where a named battle sums its members).
         $locationNames = Location::query()->whereIn('id', $ownLocationIds)->orderBy('name')->pluck('name', 'id');
-        $singleOwn = $locationNames->count() === 1;
+
+        // Build the own lines: [label, member location ids].
+        $ownLines = [];
+        $grouped = [];
+        foreach (LocationGroup::query()->orderBy('name')->get() as $group) {
+            $memberIds = array_values(array_intersect($group->locationIds(), $ownLocationIds));
+            if ($memberIds === []) {
+                continue;
+            }
+            $ownLines[] = ['label' => (string) $group->name, 'ids' => $memberIds];
+            $grouped = array_merge($grouped, $memberIds);
+        }
+        foreach ($locationNames as $locationId => $locationName) {
+            if (in_array((int) $locationId, $grouped, true)) {
+                continue;
+            }
+            $ownLines[] = ['label' => (string) $locationName, 'ids' => [(int) $locationId]];
+        }
+
+        $singleOwn = count($ownLines) === 1;
         $datasets = [];
         $y = 0;
-        foreach ($locationNames as $locationId => $locationName) {
+        foreach ($ownLines as $line) {
             $datasets[] = $this->ownDataset(
-                (string) $locationName,
-                $trends->growthSeries([], [(int) $locationId], $period->start, $period->end, $mode)['own'],
+                $line['label'],
+                $trends->growthSeries([], $line['ids'], $period->start, $period->end, $mode)['own'],
                 $y++,
                 $singleOwn,
             );
