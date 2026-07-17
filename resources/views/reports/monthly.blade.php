@@ -349,6 +349,72 @@
                     @endforeach
                 </tbody>
             </table>
+
+            @php
+                // Velocity chart: new reviews in the period, you + competitors,
+                // ranked. CSS bars (widths in %) render reliably in the PDF.
+                $chartRows = collect([['name' => $own['name'].' · '.__('report.competitors_you'), 'new' => max(0, (int) $own['new_reviews']), 'you' => true]])
+                    ->concat(collect($data['competitors']['rows'])->map(fn ($r) => [
+                        'name' => $r['name'],
+                        'new' => max(0, (int) ($r['new_reviews'] ?? 0)),
+                        'you' => false,
+                    ]))
+                    ->sortByDesc('new')->values();
+                $chartMax = max(1, $chartRows->max('new'));
+            @endphp
+
+            @if($chartRows->sum('new') > 0)
+                <div style="margin:14px 8px 4px;">
+                    <div style="font-size:11px; font-weight:700; color:#374151; margin-bottom:8px;">{{ __('report.competitors_chart_title') }}</div>
+                    @foreach($chartRows as $cr)
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:11px;">
+                            <span style="flex:0 0 38%; color:{{ $cr['you'] ? '#111827' : '#6b7280' }}; font-weight:{{ $cr['you'] ? '700' : '400' }}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $cr['name'] }}</span>
+                            <span style="flex:1; background:#eef0f4; border-radius:4px; height:12px; position:relative;">
+                                <span style="position:absolute; left:0; top:0; height:12px; border-radius:4px; width:{{ max(2, round($cr['new'] / $chartMax * 100)) }}%; background:{{ $cr['you'] ? 'var(--brand)' : '#c7cbd4' }};"></span>
+                            </span>
+                            <span style="flex:0 0 34px; text-align:right; color:{{ $cr['you'] ? '#111827' : '#6b7280' }}; font-weight:{{ $cr['you'] ? '700' : '400' }};">+{{ number_format($cr['new']) }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            @php
+                // Deterministic take-aways from the same data (no AI cost).
+                $rowsC = collect($data['competitors']['rows']);
+                $insightsC = [];
+
+                if ($own['rating'] !== null) {
+                    $higherRated = $rowsC->filter(fn ($r) => $r['rating'] !== null && $r['rating'] > $own['rating'])->count();
+                    $insightsC[] = $higherRated === 0
+                        ? __('report.competitors_insight_rating_lead', ['rating' => number_format($own['rating'], 1)])
+                        : __('report.competitors_insight_rating_behind', ['count' => $higherRated, 'total' => $rowsC->count(), 'rating' => number_format($own['rating'], 1)]);
+                }
+
+                $moreReviews = $rowsC->filter(fn ($r) => (int) $r['reviews'] > (int) $own['reviews'])->count();
+                $insightsC[] = $moreReviews === 0
+                    ? __('report.competitors_insight_reviews_lead')
+                    : __('report.competitors_insight_reviews_behind', ['count' => $moreReviews]);
+
+                if ((int) $own['new_reviews'] > 0) {
+                    $topGrower = $rowsC->sortByDesc(fn ($r) => (int) ($r['new_reviews'] ?? 0))->first();
+                    $topNew = (int) ($topGrower['new_reviews'] ?? 0);
+                    $insightsC[] = $topNew < (int) $own['new_reviews']
+                        ? __('report.competitors_insight_growth_lead', ['count' => number_format((int) $own['new_reviews'])])
+                        : __('report.competitors_insight_growth_behind', ['name' => $topGrower['name'], 'top' => number_format($topNew), 'own' => number_format((int) $own['new_reviews'])]);
+                }
+            @endphp
+
+            @if($insightsC !== [])
+                <div style="margin:14px 8px 2px; padding:10px 12px; background:#f6f5ff; border-radius:8px;">
+                    <div style="font-size:11px; font-weight:700; color:#374151; margin-bottom:6px;">{{ __('report.competitors_insights_title') }}</div>
+                    <ul style="margin:0; padding-left:16px; font-size:11px; color:#4b5563;">
+                        @foreach($insightsC as $line)
+                            <li style="margin-bottom:3px;">{{ $line }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <p style="font-size:10px; color:#9ca3af; margin:8px 8px 2px;">{{ __('report.competitors_note') }}</p>
         </div>
     @endif
