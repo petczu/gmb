@@ -61,13 +61,13 @@ class CompetitorBenchmarkWidget extends Widget
             ->latest('created_at')
             ->get();
 
-        // Honour the dashboard's location filter: keep battles whose own side
-        // intersects the selection (catch-all view keeps everything).
+        // Honour the dashboard's location filter: with a location selected, show
+        // only competitors compared against it (same city). "All locations"
+        // (empty filter) shows every competitor.
         if ($period->locationIds !== []) {
-            $filtered = $battles->filter(
+            $battles = $battles->filter(
                 fn (CompetitorBattle $b): bool => array_intersect($b->ownLocationIds(), $period->locationIds) !== [],
             );
-            $battles = $filtered->isNotEmpty() ? $filtered : $battles;
         }
 
         $trends = app(CompetitorTrends::class);

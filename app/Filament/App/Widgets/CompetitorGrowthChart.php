@@ -276,12 +276,13 @@ class CompetitorGrowthChart extends ChartWidget
     {
         $battles = CompetitorBattle::query()->with('competitors')->latest('created_at')->get();
 
+        // With a location selected, keep only competitors compared against it
+        // (same city); "all locations" (empty filter) keeps every competitor.
         $period = DashboardPeriod::fromFilters($this->pageFilters);
         if ($period->locationIds !== []) {
-            $filtered = $battles->filter(
+            $battles = $battles->filter(
                 fn (CompetitorBattle $b): bool => array_intersect($b->ownLocationIds(), $period->locationIds) !== [],
             );
-            $battles = $filtered->isNotEmpty() ? $filtered : $battles;
         }
 
         return $battles->values();

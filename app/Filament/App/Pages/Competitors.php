@@ -198,6 +198,24 @@ class Competitors extends Page implements HasTable
                         ->visible(fn (Competitor $record): bool => $record->battle !== null && filled($record->battle->name))
                         ->action(fn (Competitor $record) => $this->ungroup($record)),
 
+                    // Re-scope which of your locations (cities) this competitor
+                    // is compared against — drives the dashboard/report filter.
+                    Action::make('editLocations')
+                        ->label(__('pages/competitors.edit_locations'))
+                        ->icon(Heroicon::OutlinedMapPin)
+                        ->visible(fn (Competitor $record): bool => $record->battle !== null)
+                        ->modalHeading(__('pages/competitors.edit_locations_heading'))
+                        ->fillForm(fn (Competitor $record): array => ['own_location_ids' => $record->battle?->ownLocationIds() ?? []])
+                        ->schema([$this->ownLocationsField()])
+                        ->action(function (Competitor $record, array $data): void {
+                            $battle = $record->battle;
+                            if ($battle === null) {
+                                return;
+                            }
+                            $battle->update(['own_location_ids' => $this->pickedOwnLocationIds($data)]);
+                            Notification::make()->title(__('pages/competitors.locations_updated'))->success()->send();
+                        }),
+
                     Action::make('remove')
                         ->label(__('pages/competitors.remove'))
                         ->icon(Heroicon::OutlinedTrash)
@@ -250,6 +268,7 @@ class Competitors extends Page implements HasTable
                 ->minItems(2)
                 ->options(fn (): array => Competitor::query()->orderBy('name')->pluck('name', 'id')->all())
                 ->helperText(__('pages/competitors.field_group_competitors_helper')),
+            $this->ownLocationsField(),
         ];
     }
 
@@ -271,7 +290,7 @@ class Competitors extends Page implements HasTable
         }
 
         $formerBattleIds = $competitors->pluck('battle_id')->filter()->unique()->all();
-        $ownIds = Location::query()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $ownIds = $this->pickedOwnLocationIds($data);
 
         $battle = new CompetitorBattle;
         $battle->name = trim((string) ($data['name'] ?? ''));
@@ -292,9 +311,47 @@ class Competitors extends Page implements HasTable
     }
 
     /** Add form: one competitor place at a time (search Google Places). */
+    /** @return array<int, string> */
+    protected function ownLocationOptions(): array
+    {
+        return Location::query()->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    /** @return list<int> */
+    protected function allOwnLocationIds(): array
+    {
+        return Location::query()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+    }
+
+    /**
+     * The own-location ids the user picked, falling back to all of them.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<int>
+     */
+    protected function pickedOwnLocationIds(array $data): array
+    {
+        $ids = array_values(array_filter(array_map('intval', (array) ($data['own_location_ids'] ?? []))));
+
+        return $ids !== [] ? $ids : $this->allOwnLocationIds();
+    }
+
+    /** Which of your locations (cities) this competitor is compared against. */
+    protected function ownLocationsField(): Select
+    {
+        return Select::make('own_location_ids')
+            ->label(__('pages/competitors.field_own_locations'))
+            ->multiple()
+            ->required()
+            ->options(fn (): array => $this->ownLocationOptions())
+            ->default(fn (): array => $this->allOwnLocationIds())
+            ->helperText(__('pages/competitors.field_own_locations_helper'));
+    }
+
     protected function battleFormSchema(): array
     {
         return [
+            $this->ownLocationsField(),
             Select::make('place_id')
                 ->label(__('pages/competitors.field_place'))
                 ->required()
@@ -304,12 +361,16 @@ class Competitors extends Page implements HasTable
                         return [];
                     }
 
-                    // Hide places we already track so they can't be added twice.
-                    $tracked = Competitor::query()->pluck('place_id')->all();
+                    // Hide places we already track AND our own locations — you
+                    // can't compete with yourself.
+                    $exclude = array_merge(
+                        Competitor::query()->pluck('place_id')->all(),
+                        Location::query()->whereNotNull('place_id')->pluck('place_id')->all(),
+                    );
 
                     try {
                         return collect(app(PlacesClient::class)->search($search))
-                            ->reject(fn (array $place): bool => in_array($place['place_id'], $tracked, true))
+                            ->reject(fn (array $place): bool => in_array($place['place_id'], $exclude, true))
                             ->mapWithKeys(fn (array $place): array => [
                                 $place['place_id'] => $place['name'].($place['address'] ? ' — '.$place['address'] : ''),
                             ])
@@ -374,7 +435,7 @@ class Competitors extends Page implements HasTable
             return;
         }
 
-        $ownIds = Location::query()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $ownIds = $this->pickedOwnLocationIds($data);
 
         // Only create the battle once we have a valid, non-duplicate place, so a
         // failure never leaves an empty "Untitled competition" behind.
