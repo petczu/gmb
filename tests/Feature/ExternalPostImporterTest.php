@@ -95,7 +95,7 @@ class ExternalPostImporterTest extends TestCase
 
         $result = app(ExternalPostImporter::class)->import();
 
-        $this->assertSame(['locations' => 1, 'imported' => 1], $result);
+        $this->assertSame(['locations' => 1, 'imported' => 1, 'seen' => 1], $result);
 
         $post = Post::sole();
         $this->assertSame('imported', $post->origin);
@@ -178,7 +178,7 @@ class ExternalPostImporterTest extends TestCase
 
         $result = app(ExternalPostImporter::class)->import();
 
-        $this->assertSame(['locations' => 0, 'imported' => 0], $result);
+        $this->assertSame(['locations' => 0, 'imported' => 0, 'seen' => 0], $result);
         $this->assertSame(0, Post::count());
     }
 

@@ -40,7 +40,7 @@ class SnapshotExternalPostsCommand extends Command
 
             try {
                 $result = app(ExternalPostImporter::class)->snapshot();
-                $this->line("{$workspace->slug}: {$result['imported']} imported across {$result['locations']} location(s)");
+                $this->line("{$workspace->slug}: {$result['imported']} new / {$result['seen']} seen across {$result['locations']} location(s)");
             } finally {
                 $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();
             }

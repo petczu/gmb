@@ -43,12 +43,12 @@ class ExternalPostImporter
      * stored posts are the durable copy. (Confirmed pattern with Zernio eng;
      * their proper all-location fix will make this loop unnecessary.)
      *
-     * @return array{locations: int, imported: int}
+     * @return array{locations: int, imported: int, seen: int}
      */
     public function snapshot(): array
     {
         if (! $this->zernio->configured()) {
-            return ['locations' => 0, 'imported' => 0];
+            return ['locations' => 0, 'imported' => 0, 'seen' => 0];
         }
 
         $connected = Location::query()
@@ -59,6 +59,7 @@ class ExternalPostImporter
         $cidMap = $connected->whereNotNull('cid')->keyBy(fn (Location $l): string => (string) $l->cid);
 
         $imported = 0;
+        $seen = 0;
         $visited = 0;
 
         foreach ($connected->groupBy(fn (Location $l): string => trim((string) $l->zernio_account_id)) as $accountId => $group) {
@@ -90,12 +91,22 @@ class ExternalPostImporter
 
                 // After selecting this location, the account feed carries its
                 // posts; attribute by CID (fallback to this location) and upsert.
-                $imported += $this->importAccount($location, $accountId, $cidMap);
+                $result = $this->importAccount($location, $accountId, $cidMap);
+                $imported += $result['stored'];
+                $seen += $result['seen'];
                 $visited++;
+
+                Log::info('External post snapshot: location done', [
+                    'account' => $accountId,
+                    'location' => $location->name,
+                    'external_id' => $location->external_id,
+                    'seen' => $result['seen'],
+                    'stored' => $result['stored'],
+                ]);
             }
         }
 
-        return ['locations' => $visited, 'imported' => $imported];
+        return ['locations' => $visited, 'imported' => $imported, 'seen' => $seen];
     }
 
     /** Overridable in tests so the 15s debounce doesn't slow the suite. */
@@ -107,12 +118,12 @@ class ExternalPostImporter
     /**
      * Sync every connected location's external posts.
      *
-     * @return array{locations: int, imported: int}
+     * @return array{locations: int, imported: int, seen: int}
      */
     public function import(): array
     {
         if (! $this->zernio->configured()) {
-            return ['locations' => 0, 'imported' => 0];
+            return ['locations' => 0, 'imported' => 0, 'seen' => 0];
         }
 
         $connected = Location::query()->whereNotNull('zernio_account_id')->get();
@@ -123,6 +134,7 @@ class ExternalPostImporter
         $cidMap = $connected->whereNotNull('cid')->keyBy(fn (Location $l): string => (string) $l->cid);
 
         $imported = 0;
+        $seen = 0;
         foreach ($connected->groupBy(fn (Location $l): string => trim((string) $l->zernio_account_id)) as $accountId => $group) {
             if ($accountId === '') {
                 continue;
@@ -137,18 +149,22 @@ class ExternalPostImporter
                 Log::info('External post on-demand sync skipped', ['account' => $accountId, 'error' => $e->getMessage()]);
             }
 
-            $imported += $this->importAccount($group->first(), $accountId, $cidMap);
+            $result = $this->importAccount($group->first(), $accountId, $cidMap);
+            $imported += $result['stored'];
+            $seen += $result['seen'];
         }
 
-        return ['locations' => $connected->count(), 'imported' => $imported];
+        return ['locations' => $connected->count(), 'imported' => $imported, 'seen' => $seen];
     }
 
     /**
      * @param  Collection<string, Location>  $cidMap
+     * @return array{stored: int, seen: int} stored = newly created; seen = total posts returned
      */
-    private function importAccount(Location $fallback, string $accountId, Collection $cidMap): int
+    private function importAccount(Location $fallback, string $accountId, Collection $cidMap): array
     {
         $stored = 0;
+        $seen = 0;
         $page = 1;
         $pages = 1;
 
@@ -161,6 +177,7 @@ class ExternalPostImporter
             }
 
             foreach ($result['posts'] as $post) {
+                $seen++;
                 $post = (array) $post;
                 // External posts come back in Zernio's post shape: the platform
                 // id/url/date live under platforms[]; media under mediaItems[].
@@ -181,7 +198,7 @@ class ExternalPostImporter
             $page++;
         } while ($page <= $pages && $page <= self::MAX_PAGES);
 
-        return $stored;
+        return ['stored' => $stored, 'seen' => $seen];
     }
 
     /**

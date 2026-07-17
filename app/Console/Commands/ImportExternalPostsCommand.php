@@ -48,7 +48,7 @@ class ImportExternalPostsCommand extends Command
 
             try {
                 $result = app(ExternalPostImporter::class)->import();
-                $this->line("{$workspace->slug}: {$result['imported']} imported from {$result['locations']} location(s)");
+                $this->line("{$workspace->slug}: {$result['imported']} new / {$result['seen']} seen from {$result['locations']} location(s)");
             } finally {
                 $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();
             }
