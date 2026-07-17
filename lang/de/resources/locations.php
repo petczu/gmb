@@ -76,6 +76,8 @@ return [
     'move_done' => 'Standort nach :workspace verschoben',
     'move_done_body' => 'Wechsle in diesen Workspace und verbinde ihn erneut mit Google, um die Synchronisierung fortzusetzen.',
     'move_failed' => 'Standort konnte nicht verschoben werden',
+    'move_running' => 'Standort wird verschoben…',
+    'move_running_hint' => 'Bewertungen und Beiträge werden zwischen Workspaces kopiert. Das kann einen Moment dauern.',
     'sync_err_timeout' => 'Zeitüberschreitung bei Google/Zernio beim Abruf der Bewertungen. Erneuter Versuch beim nächsten Sync.',
     'sync_err_rate' => 'Vom Anbieter gedrosselt. Erneuter Versuch beim nächsten Sync.',
     'sync_err_auth' => 'Die Google-Verbindung muss neu autorisiert werden. Standort erneut verbinden.',

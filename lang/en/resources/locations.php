@@ -76,6 +76,8 @@ return [
     'move_done' => 'Location moved to :workspace',
     'move_done_body' => 'Switch to that workspace and reconnect it to Google to resume syncing.',
     'move_failed' => 'Could not move the location',
+    'move_running' => 'Moving location…',
+    'move_running_hint' => 'Copying reviews and posts across workspaces. This can take a moment.',
     'sync_err_timeout' => 'Google/Zernio timed out fetching reviews. It will retry on the next sync.',
     'sync_err_rate' => 'Rate limited by the provider. It will retry on the next sync.',
     'sync_err_auth' => 'The Google connection needs re-authorizing. Reconnect this location.',

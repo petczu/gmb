@@ -490,11 +490,23 @@ class BusinessProfile extends Page implements HasForms
             $items .= '<li style="display:flex; justify-content:space-between; gap:1rem;"><span>'.e($label).'</span><b>'.(int) ($preview[$key] ?? 0).'</b></li>';
         }
 
+        // Overlay shown while the move runs (it's a heavy cross-database copy):
+        // a spinner over the modal so it doesn't look frozen. wire:target scopes
+        // it to the action call, so picking the target workspace doesn't flash it.
+        $loader = '<div wire:loading wire:target="callMountedAction, callSchemaComponentMethod" '
+            .'style="position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.9rem; background:rgba(255,255,255,.92); border-radius:.5rem;">'
+            .'<svg width="42" height="42" viewBox="0 0 50 50" style="animation:mv-spin 1s linear infinite;"><circle cx="25" cy="25" r="20" fill="none" stroke="#2d19ec" stroke-width="5" stroke-linecap="round" stroke-dasharray="80 40"/></svg>'
+            .'<span style="font-size:.9rem; font-weight:600; color:#374151;">'.e(__('resources/locations.move_running')).'</span>'
+            .'<span style="font-size:.78rem; color:#6b7280;">'.e(__('resources/locations.move_running_hint')).'</span>'
+            .'<style>@keyframes mv-spin{to{transform:rotate(360deg)}}</style>'
+            .'</div>';
+
         return new HtmlString(
-            '<div style="font-size:.85rem; color:#374151;">'
+            '<div style="position:relative; font-size:.85rem; color:#374151;">'
             .'<p style="margin:0 0 .5rem;">'.e(__('resources/locations.move_intro')).'</p>'
             .'<ul style="list-style:none; margin:0 0 .6rem; padding:0; display:flex; flex-direction:column; gap:.25rem;">'.$items.'</ul>'
             .'<p style="margin:0; color:#b45309;">'.e(__('resources/locations.move_reconnect')).'</p>'
+            .$loader
             .'</div>'
         );
     }
@@ -513,6 +525,10 @@ class BusinessProfile extends Page implements HasForms
 
             return;
         }
+
+        // A location with a lot of reviews/posts is a heavy cross-database copy;
+        // don't let the request time out mid-move.
+        set_time_limit(300);
 
         try {
             app(LocationTransferService::class)->transfer((int) $location->id, $source, $target);
