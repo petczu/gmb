@@ -132,7 +132,7 @@ class ReviewsTable
                     ->placeholder('—')
                     ->toggleable()
                     ->visibleFrom('md')
-                    ->icon(fn (Review $record): ?string => $record->reply_text === null ? null : match ($record->reply_source) {
+                    ->icon(fn (Review $record): ?Heroicon => $record->reply_text === null ? null : match ($record->reply_source) {
                         'ai_auto', 'ai_draft' => Heroicon::OutlinedSparkles,
                         'mcp' => Heroicon::OutlinedChatBubbleLeftRight,
                         'api' => Heroicon::OutlinedCodeBracket,

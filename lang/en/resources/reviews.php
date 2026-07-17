@@ -12,7 +12,7 @@ return [
     'col_replied_by' => 'Replied by',
     'col_date' => 'Date',
     'replied_ai' => 'AI',
-    'replied_human' => 'Human',
+    'replied_human' => 'Team',
     'replied_assistant' => 'Assistant',
     'replied_api' => 'API',
     'replied_google' => 'Google',

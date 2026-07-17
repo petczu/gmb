@@ -12,7 +12,7 @@ return [
     'col_replied_by' => 'Beantwortet von',
     'col_date' => 'Datum',
     'replied_ai' => 'KI',
-    'replied_human' => 'Mensch',
+    'replied_human' => 'Team',
     'replied_assistant' => 'Assistent',
     'replied_api' => 'API',
     'replied_google' => 'Google',
