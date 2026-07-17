@@ -19,6 +19,7 @@ return [
     'no_reply' => '— no reply —',
     'status_replied' => 'Replied',
     'status_pending' => 'Pending',
+    'status_failed' => 'Failed',
 
     // Filters
     'review_date' => 'Review date',

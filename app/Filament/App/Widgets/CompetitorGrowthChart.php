@@ -37,11 +37,12 @@ class CompetitorGrowthChart extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    /** Distinct competitor line colours (own lines use the brand-blue family). */
-    private const PALETTE = ['#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#0ea5e9', '#ec4899', '#84cc16', '#64748b'];
+    /** Competitor line colours: warm/neutral only, so they never blend into the
+     *  cool "you" lines (which are also dashed). */
+    private const PALETTE = ['#f59e0b', '#10b981', '#ef4444', '#ec4899', '#84cc16', '#64748b', '#b45309', '#be185d', '#059669', '#a16207'];
 
-    /** Own-side line colours, one per location (brand-blue/indigo family). */
-    private const YOU_PALETTE = ['#2d19ec', '#7c6cf5', '#4f46e5', '#0891b2', '#0d9488'];
+    /** Own-side line colours: distinct cool hues, drawn dashed to stand apart. */
+    private const YOU_PALETTE = ['#2d19ec', '#06b6d4', '#7c3aed', '#0d9488', '#4338ca'];
 
     /** Growth (rebased to 0) vs Total (absolute counts). Default: growth. */
     public ?string $filter = 'growth';
@@ -197,6 +198,9 @@ class CompetitorGrowthChart extends ChartWidget
             'borderColor' => self::YOU_PALETTE[$index % count(self::YOU_PALETTE)],
             'backgroundColor' => $fill ? 'rgba(45, 25, 236, 0.08)' : 'transparent',
             'borderWidth' => 3,
+            // Dashed so every "you" line reads as ours at a glance, distinct
+            // from the solid competitor lines regardless of colour overlap.
+            'borderDash' => [6, 4],
             'pointRadius' => 0,
             'tension' => 0.3,
             'fill' => $fill,

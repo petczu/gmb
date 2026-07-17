@@ -10,6 +10,7 @@ use App\Webhooks\WebhookEvents;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * TENANT model — lives in the per-workspace DB (default connection, swapped by
@@ -107,6 +108,12 @@ class Review extends Model
     public function queueItems(): HasMany
     {
         return $this->hasMany(AutoReplyQueueItem::class);
+    }
+
+    /** The most recent auto-reply attempt (carries the failure reason, if any). */
+    public function latestQueueItem(): HasOne
+    {
+        return $this->hasOne(AutoReplyQueueItem::class)->latestOfMany();
     }
 
     public function hasReply(): bool

@@ -53,7 +53,7 @@ class ReviewResource extends Resource
     /** Restrict to the user's allowed locations (null = all). */
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->with('aiAgent');
+        $query = parent::getEloquentQuery()->with(['aiAgent', 'latestQueueItem']);
         $ids = auth()->user()?->allowedLocationIds((string) session('current_workspace_id'));
 
         return $ids === null ? $query : $query->whereIn('location_id', $ids);

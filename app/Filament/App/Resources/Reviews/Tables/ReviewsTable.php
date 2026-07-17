@@ -105,8 +105,22 @@ class ReviewsTable
                 TextColumn::make('reply_status')
                     ->label(__('resources/reviews.col_status'))
                     ->badge()
-                    ->state(fn (Review $record): string => $record->reply_text ? __('resources/reviews.status_replied') : __('resources/reviews.status_pending'))
-                    ->color(fn (Review $record): string => $record->reply_text ? 'success' : 'gray')
+                    // Replied → green. No reply but the last auto-reply attempt
+                    // failed → red "Failed" with the reason on hover. Otherwise
+                    // pending.
+                    ->state(fn (Review $record): string => match (true) {
+                        (bool) $record->reply_text => __('resources/reviews.status_replied'),
+                        $record->latestQueueItem?->status === 'failed' => __('resources/reviews.status_failed'),
+                        default => __('resources/reviews.status_pending'),
+                    })
+                    ->color(fn (Review $record): string => match (true) {
+                        (bool) $record->reply_text => 'success',
+                        $record->latestQueueItem?->status === 'failed' => 'danger',
+                        default => 'gray',
+                    })
+                    ->tooltip(fn (Review $record): ?string => ! $record->reply_text && $record->latestQueueItem?->status === 'failed'
+                        ? $record->latestQueueItem->error
+                        : null)
                     ->visibleFrom('sm'),
 
                 // Who wrote the reply: an AI agent (with its name), a person,

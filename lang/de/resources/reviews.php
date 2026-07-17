@@ -19,6 +19,7 @@ return [
     'no_reply' => '— keine Antwort —',
     'status_replied' => 'Beantwortet',
     'status_pending' => 'Ausstehend',
+    'status_failed' => 'Fehlgeschlagen',
 
     // Filters
     'review_date' => 'Bewertungsdatum',
