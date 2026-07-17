@@ -35,7 +35,9 @@ class AutoReplyQueueItemsTable
     {
         return $table
             ->defaultSort('created_at', 'desc')
-            ->searchable(AutoReplyQueueItem::query()->where('status', 'pending')->exists())
+            // Search box always visible next to the filter (searches author,
+            // review text and the drafted reply).
+            ->searchable()
             ->emptyStateIcon(Heroicon::OutlinedInboxStack)
             ->emptyStateHeading(__('resources/auto_reply.empty_heading'))
             ->emptyStateDescription(__('resources/auto_reply.empty_desc'))
@@ -48,10 +50,11 @@ class AutoReplyQueueItemsTable
                 TextColumn::make('review.location.name')
                     ->label(__('resources/auto_reply.col_location'))
                     ->wrap()
+                    ->searchable()
                     ->toggleable()
                     ->visibleFrom('lg'),
 
-                TextColumn::make('review.author_name')->label(__('resources/auto_reply.col_author')),
+                TextColumn::make('review.author_name')->label(__('resources/auto_reply.col_author'))->searchable(),
 
                 TextColumn::make('review.rating')
                     ->label(__('resources/auto_reply.col_rating'))
@@ -67,6 +70,7 @@ class AutoReplyQueueItemsTable
                     ->label(__('resources/auto_reply.col_review'))
                     ->limit(50)
                     ->wrap()
+                    ->searchable()
                     ->tooltip(fn (AutoReplyQueueItem $record): ?string => $record->review?->text)
                     ->visibleFrom('lg'),
 
@@ -74,6 +78,7 @@ class AutoReplyQueueItemsTable
                     ->label(__('resources/auto_reply.col_ai_reply'))
                     ->limit(70)
                     ->wrap()
+                    ->searchable()
                     ->tooltip(fn (AutoReplyQueueItem $record): string => $record->generated_text)
                     ->visibleFrom('md'),
 
