@@ -192,6 +192,20 @@ class ZernioRestClient
             ->json();
     }
 
+    /**
+     * Switch which GBP location is the account's SELECTED one. Zernio's
+     * external-post sync reads the selected location, so this is used to walk an
+     * account location-by-location and snapshot each one's posts.
+     *
+     * @throws RequestException
+     */
+    public function selectLocation(string $accountId, string $locationId): void
+    {
+        $this->request()
+            ->put(sprintf('/accounts/%s/gmb-locations', $accountId), ['selectedLocationId' => $locationId])
+            ->throw();
+    }
+
     protected function baseUrl(): string
     {
         return rtrim((string) config('services.reviews.zernio_base_url', 'https://zernio.com/api/v1'), '/');

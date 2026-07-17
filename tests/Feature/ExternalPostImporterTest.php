@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\Location;
 use App\Models\Post;
 use App\Services\Posts\ExternalPostImporter;
+use App\Services\Zernio\ZernioRestClient;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -31,6 +32,7 @@ class ExternalPostImporterTest extends TestCase
             $table->increments('id');
             $table->string('name');
             $table->string('zernio_account_id')->nullable();
+            $table->string('external_id')->nullable();
             $table->string('cid')->nullable();
             $table->timestamps();
         });
@@ -178,5 +180,45 @@ class ExternalPostImporterTest extends TestCase
 
         $this->assertSame(['locations' => 0, 'imported' => 0], $result);
         $this->assertSame(0, Post::count());
+    }
+
+    public function test_snapshot_selects_and_syncs_each_location_on_the_account(): void
+    {
+        // Two locations under ONE account: the snapshot must switch the selected
+        // location for each before syncing, so both get covered.
+        Location::create(['name' => 'City Walk', 'zernio_account_id' => 'acc-1', 'external_id' => 'loc-a', 'cid' => '111']);
+        Location::create(['name' => 'Riyadh', 'zernio_account_id' => 'acc-1', 'external_id' => 'loc-b', 'cid' => '222']);
+
+        Http::fake([
+            '*/accounts/*/gmb-locations' => Http::response([]),
+            '*/posts/sync-external' => Http::response(['synced' => []]),
+            '*/posts*' => Http::response([
+                'posts' => [[
+                    '_id' => 'z-1', 'content' => 'A post',
+                    'mediaItems' => [], 'scheduledFor' => '2026-06-01T09:00:00Z', 'status' => 'published',
+                    'platforms' => [['platformPostId' => 'g-1', 'platformPostUrl' => 'https://local.google.com/place?id=111&use=posts']],
+                ]],
+                'pagination' => ['page' => 1, 'pages' => 1],
+            ]),
+        ]);
+
+        // Subclass to skip the real 15s debounce sleep.
+        $importer = new class(app(ZernioRestClient::class)) extends ExternalPostImporter
+        {
+            protected function pause(int $seconds): void {}
+        };
+
+        $result = $importer->snapshot();
+
+        $this->assertSame(2, $result['locations']);
+
+        // The selected location was switched to each location's external id.
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/accounts/acc-1/gmb-locations')
+            && ($request['selectedLocationId'] ?? null) === 'loc-a');
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/accounts/acc-1/gmb-locations')
+            && ($request['selectedLocationId'] ?? null) === 'loc-b');
+
+        // The post is stored once (deduped on platform id across both passes).
+        $this->assertSame(1, Post::count());
     }
 }

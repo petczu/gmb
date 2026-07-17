@@ -26,7 +26,83 @@ class ExternalPostImporter
     /** Safety cap on pages walked per account (~12 months of history). */
     private const MAX_PAGES = 50;
 
+    /** Zernio debounces external syncs on the same account within this window,
+     *  so we wait it out between locations of one account. */
+    private const SYNC_DEBOUNCE_SECONDS = 16;
+
     public function __construct(private ZernioRestClient $zernio) {}
+
+    /**
+     * Snapshot each connected location's external posts, one location at a time.
+     *
+     * Zernio's external sync reads the account's SELECTED location and its
+     * deletion detection is account-scoped, so a single account-level sync only
+     * ever exposes one location's posts. We instead walk every location: select
+     * it, sync, read its posts and upsert them on our side. We never delete, so
+     * the deleted/reappeared webhook noise this generates is harmless — our
+     * stored posts are the durable copy. (Confirmed pattern with Zernio eng;
+     * their proper all-location fix will make this loop unnecessary.)
+     *
+     * @return array{locations: int, imported: int}
+     */
+    public function snapshot(): array
+    {
+        if (! $this->zernio->configured()) {
+            return ['locations' => 0, 'imported' => 0];
+        }
+
+        $connected = Location::query()
+            ->whereNotNull('zernio_account_id')
+            ->whereNotNull('external_id')
+            ->get();
+
+        $cidMap = $connected->whereNotNull('cid')->keyBy(fn (Location $l): string => (string) $l->cid);
+
+        $imported = 0;
+        $visited = 0;
+
+        foreach ($connected->groupBy(fn (Location $l): string => trim((string) $l->zernio_account_id)) as $accountId => $group) {
+            if ($accountId === '') {
+                continue;
+            }
+
+            $first = true;
+            foreach ($group as $location) {
+                // Respect the per-account 15s debounce between syncs, or the
+                // second sync is skipped and we'd re-read the previous location.
+                if (! $first) {
+                    $this->pause(self::SYNC_DEBOUNCE_SECONDS);
+                }
+                $first = false;
+
+                try {
+                    $this->zernio->selectLocation($accountId, (string) $location->external_id);
+                    $this->zernio->syncExternalPosts($accountId);
+                } catch (Throwable $e) {
+                    Log::warning('External post snapshot: select/sync failed', [
+                        'account' => $accountId,
+                        'location' => $location->external_id,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    continue;
+                }
+
+                // After selecting this location, the account feed carries its
+                // posts; attribute by CID (fallback to this location) and upsert.
+                $imported += $this->importAccount($location, $accountId, $cidMap);
+                $visited++;
+            }
+        }
+
+        return ['locations' => $visited, 'imported' => $imported];
+    }
+
+    /** Overridable in tests so the 15s debounce doesn't slow the suite. */
+    protected function pause(int $seconds): void
+    {
+        sleep($seconds);
+    }
 
     /**
      * Sync every connected location's external posts.

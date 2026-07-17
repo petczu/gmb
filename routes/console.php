@@ -70,3 +70,9 @@ Schedule::command('competitors:backfill-reviews --delta')->weeklyOn(1, '07:00');
 // Global AI budget guard: emails super-admins at 80%/100% of
 // AI_MONTHLY_BUDGET_USD (no-op while unset).
 Schedule::command('ai:budget-check')->dailyAt('09:30');
+
+// Per-location snapshot of external Google posts. Zernio's external sync only
+// exposes the account's selected location, so this walks each location (select
+// + sync + upsert). Sleeps ~15s between locations of one account; runs without
+// overlap. Twice daily is enough — new posts also arrive live via webhooks.
+Schedule::command('posts:snapshot-external')->twiceDaily(4, 16)->withoutOverlapping();
