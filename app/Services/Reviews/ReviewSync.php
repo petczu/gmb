@@ -13,6 +13,7 @@ use App\Services\Notifications\ChatChannels;
 use App\Services\Notifications\NotificationCategory;
 use App\Services\Notifications\NotificationDispatcher;
 use App\Services\Webhooks\WebhookDispatcher;
+use App\Support\SyncFailure;
 use App\Webhooks\WebhookEvents;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -78,6 +79,13 @@ class ReviewSync
                         'location' => $location->external_id,
                         'error' => $e->getMessage(),
                     ]);
+                    // Surface real failures (timeouts, 5xx, auth) in Sentry; the
+                    // exception is caught here so the handler would never see it
+                    // otherwise. Skip the expected "still backfilling" case so a
+                    // freshly connected location doesn't page us.
+                    if (! SyncFailure::isTransient($e)) {
+                        report($e);
+                    }
                     $location->forceFill(['last_sync_error' => Str::limit($e->getMessage(), 500)])->save();
                     $stats['errors']++;
 

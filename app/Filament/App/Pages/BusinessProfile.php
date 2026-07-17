@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Filament\App\Resources\Locations\LocationResource;
 use App\Models\Location;
+use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Listings\ListingUpdater;
+use App\Services\Locations\LocationTransferService;
 use App\Services\Zernio\ZernioRestClient;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -28,6 +32,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\HtmlString;
 use Throwable;
 
 /**
@@ -423,7 +429,109 @@ class BusinessProfile extends Page implements HasForms
                 ->visible(fn (): bool => $this->isConfigured() && $this->locationId !== null)
                 ->disabled(fn (): bool => $this->liveLoading)
                 ->action(fn () => $this->save()),
+
+            // Move this location, with everything tied exclusively to it, into
+            // another workspace. It lands disconnected and must be reconnected
+            // to Google there.
+            Action::make('moveWorkspace')
+                ->label(__('resources/locations.move'))
+                ->icon(Heroicon::OutlinedArrowRightCircle)
+                ->color('gray')
+                ->visible(fn (): bool => $this->locationId !== null
+                    && (auth()->user()?->can('edit_business_info') ?? false)
+                    && $this->otherWorkspaces()->isNotEmpty())
+                ->modalHeading(__('resources/locations.move_heading'))
+                ->modalSubmitActionLabel(__('resources/locations.move_submit'))
+                ->schema([
+                    Placeholder::make('move_preview')
+                        ->hiddenLabel()
+                        ->content(fn (): HtmlString => $this->movePreviewHtml()),
+                    Select::make('target')
+                        ->label(__('resources/locations.move_target'))
+                        ->options(fn (): array => $this->otherWorkspaces()->pluck('name', 'id')->all())
+                        ->required()
+                        ->native(false),
+                ])
+                ->action(fn (array $data) => $this->moveLocation($data)),
         ];
+    }
+
+    /** The current user's other workspaces (valid move targets). */
+    private function otherWorkspaces(): Collection
+    {
+        $currentId = session('current_workspace_id');
+
+        return rescue(fn (): Collection => (auth()->user()?->workspaces ?? collect())
+            ->reject(fn (Workspace $w): bool => $w->id === $currentId)
+            ->values(), collect(), report: false);
+    }
+
+    /** A "what will move" summary for the confirmation modal. */
+    private function movePreviewHtml(): HtmlString
+    {
+        $location = $this->location();
+        if ($location === null) {
+            return new HtmlString('');
+        }
+
+        $preview = app(LocationTransferService::class)->preview((int) $location->id, Workspace::find(session('current_workspace_id')));
+
+        $rows = [
+            'reviews' => __('resources/locations.move_reviews'),
+            'posts' => __('resources/locations.move_posts'),
+            'automations' => __('resources/locations.move_automations'),
+            'report_schedules' => __('resources/locations.move_reports'),
+            'auto_reply_rules' => __('resources/locations.move_rules'),
+            'agents' => __('resources/locations.move_agents'),
+        ];
+
+        $items = '';
+        foreach ($rows as $key => $label) {
+            $items .= '<li style="display:flex; justify-content:space-between; gap:1rem;"><span>'.e($label).'</span><b>'.(int) ($preview[$key] ?? 0).'</b></li>';
+        }
+
+        return new HtmlString(
+            '<div style="font-size:.85rem; color:#374151;">'
+            .'<p style="margin:0 0 .5rem;">'.e(__('resources/locations.move_intro')).'</p>'
+            .'<ul style="list-style:none; margin:0 0 .6rem; padding:0; display:flex; flex-direction:column; gap:.25rem;">'.$items.'</ul>'
+            .'<p style="margin:0; color:#b45309;">'.e(__('resources/locations.move_reconnect')).'</p>'
+            .'</div>'
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function moveLocation(array $data): void
+    {
+        $location = $this->location();
+        $source = Workspace::find(session('current_workspace_id'));
+        $target = $this->otherWorkspaces()->firstWhere('id', $data['target'] ?? null);
+
+        if ($location === null || $source === null || $target === null) {
+            Notification::make()->title(__('resources/locations.move_failed'))->danger()->send();
+
+            return;
+        }
+
+        try {
+            app(LocationTransferService::class)->transfer((int) $location->id, $source, $target);
+        } catch (Throwable $e) {
+            Notification::make()->title(__('resources/locations.move_failed'))->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        ActivityLogger::log('location.moved', ['location' => $location->name, 'to' => $target->name]);
+        Notification::make()
+            ->title(__('resources/locations.move_done', ['workspace' => $target->name]))
+            ->body(__('resources/locations.move_done_body'))
+            ->success()
+            ->persistent()
+            ->send();
+
+        // The location no longer lives here — leave the editor.
+        $this->redirect(LocationResource::getUrl());
     }
 
     public function save(): void

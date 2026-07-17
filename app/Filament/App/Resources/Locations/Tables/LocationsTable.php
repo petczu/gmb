@@ -8,6 +8,7 @@ use App\Models\LocationGroup;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Billing\LocationBilling;
+use App\Support\SyncFailure;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
@@ -98,8 +99,9 @@ class LocationsTable
                     })
                     // Failure → the provider's error message; first import still
                     // running → a "give it a few minutes" hint.
-                    ->tooltip(fn (Location $record): ?string => $record->last_sync_error
-                        ?? ($record->last_synced_at === null ? __('resources/locations.syncing_hint') : null))
+                    ->tooltip(fn (Location $record): ?string => filled($record->last_sync_error)
+                        ? SyncFailure::humanize($record->last_sync_error)
+                        : ($record->last_synced_at === null ? __('resources/locations.syncing_hint') : null))
                     ->placeholder(__('resources/locations.syncing'))
                     ->sortable()
                     ->visibleFrom('md'),
