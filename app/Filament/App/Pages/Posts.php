@@ -611,6 +611,8 @@ class Posts extends Page implements HasTable
     {
         return Action::make('viewPost')
             ->modalHeading(fn (): string => __('pages/posts.type_'.(Post::find($this->viewingPostId)?->type ?? 'update')))
+            // Hug the preview card (max-width 26rem) instead of a wide default.
+            ->modalWidth(Width::Medium)
             ->modalSubmitAction(false)
             ->modalCancelActionLabel(__('pages/posts.close'))
             ->schema(fn (): array => [
@@ -848,6 +850,7 @@ class Posts extends Page implements HasTable
                     ->icon(Heroicon::OutlinedEye)
                     ->color('gray')
                     ->modalHeading(fn (Post $record): string => __('pages/posts.type_'.$record->type))
+                    ->modalWidth(Width::Medium)
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel(__('pages/posts.close'))
                     ->schema(fn (Post $record): array => [
