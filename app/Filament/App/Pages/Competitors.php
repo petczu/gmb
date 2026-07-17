@@ -76,17 +76,6 @@ class Competitors extends Page implements HasTable
         return app(PlacesClient::class)->configured();
     }
 
-    /** Weighted own rating across the battle's own locations. */
-    protected function ownRating(CompetitorBattle $battle): ?float
-    {
-        return CompetitorTrends::weightedRating(
-            $battle->ownLocations()->map(fn (Location $l): array => [
-                'rating' => $l->rating !== null ? (float) $l->rating : null,
-                'reviews_count' => (int) $l->reviews_count,
-            ]),
-        );
-    }
-
     /**
      * One competitor's detail: rating, review count and (when DataForSEO
      * supplied it) the 1-5 star distribution as horizontal bars, alongside the
@@ -94,19 +83,7 @@ class Competitors extends Page implements HasTable
      */
     protected function competitorDetailHtml(Competitor $competitor): string
     {
-        $battle = $competitor->battle;
-        $ownRating = $battle !== null ? $this->ownRating($battle) : null;
-        $ownName = $battle !== null
-            ? ($battle->ownLocations()->pluck('name')->implode(', ') ?: __('pages/competitors.you'))
-            : __('pages/competitors.you');
-
         $html = '<div style="display:flex; flex-direction:column; gap:1rem;">';
-
-        // Own side header row.
-        $html .= '<div style="display:flex; align-items:center; justify-content:space-between; padding:.6rem .8rem; border-radius:.6rem; background:rgb(45 25 236 / .06);">'
-            .'<span style="font-weight:700;">'.e($ownName).'</span>'
-            .'<span style="font-weight:700;">'.($ownRating !== null ? number_format($ownRating, 1).' ★' : '—').'</span>'
-            .'</div>';
 
         $rating = $competitor->rating !== null ? number_format((float) $competitor->rating, 1).' ★' : '—';
         $reviews = trans_choice('pages/competitors.reviews_count', (int) $competitor->reviews_count, ['count' => number_format((int) $competitor->reviews_count)]);
