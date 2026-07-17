@@ -115,7 +115,7 @@ class AutoReplyService
         $review = $item->review;
 
         try {
-            $this->publish($workspace, $review, $item->generated_text, 'ai_draft');
+            $this->publish($workspace, $review, $item->generated_text, 'ai_draft', $item->ai_agent_id);
         } catch (Throwable $e) {
             $item->forceFill([
                 'status' => 'failed',
@@ -185,7 +185,7 @@ class AutoReplyService
             ->first();
     }
 
-    private function publish(Workspace $workspace, Review $review, string $text, string $source): void
+    private function publish(Workspace $workspace, Review $review, string $text, string $source, ?int $agentId = null): void
     {
         $provider = $this->providers->make();
         $accountId = $review->location?->zernio_account_id ?? 'fake-account';
@@ -197,6 +197,7 @@ class AutoReplyService
             'replied_at' => now(),
             'reply_status' => 'published',
             'reply_source' => $source,
+            'ai_agent_id' => $agentId,
         ])->save();
     }
 }

@@ -140,7 +140,7 @@ class AutomationService
 
         if ($postAt->lessThanOrEqualTo(now())) {
             $item = $this->record($review, $text, 'published', 'auto', model: $model, credits: $cost, agentId: $agentId);
-            $this->publish($review, $text, $source);
+            $this->publish($review, $text, $source, $agentId);
             $item->forceFill(['decided_at' => now()])->save();
 
             return $item;
@@ -327,7 +327,7 @@ class AutomationService
      * Post a reply to the provider and mark the review replied. Shared by the
      * instant-publish path and the deferred poster ([[AutoReplyPostDueCommand]]).
      */
-    public function publish(Review $review, string $text, string $source): void
+    public function publish(Review $review, string $text, string $source, ?int $agentId = null): void
     {
         $provider = $this->providers->make();
         $accountId = $review->location?->zernio_account_id ?? 'fake-account';
@@ -339,6 +339,7 @@ class AutomationService
             'replied_at' => now(),
             'reply_status' => 'published',
             'reply_source' => $source,
+            'ai_agent_id' => $agentId,
         ])->save();
     }
 }

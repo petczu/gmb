@@ -109,6 +109,36 @@ class ReviewsTable
                     ->color(fn (Review $record): string => $record->reply_text ? 'success' : 'gray')
                     ->visibleFrom('sm'),
 
+                // Who wrote the reply: an AI agent (with its name), a person,
+                // the assistant/API, or Google directly. Visible by default and
+                // hideable from the columns menu.
+                TextColumn::make('reply_source')
+                    ->label(__('resources/reviews.col_replied_by'))
+                    ->badge()
+                    ->placeholder('—')
+                    ->toggleable()
+                    ->visibleFrom('md')
+                    ->icon(fn (Review $record): ?string => $record->reply_text === null ? null : match ($record->reply_source) {
+                        'ai_auto', 'ai_draft' => Heroicon::OutlinedSparkles,
+                        'mcp' => Heroicon::OutlinedChatBubbleLeftRight,
+                        'api' => Heroicon::OutlinedCodeBracket,
+                        'external' => Heroicon::OutlinedGlobeAlt,
+                        default => Heroicon::OutlinedUser,
+                    })
+                    ->color(fn (Review $record): string => match ($record->reply_source) {
+                        'ai_auto', 'ai_draft', 'mcp' => 'info',
+                        'api' => 'warning',
+                        'external' => 'gray',
+                        default => 'success',
+                    })
+                    ->state(fn (Review $record): ?string => $record->reply_text === null ? null : match ($record->reply_source) {
+                        'ai_auto', 'ai_draft' => $record->aiAgent?->name ?? __('resources/reviews.replied_ai'),
+                        'mcp' => __('resources/reviews.replied_assistant'),
+                        'api' => __('resources/reviews.replied_api'),
+                        'external' => __('resources/reviews.replied_google'),
+                        default => __('resources/reviews.replied_human'),
+                    }),
+
                 TextColumn::make('created_at_external')
                     ->label(__('resources/reviews.col_date'))
                     ->dateTime('D, M j, Y · H:i')

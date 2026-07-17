@@ -31,6 +31,7 @@ class Review extends Model
         'replied_at',
         'reply_status',
         'reply_source',
+        'ai_agent_id',
         'synced_at',
     ];
 
@@ -95,6 +96,12 @@ class Review extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    /** The AI agent that produced the published reply, if any. */
+    public function aiAgent(): BelongsTo
+    {
+        return $this->belongsTo(AiAgent::class);
     }
 
     public function queueItems(): HasMany
