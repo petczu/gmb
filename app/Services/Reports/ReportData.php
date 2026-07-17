@@ -116,27 +116,14 @@ class ReportData
      */
     protected function competitors(DashboardPeriod $period): array
     {
+        // The benchmark is a workspace-level list of tracked competitors, so it
+        // always shows every competitor regardless of the report's location
+        // filter (the "you" side below still reflects the selected locations for
+        // the comparison). Competitors are battle-scoped now, so filtering them
+        // by the legacy location_id would wrongly empty the block.
         $competitors = Competitor::query()
-            ->with('battle')
             ->orderByDesc('rating')
             ->get();
-
-        // Honour the report's location filter the same way the dashboard widget
-        // does: keep competitors whose battle covers a selected location. A
-        // competitor is battle-scoped now (its legacy location_id may be null),
-        // so filtering on location_id would wrongly empty the block. Fall back
-        // to all competitors if the filter matches none.
-        if ($period->locationIds !== []) {
-            $filtered = $competitors->filter(function (Competitor $c) use ($period): bool {
-                $own = $c->battle?->ownLocationIds() ?? [];
-                if ($own === [] && $c->location_id !== null) {
-                    $own = [(int) $c->location_id];
-                }
-
-                return $own === [] || array_intersect($own, $period->locationIds) !== [];
-            });
-            $competitors = $filtered->isNotEmpty() ? $filtered : $competitors;
-        }
 
         if ($competitors->isEmpty()) {
             return [];
