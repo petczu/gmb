@@ -50,6 +50,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // unauthenticated request must return 401 (not a 302 to login) so the
         // package can attach the WWW-Authenticate header that bootstraps OAuth.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->is('mcp/*'),
+            fn (Request $request) => $request->is('api/*') || $request->is('mcp') || $request->is('mcp/*'),
         );
     })->create();

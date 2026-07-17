@@ -29,6 +29,9 @@ class DocsController extends Controller
         $markdown = (string) file_get_contents($path);
         [$meta, $body] = $this->parseFrontmatter($markdown);
 
+        // Docs use https://YOUR-APP-DOMAIN as a placeholder; show the real one.
+        $body = str_replace('https://YOUR-APP-DOMAIN', rtrim((string) config('app.url'), '/'), $body);
+
         $html = Str::markdown($body, [
             'html_input' => 'allow',
             'allow_unsafe_links' => false,

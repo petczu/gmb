@@ -66,10 +66,10 @@ class Mcp extends Page implements HasForms
         return app(LocationBilling::class)->allows($this->workspace(), Plans::MCP);
     }
 
-    /** Per-workspace MCP endpoint the user pastes into their AI client. */
+    /** The MCP endpoint the user pastes into their AI client. */
     public function endpoint(): string
     {
-        return rtrim((string) config('app.url'), '/').'/mcp/'.$this->workspace()->slug;
+        return rtrim((string) config('app.url'), '/').'/mcp';
     }
 
     public function mount(): void

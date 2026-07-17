@@ -13,11 +13,11 @@ use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Scopes an authenticated MCP request to the workspace named in the URL
- * (/mcp/{workspace}). The user has already been resolved by `auth:api`
- * (Passport OAuth); here we verify they belong to that workspace, gate the Pro
- * plan and initialize the workspace's tenancy so every tool reads and writes
- * strictly within its data.
+ * Scopes an authenticated MCP request to the user's workspace. The endpoint is
+ * a single /mcp (no workspace in the URL); the user has already been resolved
+ * by `auth:api` (Passport OAuth). We pick their first MCP-enabled (Pro)
+ * workspace, gate the plan and initialize its tenancy so every tool reads and
+ * writes strictly within its data.
  */
 class ResolveMcpWorkspace
 {
@@ -29,18 +29,20 @@ class ResolveMcpWorkspace
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
-        $slug = (string) $request->route('workspace');
-        $workspace = $slug === '' ? null : Workspace::query()->where('slug', $slug)->first();
+        $workspaces = $user->workspaces()->get();
 
-        if ($workspace === null) {
-            return response()->json(['error' => 'Workspace not found.'], 404);
+        if ($workspaces->isEmpty()) {
+            return response()->json(['error' => 'You do not belong to any workspace.'], 403);
         }
 
-        if (! $workspace->users()->whereKey($user->getKey())->exists()) {
-            return response()->json(['error' => 'You do not have access to this workspace.'], 403);
-        }
+        $billing = app(LocationBilling::class);
 
-        if (! app(LocationBilling::class)->allows($workspace, Plans::MCP)) {
+        // Prefer a workspace that actually has MCP access; fall back to the
+        // first so the response can explain the Pro requirement clearly.
+        $workspace = $workspaces->first(fn (Workspace $w): bool => $billing->allows($w, Plans::MCP))
+            ?? $workspaces->first();
+
+        if (! $billing->allows($workspace, Plans::MCP)) {
             return response()->json(['error' => 'MCP access requires the Pro plan.'], 403);
         }
 

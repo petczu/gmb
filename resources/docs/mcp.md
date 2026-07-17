@@ -16,17 +16,18 @@ answers from your real workspace data.
 
 ## Connecting
 
-Your endpoint is per-workspace:
+There is one endpoint for everyone:
 
 ```
-https://YOUR-APP-DOMAIN/mcp/{workspace-slug}
+https://YOUR-APP-DOMAIN/mcp
 ```
 
-No token to copy. Authentication is OAuth 2.1: paste the URL into your client
-(e.g. claude.ai → Settings → Connectors → **Add custom connector**, leave
-Client ID/Secret empty — the client registers itself), and on first use you
-will be redirected to sign in and approve access. Access is tied to your user
-account and your membership of the workspace.
+No token to copy, and no workspace id in the URL. Authentication is OAuth 2.1:
+paste the URL into your client (e.g. claude.ai → Settings → Connectors →
+**Add custom connector**, leave Client ID/Secret empty — the client registers
+itself), and on first use you will be redirected to sign in and approve access.
+Access is tied to your user account; the server works within your Pro workspace
+automatically.
 
 ## Tools
 
@@ -48,7 +49,8 @@ posting public replies on your behalf.
 
 ## Notes
 
-- One endpoint per workspace; connect each workspace separately.
+- One endpoint for everyone; the server resolves your Pro workspace from your
+  signed-in account.
 - Revoking is instant: sign out the connector in your client, or remove the
   user's workspace membership.
 - Requests are rate-limited (60/minute).

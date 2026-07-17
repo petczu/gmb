@@ -9,10 +9,10 @@ use Laravel\Mcp\Facades\Mcp;
 // itself and the user authorizes on first request. No manual token to paste.
 Mcp::oauthRoutes();
 
-// Per-workspace MCP server. `auth:api` (Passport) authenticates the user from
-// the OAuth access token; ResolveMcpWorkspace then verifies membership of the
-// {workspace} in the URL, gates the Pro plan and initializes that workspace's
-// tenancy so every tool is scoped strictly to its data.
-// Endpoint: https://<app>/mcp/{workspace-slug}
-Mcp::web('/mcp/{workspace}', WorkspaceServer::class)
+// Single MCP endpoint. `auth:api` (Passport) authenticates the user from the
+// OAuth access token; ResolveMcpWorkspace then picks the user's MCP-enabled
+// workspace, gates the Pro plan and initializes its tenancy so every tool is
+// scoped strictly to that data.
+// Endpoint: https://<app>/mcp
+Mcp::web('/mcp', WorkspaceServer::class)
     ->middleware(['auth:api', ResolveMcpWorkspace::class, 'throttle:60,1']);
