@@ -7,6 +7,7 @@ namespace App\Filament\App\Pages;
 use App\Models\Competitor;
 use App\Models\CompetitorBattle;
 use App\Models\Location;
+use App\Models\PlaceReview;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Competitors\CompetitorGeo;
 use App\Services\Competitors\CompetitorTrends;
@@ -96,7 +97,14 @@ class Competitors extends Page implements HasTable
             .'<span style="white-space:nowrap; color:#6b7280; font-size:.85rem;">'.e($rating).' · '.e($reviews).'</span>'
             .'</div>';
 
+        // Prefer the breakdown from DataForSEO business details; fall back to
+        // counting the backfilled individual reviews (place_reviews) when it's
+        // missing, so the breakdown shows as long as we have the reviews.
         $dist = $competitor->rating_distribution;
+        if (! (is_array($dist) && array_sum($dist) > 0)) {
+            $dist = $this->distributionFromReviews((string) $competitor->place_id);
+        }
+
         if (is_array($dist) && array_sum($dist) > 0) {
             $max = max($dist);
             $colors = [5 => '#16a34a', 4 => '#84cc16', 3 => '#eab308', 2 => '#f97316', 1 => '#dc2626'];
@@ -117,6 +125,33 @@ class Competitors extends Page implements HasTable
         $html .= '</div></div>';
 
         return $html;
+    }
+
+    /**
+     * Star breakdown counted from the backfilled individual reviews of a place
+     * (place_reviews, central), keyed 1..5. Null when there are no reviews.
+     *
+     * @return array<int, int>|null
+     */
+    protected function distributionFromReviews(string $placeId): ?array
+    {
+        if ($placeId === '') {
+            return null;
+        }
+
+        $counts = PlaceReview::query()
+            ->where('place_id', $placeId)
+            ->whereNotNull('rating')
+            ->selectRaw('ROUND(rating) as star, COUNT(*) as total')
+            ->groupBy('star')
+            ->pluck('total', 'star');
+
+        $dist = [];
+        for ($star = 1; $star <= 5; $star++) {
+            $dist[$star] = (int) ($counts[$star] ?? 0);
+        }
+
+        return array_sum($dist) > 0 ? $dist : null;
     }
 
     /** Move a competitor out of its group into its own single (unnamed) battle. */
