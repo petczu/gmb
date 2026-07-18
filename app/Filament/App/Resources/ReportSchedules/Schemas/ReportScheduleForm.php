@@ -6,13 +6,13 @@ namespace App\Filament\App\Resources\ReportSchedules\Schemas;
 
 use App\Models\Competitor;
 use App\Models\Location;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Notifications\NotificationRecipients;
 use App\Support\ReportBlocks;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
@@ -20,7 +20,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
-use Spatie\Permission\Models\Role;
 
 class ReportScheduleForm
 {
@@ -105,8 +104,8 @@ class ReportScheduleForm
                     ->bulkToggleable(),
 
                 // Recipients by role/member (Included minus Excluded, same
-                // model as the Notifications page) plus any external emails.
-                // Empty selection falls back to every workspace member.
+                // model as the Notifications page). Empty selection falls back
+                // to every workspace member.
                 Select::make('recipients.include')
                     ->label(__('resources/report_schedules.recipients_include'))
                     ->placeholder(__('resources/report_schedules.recipients_all'))
@@ -117,12 +116,7 @@ class ReportScheduleForm
                     ->label(__('resources/report_schedules.recipients_exclude'))
                     ->placeholder(__('resources/report_schedules.recipients_none'))
                     ->multiple()
-                    ->options(fn (): array => self::peopleOptions()),
-
-                TagsInput::make('recipients.emails')
-                    ->label(__('resources/report_schedules.recipients_emails'))
-                    ->placeholder(__('resources/report_schedules.recipients_placeholder'))
-                    ->nestedRecursiveRules(['email'])
+                    ->options(fn (): array => self::peopleOptions())
                     ->helperText(__('resources/report_schedules.recipients_helper')),
             ]),
         ]);
@@ -134,7 +128,7 @@ class ReportScheduleForm
      *
      * @return array<string, array<int|string, string>>
      */
-    protected static function recipientOptions(): array
+    public static function recipientOptions(): array
     {
         $workspace = tenant();
         if ($workspace === null) {
@@ -160,7 +154,7 @@ class ReportScheduleForm
      *
      * @return array<int, string>
      */
-    protected static function peopleOptions(): array
+    public static function peopleOptions(): array
     {
         $workspace = tenant();
         if ($workspace === null) {
@@ -184,6 +178,8 @@ class ReportScheduleForm
      */
     protected static function roleNames(Workspace $workspace): array
     {
+        // App\Models\Role pins the central connection; the raw Spatie model
+        // would query the tenant DB (no roles table there) and blow up.
         $defined = Role::query()->where('team_id', $workspace->id)->pluck('name')->all();
 
         return array_values(array_unique(array_merge(

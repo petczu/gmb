@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\App\Pages;
 
 use App\Filament\App\Clusters\ReportsCluster;
+use App\Filament\App\Resources\ReportSchedules\Schemas\ReportScheduleForm;
 use App\Models\Competitor;
 use App\Models\GeneratedReport;
 use App\Models\Location;
@@ -25,7 +26,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -355,10 +355,19 @@ class Reports extends Page implements HasForms
                         ->required(),
                 ]),
 
-                TagsInput::make('recipients')
-                    ->label(__('resources/report_schedules.recipients'))
-                    ->placeholder(__('resources/report_schedules.recipients_placeholder'))
-                    ->nestedRecursiveRules(['email'])
+                // Recipients by role/member (Included minus Excluded), same
+                // model as the schedule edit page and the Notifications page.
+                Select::make('recipients.include')
+                    ->label(__('resources/report_schedules.recipients_include'))
+                    ->placeholder(__('resources/report_schedules.recipients_all'))
+                    ->multiple()
+                    ->options(fn (): array => ReportScheduleForm::recipientOptions()),
+
+                Select::make('recipients.exclude')
+                    ->label(__('resources/report_schedules.recipients_exclude'))
+                    ->placeholder(__('resources/report_schedules.recipients_none'))
+                    ->multiple()
+                    ->options(fn (): array => ReportScheduleForm::peopleOptions())
                     ->helperText(__('resources/report_schedules.recipients_helper')),
             ])
             ->action(function (array $data): void {
@@ -385,7 +394,10 @@ class Reports extends Page implements HasForms
                     'location_ids' => $locationIds ?: null,
                     'compare' => ($filters['compareMode'] ?? 'previous') !== 'none',
                     'blocks' => ReportBlocks::normalize($this->data['blocks'] ?? null),
-                    'recipients' => array_values($data['recipients'] ?? []),
+                    'recipients' => [
+                        'include' => array_values((array) ($data['recipients']['include'] ?? [])),
+                        'exclude' => array_values((array) ($data['recipients']['exclude'] ?? [])),
+                    ],
                 ]);
 
                 ActivityLogger::log('schedule.created', ['name' => $data['name'], 'frequency' => $data['frequency']]);
