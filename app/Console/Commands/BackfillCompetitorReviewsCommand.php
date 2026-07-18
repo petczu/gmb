@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Jobs\BackfillPlaceReviewsJob;
 use App\Models\Competitor;
+use App\Models\PlaceReview;
 use App\Models\Workspace;
 use App\Services\Competitors\DataForSeoReviewsClient;
 use Illuminate\Console\Command;
@@ -29,6 +30,7 @@ class BackfillCompetitorReviewsCommand extends Command
     protected $signature = 'competitors:backfill-reviews
         {workspace? : Workspace id or slug; omit for all}
         {--place=* : Specific place ids (skips the competitor lookup)}
+        {--missing : Only places with no reviews stored yet (skip already-backfilled ones)}
         {--delta : Only fetch the newest reviews (top-up), not the full history}
         {--depth= : Override the max reviews pulled per place}';
 
@@ -43,6 +45,20 @@ class BackfillCompetitorReviewsCommand extends Command
         }
 
         $placeIds = $this->resolvePlaceIds();
+
+        // --missing: skip places that already have reviews stored, so a broad
+        // backfill only spends on the ones actually lacking history.
+        if ($this->option('missing') && $placeIds !== []) {
+            $already = PlaceReview::query()
+                ->whereIn('place_id', $placeIds)
+                ->distinct()
+                ->pluck('place_id')
+                ->all();
+            $skipped = count(array_intersect($placeIds, $already));
+            $placeIds = array_values(array_diff($placeIds, $already));
+            $this->info(sprintf('Skipping %d place(s) that already have reviews.', $skipped));
+        }
+
         if ($placeIds === []) {
             $this->info('No competitor places to backfill.');
 
