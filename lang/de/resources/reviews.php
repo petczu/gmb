@@ -20,6 +20,7 @@ return [
     'status_replied' => 'Beantwortet',
     'status_pending' => 'Ausstehend',
     'status_scheduled' => 'Geplant',
+    'scheduled_for' => 'Wird am :datetime veröffentlicht',
     'status_failed' => 'Fehlgeschlagen',
 
     // Filters

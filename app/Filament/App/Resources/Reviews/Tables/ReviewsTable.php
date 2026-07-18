@@ -130,9 +130,22 @@ class ReviewsTable
                         $record->latestQueueItem?->status === 'scheduled' => 'info',
                         default => 'gray',
                     })
-                    ->tooltip(fn (Review $record): ?string => ! $record->reply_text && $record->latestQueueItem?->status === 'failed'
-                        ? $record->latestQueueItem->error
-                        : null)
+                    // Hover a failed status → the error; a scheduled one → when
+                    // the reply is set to post.
+                    ->tooltip(function (Review $record): ?string {
+                        if ($record->reply_text) {
+                            return null;
+                        }
+                        $item = $record->latestQueueItem;
+                        if ($item?->status === 'failed') {
+                            return $item->error;
+                        }
+                        if ($item?->status === 'scheduled' && $item->post_at !== null) {
+                            return __('resources/reviews.scheduled_for', ['datetime' => $item->post_at->format('D, M j, Y · H:i')]);
+                        }
+
+                        return null;
+                    })
                     ->visibleFrom('sm'),
 
                 // Who wrote the reply: an AI agent (with its name), a person,

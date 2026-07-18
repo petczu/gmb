@@ -83,9 +83,17 @@ class ListReviews extends ListRecords
      */
     public function getTabs(): array
     {
+        // Active states (pending/scheduled/failed) only count when the reply is
+        // NOT yet posted — once a reply goes out (e.g. a retry succeeds), a stale
+        // failed/pending queue item must not keep the review in that tab.
         $withQueueStatus = fn (string $status): int => Review::query()
+            ->whereNull('reply_text')
             ->whereHas('queueItems', fn (Builder $query): Builder => $query->where('status', $status))
             ->count();
+
+        $inQueueStatus = fn (string $status): callable => fn (Builder $query): Builder => $query
+            ->whereNull('reply_text')
+            ->whereHas('queueItems', fn (Builder $q): Builder => $q->where('status', $status));
 
         return [
             'all' => Tab::make(__('resources/reviews.tab_all')),
@@ -93,12 +101,12 @@ class ListReviews extends ListRecords
             'needs_approval' => Tab::make(__('resources/reviews.tab_needs_approval'))
                 ->badge($withQueueStatus('pending') ?: null)
                 ->badgeColor('warning')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereHas('queueItems', fn (Builder $q): Builder => $q->where('status', 'pending'))),
+                ->modifyQueryUsing($inQueueStatus('pending')),
 
             'scheduled' => Tab::make(__('resources/reviews.tab_scheduled'))
                 ->badge($withQueueStatus('scheduled') ?: null)
                 ->badgeColor('info')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereHas('queueItems', fn (Builder $q): Builder => $q->where('status', 'scheduled'))),
+                ->modifyQueryUsing($inQueueStatus('scheduled')),
 
             'published' => Tab::make(__('resources/reviews.tab_published'))
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereNotNull('reply_text')),
@@ -106,7 +114,7 @@ class ListReviews extends ListRecords
             'failed' => Tab::make(__('resources/reviews.tab_failed'))
                 ->badge($withQueueStatus('failed') ?: null)
                 ->badgeColor('danger')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereHas('queueItems', fn (Builder $q): Builder => $q->where('status', 'failed'))),
+                ->modifyQueryUsing($inQueueStatus('failed')),
         ];
     }
 }
