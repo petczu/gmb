@@ -21,7 +21,6 @@ return [
     'status_pending' => 'Pending',
     'status_scheduled' => 'Scheduled',
     'status_failed' => 'Failed',
-    'reply_draft_note' => 'Draft, not posted yet',
 
     // Filters
     'review_date' => 'Review date',

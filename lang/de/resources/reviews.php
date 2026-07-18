@@ -21,7 +21,6 @@ return [
     'status_pending' => 'Ausstehend',
     'status_scheduled' => 'Geplant',
     'status_failed' => 'Fehlgeschlagen',
-    'reply_draft_note' => 'Entwurf, noch nicht veröffentlicht',
 
     // Filters
     'review_date' => 'Bewertungsdatum',

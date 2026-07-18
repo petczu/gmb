@@ -119,8 +119,11 @@ class AutoReplyPostDueCommand extends Command
             $businessName = $review?->location?->name ?? $workspace->name;
             $authorName = (string) ($review?->author_name ?? 'A customer');
             $snippet = Str::limit((string) ($review?->text ?? ''), 160);
-            // The failed draft lives on the Approvals page (Failed filter).
-            $reviewsUrl = rtrim((string) config('app.url'), '/').'/approvals';
+            // Deep-link straight to the failed review (its reply slide-over, on
+            // the Reviews page Failed tab), not the Approvals page — a failed
+            // reply is no longer a pending approval.
+            $base = rtrim((string) config('app.url'), '/').'/reviews';
+            $reviewsUrl = $review !== null ? $base.'?review='.$review->id : $base;
 
             // A 404 means the review is gone on Google (deleted by its author or
             // filtered) — "try again" would be misleading advice.

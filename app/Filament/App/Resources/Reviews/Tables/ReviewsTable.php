@@ -103,9 +103,6 @@ class ReviewsTable
                     // Not posted yet? Show the drafted reply sitting in the queue
                     // (pending approval or scheduled) so the tab isn't blank.
                     ->state(fn (Review $record): ?string => $record->reply_text ?: self::pendingReplyDraft($record))
-                    ->description(fn (Review $record): ?string => ! $record->reply_text && self::pendingReplyDraft($record) !== null
-                        ? __('resources/reviews.reply_draft_note')
-                        : null)
                     ->placeholder(__('resources/reviews.no_reply'))
                     ->tooltip(fn (Review $record): ?string => $record->reply_text ?: self::pendingReplyDraft($record))
                     ->searchable()
