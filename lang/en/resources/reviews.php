@@ -21,6 +21,7 @@ return [
     'status_pending' => 'Pending',
     'status_scheduled' => 'Scheduled',
     'scheduled_for' => 'Posts on :datetime',
+    'replied_at' => 'Replied :datetime',
     'status_failed' => 'Failed',
 
     // Filters

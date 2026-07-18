@@ -130,11 +130,13 @@ class ReviewsTable
                         $record->latestQueueItem?->status === 'scheduled' => 'info',
                         default => 'gray',
                     })
-                    // Hover a failed status → the error; a scheduled one → when
-                    // the reply is set to post.
+                    // Hover a replied status → when the reply went out; a failed
+                    // one → the error; a scheduled one → when it will post.
                     ->tooltip(function (Review $record): ?string {
                         if ($record->reply_text) {
-                            return null;
+                            return $record->replied_at !== null
+                                ? __('resources/reviews.replied_at', ['datetime' => $record->replied_at->format('D, M j, Y · H:i')])
+                                : null;
                         }
                         $item = $record->latestQueueItem;
                         if ($item?->status === 'failed') {

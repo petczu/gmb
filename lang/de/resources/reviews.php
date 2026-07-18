@@ -21,6 +21,7 @@ return [
     'status_pending' => 'Ausstehend',
     'status_scheduled' => 'Geplant',
     'scheduled_for' => 'Wird am :datetime veröffentlicht',
+    'replied_at' => 'Beantwortet am :datetime',
     'status_failed' => 'Fehlgeschlagen',
 
     // Filters
