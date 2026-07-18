@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Jobs\BackfillPlaceReviewsJob;
 use App\Models\Competitor;
 use App\Models\CompetitorBattle;
 use App\Models\Location;
@@ -11,6 +12,7 @@ use App\Models\PlaceReview;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Competitors\CompetitorGeo;
 use App\Services\Competitors\CompetitorTrends;
+use App\Services\Competitors\DataForSeoReviewsClient;
 use App\Services\Competitors\PlacesClient;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -521,6 +523,15 @@ class Competitors extends Page implements HasTable
         ]);
 
         app(CompetitorTrends::class)->record($competitor);
+
+        // Pull the full review history now (async) so the new competitor gets
+        // per-day growth from the start and a star breakdown right away, instead
+        // of only from the day it was added. No-op unless DataForSEO is enabled,
+        // and skipped when this place was already backfilled (shared centrally).
+        if (app(DataForSeoReviewsClient::class)->configured()
+            && ! PlaceReview::query()->where('place_id', $place['place_id'])->exists()) {
+            BackfillPlaceReviewsJob::dispatch((string) $place['place_id']);
+        }
 
         ActivityLogger::log('competitor.added', ['name' => (string) $place['name']]);
 
