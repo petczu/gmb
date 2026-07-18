@@ -15,7 +15,7 @@ class PlacesClient
 {
     protected const BASE = 'https://places.googleapis.com/v1';
 
-    protected const FIELDS = 'id,displayName,formattedAddress,rating,userRatingCount';
+    protected const FIELDS = 'id,displayName,formattedAddress,rating,userRatingCount,location';
 
     /**
      * Interactive search only shows name + address; leaving out the rating
@@ -101,10 +101,12 @@ class PlacesClient
 
     /**
      * @param  array<string, mixed>  $place
-     * @return array{place_id: string, name: string, address: ?string, rating: ?float, reviews_count: int, rating_distribution: null}
+     * @return array{place_id: string, name: string, address: ?string, rating: ?float, reviews_count: int, rating_distribution: null, latitude: ?float, longitude: ?float}
      */
     protected function normalize(array $place): array
     {
+        $loc = $place['location'] ?? null;
+
         return [
             'place_id' => (string) ($place['id'] ?? ''),
             'name' => (string) ($place['displayName']['text'] ?? ''),
@@ -113,6 +115,8 @@ class PlacesClient
             'reviews_count' => (int) ($place['userRatingCount'] ?? 0),
             // The Places API has no star breakdown; only DataForSEO does.
             'rating_distribution' => null,
+            'latitude' => isset($loc['latitude']) ? (float) $loc['latitude'] : null,
+            'longitude' => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
         ];
     }
 

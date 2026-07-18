@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Competitor extends Model
 {
     protected $fillable = [
-        'battle_id', 'location_id', 'place_id', 'name', 'address',
+        'battle_id', 'location_id', 'place_id', 'name', 'address', 'latitude', 'longitude',
         'rating', 'reviews_count', 'rating_distribution', 'last_checked_at',
     ];
 
@@ -24,6 +24,8 @@ class Competitor extends Model
         'rating' => 'decimal:2',
         'reviews_count' => 'integer',
         'rating_distribution' => 'array',
+        'latitude' => 'float',
+        'longitude' => 'float',
         'last_checked_at' => 'datetime',
     ];
 

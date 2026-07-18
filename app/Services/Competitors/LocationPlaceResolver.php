@@ -44,7 +44,20 @@ class LocationPlaceResolver
             return null;
         }
 
-        $location->forceFill(['place_id' => $best['place_id']])->save();
+        // Also store coordinates so competitors can be auto-scoped to this
+        // location's city by distance (best-effort; a failure leaves them null).
+        $coords = null;
+        try {
+            $coords = $this->places->coordinates($best['place_id']);
+        } catch (Throwable) {
+            $coords = null;
+        }
+
+        $location->forceFill(array_filter([
+            'place_id' => $best['place_id'],
+            'latitude' => $coords['lat'] ?? null,
+            'longitude' => $coords['lng'] ?? null,
+        ], fn ($value): bool => $value !== null))->save();
 
         return $best['place_id'];
     }

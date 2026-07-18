@@ -24,6 +24,8 @@ class Location extends Model
         'cid',
         'name',
         'address',
+        'latitude',
+        'longitude',
         'timezone',
         'logo_path',
         'phone',
@@ -38,6 +40,8 @@ class Location extends Model
 
     protected $casts = [
         'listing_data' => 'array',
+        'latitude' => 'float',
+        'longitude' => 'float',
         'is_verified' => 'boolean',
         'rating' => 'decimal:1',
         'reviews_count' => 'integer',
