@@ -71,6 +71,32 @@ class AutomationService
     }
 
     /**
+     * Retry a failed reply. If the failed attempt already produced text (a
+     * posting failure), just re-post it — no fresh AI spend. Otherwise (a
+     * generation failure, e.g. the AI provider was overloaded) regenerate from
+     * the matching automation. Returns the resulting item, or null when there is
+     * nothing to retry. The provider call may throw; callers surface the error.
+     */
+    public function retry(Workspace $workspace, Review $review): ?AutoReplyQueueItem
+    {
+        if ($review->reply_text !== null) {
+            return null;
+        }
+
+        $failed = $review->latestQueueItem;
+
+        if ($failed !== null && filled($failed->generated_text)) {
+            $source = $failed->mode === 'auto' ? 'ai_auto' : 'manual';
+            $this->publish($review, (string) $failed->generated_text, $source, $failed->ai_agent_id);
+            $failed->forceFill(['status' => 'published', 'error' => null, 'decided_at' => now()])->save();
+
+            return $failed;
+        }
+
+        return $this->processReview($workspace, $review);
+    }
+
+    /**
      * Apply ONE specific automation to a review (no matching-order resolution).
      */
     public function applyAutomation(Workspace $workspace, Review $review, Automation $automation): ?AutoReplyQueueItem
@@ -252,6 +278,8 @@ class AutomationService
         $workspace->setAttribute('approvals_notified_at', now()->toIso8601String());
         $workspace->save();
 
+        $samples = $this->pendingApprovalSamples();
+
         try {
             app(NotificationDispatcher::class)->dispatch(
                 $workspace,
@@ -260,6 +288,7 @@ class AutomationService
                     name: $name,
                     count: $count,
                     approvalsUrl: rtrim((string) config('app.url'), '/').'/approvals',
+                    samples: $samples,
                     lang: $lang,
                 ),
             );
@@ -269,6 +298,31 @@ class AutomationService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * A few pending replies (review + location + drafted reply) to preview in the
+     * approvals email, newest first, so the owner can judge them at a glance.
+     * Assumes tenancy is initialized.
+     *
+     * @return list<array{location: ?string, author: ?string, rating: ?int, review: ?string, reply: ?string}>
+     */
+    public static function pendingApprovalSamples(int $limit = 3): array
+    {
+        return AutoReplyQueueItem::query()
+            ->where('status', 'pending')
+            ->with('review.location')
+            ->latest()
+            ->limit($limit)
+            ->get()
+            ->map(fn (AutoReplyQueueItem $item): array => [
+                'location' => $item->review?->location?->name,
+                'author' => $item->review?->author_name,
+                'rating' => $item->review?->rating,
+                'review' => $item->review?->originalText(),
+                'reply' => $item->generated_text,
+            ])
+            ->all();
     }
 
     /**

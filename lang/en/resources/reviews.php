@@ -19,7 +19,9 @@ return [
     'no_reply' => '— no reply —',
     'status_replied' => 'Replied',
     'status_pending' => 'Pending',
+    'status_scheduled' => 'Scheduled',
     'status_failed' => 'Failed',
+    'reply_draft_note' => 'Draft, not posted yet',
 
     // Filters
     'review_date' => 'Review date',
@@ -69,10 +71,16 @@ return [
     'reply_deleted' => 'Reply deleted',
     'no_changes' => 'No changes to save',
     'reply_published' => 'Reply published',
+    'reply_failed' => 'Reply could not be posted',
     'ai_limit_reached' => 'AI limit reached',
     'ai_limit_body' => 'You’ve used all AI replies this month. Edit manually, or upgrade for a higher limit.',
     'generation_failed' => 'Generation failed',
     'reply_generated' => 'Reply generated',
+    'retry' => 'Retry',
+    'retry_heading' => 'Retry this reply?',
+    'retry_desc' => 'We’ll try again: re-post the drafted reply, or regenerate it if the AI step failed.',
+    'retry_queued' => 'Reply queued again',
+    'retry_nothing' => 'Nothing to retry. Reply manually instead.',
 
     // Status tabs (mirror the auto-reply approval queue)
     'tab_all' => 'All',

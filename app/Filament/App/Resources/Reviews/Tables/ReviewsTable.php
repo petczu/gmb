@@ -6,6 +6,8 @@ namespace App\Filament\App\Resources\Reviews\Tables;
 
 use App\Filament\App\Support\ReplyComposer;
 use App\Models\Review;
+use App\Models\Workspace;
+use App\Services\Ai\AutomationService;
 use App\Services\Reviews\ReviewProvider;
 use App\Services\Reviews\ReviewProviderFactory;
 use Carbon\Carbon;
@@ -27,7 +29,9 @@ use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 use Livewire\Component;
+use Throwable;
 
 class ReviewsTable
 {
@@ -96,8 +100,14 @@ class ReviewsTable
                     ->label(__('resources/reviews.col_reply'))
                     ->wrap()
                     ->limit(70)
+                    // Not posted yet? Show the drafted reply sitting in the queue
+                    // (pending approval or scheduled) so the tab isn't blank.
+                    ->state(fn (Review $record): ?string => $record->reply_text ?: self::pendingReplyDraft($record))
+                    ->description(fn (Review $record): ?string => ! $record->reply_text && self::pendingReplyDraft($record) !== null
+                        ? __('resources/reviews.reply_draft_note')
+                        : null)
                     ->placeholder(__('resources/reviews.no_reply'))
-                    ->tooltip(fn (Review $record): ?string => $record->reply_text)
+                    ->tooltip(fn (Review $record): ?string => $record->reply_text ?: self::pendingReplyDraft($record))
                     ->searchable()
                     ->toggleable()
                     ->visibleFrom('lg'),
@@ -111,11 +121,13 @@ class ReviewsTable
                     ->state(fn (Review $record): string => match (true) {
                         (bool) $record->reply_text => __('resources/reviews.status_replied'),
                         $record->latestQueueItem?->status === 'failed' => __('resources/reviews.status_failed'),
+                        $record->latestQueueItem?->status === 'scheduled' => __('resources/reviews.status_scheduled'),
                         default => __('resources/reviews.status_pending'),
                     })
                     ->color(fn (Review $record): string => match (true) {
                         (bool) $record->reply_text => 'success',
                         $record->latestQueueItem?->status === 'failed' => 'danger',
+                        $record->latestQueueItem?->status === 'scheduled' => 'info',
                         default => 'gray',
                     })
                     ->tooltip(fn (Review $record): ?string => ! $record->reply_text && $record->latestQueueItem?->status === 'failed'
@@ -186,6 +198,7 @@ class ReviewsTable
 
                 SelectFilter::make('location')
                     ->relationship('location', 'name')
+                    ->multiple()
                     ->searchable()
                     ->preload(),
 
@@ -334,7 +347,19 @@ class ReviewsTable
                                 $action->halt();
                             }
 
-                            self::provider()->reply(self::accountId($record), $record->external_review_id, $data['reply_text'], $record->location?->external_id);
+                            // Never fail silently: if the provider rejects the
+                            // reply (e.g. Google/Zernio error), show why and keep
+                            // the slide-over open so the text isn't lost.
+                            try {
+                                self::provider()->reply(self::accountId($record), $record->external_review_id, $data['reply_text'], $record->location?->external_id);
+                            } catch (Throwable $e) {
+                                Notification::make()
+                                    ->title(__('resources/reviews.reply_failed'))
+                                    ->body(Str::limit($e->getMessage(), 200))
+                                    ->danger()
+                                    ->send();
+                                $action->halt();
+                            }
 
                             $record->forceFill([
                                 'reply_text' => $data['reply_text'],
@@ -344,6 +369,50 @@ class ReviewsTable
                             ])->save();
 
                             Notification::make()->title(__('resources/reviews.reply_published'))->success()->send();
+                        }),
+
+                    // Re-run a failed reply: re-post an already-drafted text, or
+                    // regenerate if the failure was during AI generation.
+                    Action::make('retry')
+                        ->label(__('resources/reviews.retry'))
+                        ->icon(Heroicon::OutlinedArrowPath)
+                        ->color('warning')
+                        ->visible(fn (Review $record): bool => $record->reply_text === null
+                            && $record->latestQueueItem?->status === 'failed'
+                            && (auth()->user()?->can('manage_reviews') ?? false))
+                        ->requiresConfirmation()
+                        ->modalHeading(__('resources/reviews.retry_heading'))
+                        ->modalDescription(__('resources/reviews.retry_desc'))
+                        ->action(function (Review $record): void {
+                            $workspace = Workspace::find(session('current_workspace_id'));
+                            if ($workspace === null) {
+                                return;
+                            }
+
+                            try {
+                                $item = app(AutomationService::class)->retry($workspace, $record);
+                            } catch (Throwable $e) {
+                                Notification::make()
+                                    ->title(__('resources/reviews.reply_failed'))
+                                    ->body(Str::limit($e->getMessage(), 200))
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            if ($item === null) {
+                                Notification::make()->title(__('resources/reviews.retry_nothing'))->warning()->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title($item->status === 'published'
+                                    ? __('resources/reviews.reply_published')
+                                    : __('resources/reviews.retry_queued'))
+                                ->success()
+                                ->send();
                         }),
 
                     Action::make('deleteReply')
@@ -499,5 +568,18 @@ class ReviewsTable
     private static function accountId(Review $record): string
     {
         return $record->location?->zernio_account_id ?? 'fake-account';
+    }
+
+    /**
+     * The reply text drafted but not yet posted: the queued reply awaiting
+     * approval or scheduled to post. Null for failed/skipped/none.
+     */
+    private static function pendingReplyDraft(Review $record): ?string
+    {
+        $item = $record->latestQueueItem;
+
+        return $item !== null && in_array($item->status, ['pending', 'scheduled'], true)
+            ? $item->generated_text
+            : null;
     }
 }

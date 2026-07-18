@@ -19,7 +19,9 @@ return [
     'no_reply' => '— keine Antwort —',
     'status_replied' => 'Beantwortet',
     'status_pending' => 'Ausstehend',
+    'status_scheduled' => 'Geplant',
     'status_failed' => 'Fehlgeschlagen',
+    'reply_draft_note' => 'Entwurf, noch nicht veröffentlicht',
 
     // Filters
     'review_date' => 'Bewertungsdatum',
@@ -69,10 +71,16 @@ return [
     'reply_deleted' => 'Antwort gelöscht',
     'no_changes' => 'Keine Änderungen zum Speichern',
     'reply_published' => 'Antwort veröffentlicht',
+    'reply_failed' => 'Antwort konnte nicht gepostet werden',
     'ai_limit_reached' => 'KI-Limit erreicht',
     'ai_limit_body' => 'Du hast alle KI-Antworten diesen Monat aufgebraucht. Bearbeite manuell oder upgrade für ein höheres Limit.',
     'generation_failed' => 'Generierung fehlgeschlagen',
     'reply_generated' => 'Antwort generiert',
+    'retry' => 'Erneut versuchen',
+    'retry_heading' => 'Antwort erneut versuchen?',
+    'retry_desc' => 'Wir versuchen es erneut: die entworfene Antwort erneut posten oder neu generieren, falls der KI-Schritt fehlschlug.',
+    'retry_queued' => 'Antwort erneut eingeplant',
+    'retry_nothing' => 'Nichts zum Wiederholen. Antworte stattdessen manuell.',
 
     // Status tabs (mirror the auto-reply approval queue)
     'tab_all' => 'Alle',
