@@ -44,7 +44,7 @@ class EmailTemplateCatalog
             'location_synced' => ['title' => 'Reviews imported', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'count' => '2', 'url' => self::url('reviews')]],
             'account_disconnected' => ['title' => 'Account disconnected', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'account' => 'Acme Google', 'url' => self::url('locations')]],
             'sync_restored' => ['title' => 'Sync restored', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'account' => 'Acme Google', 'url' => self::url('locations')]],
-            'approvals_pending' => ['title' => 'Approvals pending', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'count' => '4', 'url' => self::url('approvals')]],
+            'approvals_pending' => ['title' => 'Approvals pending', 'category' => 'Operations', 'sample' => ['name' => 'Peter', 'count' => '4', 'replies' => 'replies', 'url' => self::url('approvals')]],
 
             'new_reviews' => ['title' => 'New reviews digest', 'category' => 'Reputation', 'sample' => ['name' => 'Peter', 'count' => '3', 'location' => 'GAME OVER Vienna', 'url' => self::url('reviews')]],
             'negative_review' => ['title' => 'Negative review', 'category' => 'Reputation', 'sample' => ['name' => 'Peter', 'business' => 'GAME OVER Vienna', 'rating' => '2', 'url' => self::url('reviews')]],
@@ -118,6 +118,10 @@ class EmailTemplateCatalog
             'reply_failed' => ['table' => EmailBlocks::reviews([
                 ['author' => 'Cornel Tom', 'snippet' => 'Long wait and the room felt rushed.'],
             ])],
+            'approvals_pending' => ['table' => EmailBlocks::approvals([
+                ['location' => 'GAME OVER Vienna', 'author' => 'Darthpixi', 'rating' => 5, 'review' => 'Absolutely fantastic, so much fun!', 'reply' => 'Thank you so much, Darthpixi! We had a blast having you and hope to see you again soon.'],
+                ['location' => 'GAME OVER Vienna', 'author' => 'Cornel Tom', 'rating' => 2, 'review' => 'Long wait and the room felt rushed.', 'reply' => 'Thanks for the honest feedback, Cornel. We are sorry about the wait and are already adjusting our scheduling to fix it.'],
+            ], $t('approvals_pending.reply_label'))],
             'review_anomaly' => ['items' => EmailBlocks::list([
                 '<strong>GAME OVER Vienna</strong>: '.e(__('emails.review_anomaly.stalled', ['days' => 17], $locale)),
                 '<strong>Branch 2</strong>: '.e(__('emails.review_anomaly.negative_streak', ['count' => 4], $locale)),
@@ -148,7 +152,7 @@ class EmailTemplateCatalog
         return match ($key) {
             'invite' => __('emails.invite.subject', ['workspace' => ':workspace'], $locale),
             'trial_ending' => __('emails.trial_ending.subject', ['days' => ':days'], $locale),
-            'approvals_pending' => __('emails.approvals_pending.subject', ['count' => ':count'], $locale),
+            'approvals_pending' => __('emails.approvals_pending.subject', ['count' => ':count', 'replies' => ':replies'], $locale),
             'new_reviews' => __('emails.new_reviews.subject', ['count' => ':count'], $locale),
             'negative_review' => __('emails.negative_review.subject', ['rating' => ':rating'], $locale),
             'review_anomaly' => __('emails.review_anomaly.subject', ['count' => ':count'], $locale),
@@ -246,7 +250,8 @@ class EmailTemplateCatalog
             ], __('emails.sync_restored.cta', [], $locale)),
 
             'approvals_pending' => self::shell($locale, self::greeting($locale), [
-                __('emails.approvals_pending.intro', ['count' => ':count'], $locale),
+                __('emails.approvals_pending.intro', ['count' => ':count', 'replies' => ':replies'], $locale),
+                '{{ table }}',
             ], __('emails.approvals_pending.cta', [], $locale)),
 
             'new_reviews' => self::shell($locale, self::greeting($locale), [

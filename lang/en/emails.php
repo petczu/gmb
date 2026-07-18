@@ -156,8 +156,10 @@ return [
     ],
 
     'approvals_pending' => [
-        'subject' => ':count repl(y/ies) waiting for approval',
-        'intro' => 'You have :count repl(y/ies) waiting for your approval. Review and approve them so they can be posted.',
+        'subject' => ':count :replies waiting for approval',
+        'intro' => 'You have :count :replies waiting for your approval. Review and approve so they get posted.',
+        'reply_word' => '{1}reply|[2,*]replies',
+        'reply_label' => 'Suggested reply',
         'cta' => 'Review approvals',
     ],
 
@@ -237,7 +239,7 @@ return [
         'cta' => 'Create your review page',
     ],
     'drip_reports' => [
-        'subject' => 'Reports your clients will actually read',
+        'subject' => 'Reports that actually get read',
         'intro' => 'Build a performance report from blocks: KPIs, AI summary, staff mentions, themes. Download as PDF or share a link.',
         'tip' => 'Set it once, send it monthly: schedule the report and it lands in inboxes automatically, in English or German.',
         'cta' => 'Build a report',

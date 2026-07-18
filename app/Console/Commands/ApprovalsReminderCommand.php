@@ -7,6 +7,9 @@ namespace App\Console\Commands;
 use App\Mail\ApprovalsPendingMail;
 use App\Models\AutoReplyQueueItem;
 use App\Models\Workspace;
+use App\Services\Ai\AutomationService;
+use App\Services\Notifications\NotificationCategory;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -71,14 +74,17 @@ class ApprovalsReminderCommand extends Command
         $workspace->setAttribute($flag, true);
         $workspace->save();
 
+        $samples = AutomationService::pendingApprovalSamples();
+
         try {
-            app(\App\Services\Notifications\NotificationDispatcher::class)->dispatch(
+            app(NotificationDispatcher::class)->dispatch(
                 $workspace,
-                \App\Services\Notifications\NotificationCategory::OPERATIONS,
+                NotificationCategory::OPERATIONS,
                 fn (string $name, string $lang) => new ApprovalsPendingMail(
                     name: $name,
                     count: $count,
                     approvalsUrl: rtrim((string) config('app.url'), '/').'/approvals',
+                    samples: $samples,
                     lang: $lang,
                 ),
             );

@@ -124,6 +124,47 @@ class EmailBlocks
     }
 
     /**
+     * Approval cards: each shows the location, the review (author + stars +
+     * text) and the AI-drafted reply awaiting approval, so the owner can judge
+     * it without opening the app. $replyLabel names the reply block ("Your
+     * reply") in the recipient's language.
+     *
+     * @param  list<array{location?: string|null, author?: string|null, rating?: int|null, review?: string|null, reply?: string|null}>  $items
+     */
+    public static function approvals(array $items, string $replyLabel): string
+    {
+        $cards = '';
+        foreach ($items as $item) {
+            $author = e((string) ($item['author'] ?? ''));
+            $review = e((string) ($item['review'] ?? ''));
+            $reply = e((string) ($item['reply'] ?? ''));
+            $rating = $item['rating'] ?? null;
+            $stars = $rating !== null
+                ? '<td align="right" style="white-space:nowrap;vertical-align:top;font-size:15px;padding-inline-start:8px;">'.self::stars((int) $rating).'</td>'
+                : '';
+            $location = isset($item['location']) && $item['location'] !== null && $item['location'] !== ''
+                ? '<div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;">'.e((string) $item['location']).'</div>'
+                : '';
+            $reviewText = $review !== ''
+                ? '<div style="font-size:14px;color:#374151;margin-top:8px;line-height:1.55;">'.$review.'</div>'
+                : '';
+
+            $cards .= '<div style="border:1px solid #eef2f7;border-radius:10px;padding:14px 16px;margin:12px 0;background:#fafbfc;">'
+                .$location
+                .'<table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr>'
+                .'<td style="font-weight:600;font-size:15px;color:#111827;vertical-align:top;">'.$author.'</td>'.$stars
+                .'</tr></table>'.$reviewText
+                .'<div style="border-inline-start:3px solid #1800ff;background:#f4f2ff;border-radius:6px;padding:10px 12px;margin-top:12px;">'
+                .'<div style="font-size:11px;font-weight:600;color:#1800ff;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">'.e($replyLabel).'</div>'
+                .'<div style="font-size:14px;color:#374151;line-height:1.55;">'.$reply.'</div>'
+                .'</div>'
+                .'</div>';
+        }
+
+        return $cards;
+    }
+
+    /**
      * Mobile-friendly vertical review cards (author + stars on top, optional
      * location, then the full review text) instead of a wide table.
      *

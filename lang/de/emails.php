@@ -156,8 +156,10 @@ return [
     ],
 
     'approvals_pending' => [
-        'subject' => ':count Antwort(en) warten auf Freigabe',
-        'intro' => 'Du hast :count Antwort(en), die auf deine Freigabe warten. Prüfe und genehmige sie, damit sie veröffentlicht werden können.',
+        'subject' => 'Freigabe ausstehend: :count :replies',
+        'intro' => 'Du hast :count :replies zur Freigabe. Prüfe und gib sie frei, damit sie veröffentlicht werden.',
+        'reply_word' => '{1}Antwort|[2,*]Antworten',
+        'reply_label' => 'Vorgeschlagene Antwort',
         'cta' => 'Freigaben prüfen',
     ],
 
@@ -237,7 +239,7 @@ return [
         'cta' => 'Bewertungsseite erstellen',
     ],
     'drip_reports' => [
-        'subject' => 'Berichte, die deine Kunden wirklich lesen',
+        'subject' => 'Berichte, die wirklich gelesen werden',
         'intro' => 'Baue einen Performance-Bericht aus Blöcken: KPIs, KI-Zusammenfassung, Mitarbeiter-Erwähnungen, Themen. Als PDF oder per Link teilen.',
         'tip' => 'Einmal einrichten, monatlich senden: plane den Bericht und er landet automatisch im Postfach, auf Deutsch oder Englisch.',
         'cta' => 'Bericht erstellen',
