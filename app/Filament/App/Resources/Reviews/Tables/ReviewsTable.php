@@ -43,6 +43,9 @@ class ReviewsTable
             // When the multi-review digest email deep-linked here
             // (?reviews=1,2,3), show ONLY those reviews plus a banner to clear.
             ->modifyQueryUsing(function (Builder $query) use ($table): Builder {
+                // Eager-load the agent (directly and via the queue item) so the
+                // "Replied by" column can name it without an N+1.
+                $query->with(['aiAgent', 'latestQueueItem.aiAgent']);
                 $ids = $table->getLivewire()->emailReviewIds ?? [];
 
                 return $ids === [] ? $query : $query->whereIn('id', $ids);
@@ -155,7 +158,9 @@ class ReviewsTable
                         default => 'success',
                     })
                     ->state(fn (Review $record): ?string => $record->reply_text === null ? null : match ($record->reply_source) {
-                        'ai_auto', 'ai_draft' => $record->aiAgent?->name ?? __('resources/reviews.replied_ai'),
+                        'ai_auto', 'ai_draft' => $record->aiAgent?->name
+                            ?? $record->latestQueueItem?->aiAgent?->name
+                            ?? __('resources/reviews.replied_ai'),
                         'mcp' => __('resources/reviews.replied_assistant'),
                         'api' => __('resources/reviews.replied_api'),
                         'external' => __('resources/reviews.replied_google'),
