@@ -61,11 +61,13 @@ Schedule::command('competitors:refresh --connected-only')->dailyAt('06:00');
 // come from the reviews backfill when enabled.
 Schedule::command('competitors:refresh --watchlist')->weeklyOn(1, '06:30');
 
-// Weekly top-up of individual competitor reviews (exact per-day history).
-// No-op unless DATAFORSEO_REVIEWS_ENABLED is set; --delta only fetches the
-// newest, so ongoing cost is negligible. The one-time full backfill is run
-// manually (competitors:backfill-reviews) when the add-on goes live.
-Schedule::command('competitors:backfill-reviews --delta')->weeklyOn(1, '07:00');
+// Daily top-up of individual competitor reviews (exact per-day history).
+// No-op unless DATAFORSEO_REVIEWS_ENABLED is set; --delta only fetches reviews
+// newer than the last one stored, so each daily pass is cheap. The one-time
+// full backfill is run manually (competitors:backfill-reviews) when the add-on
+// goes live. Daily gives true per-day competitor review history (higher Business
+// Data API spend than weekly, but --delta keeps each run small).
+Schedule::command('competitors:backfill-reviews --delta')->dailyAt('07:00');
 
 // Global AI budget guard: emails super-admins at 80%/100% of
 // AI_MONTHLY_BUDGET_USD (no-op while unset).
