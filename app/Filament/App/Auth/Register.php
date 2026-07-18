@@ -141,6 +141,12 @@ class Register extends BaseRegister
                             ->action('resendCode'),
                     ),
 
+                // Capture the browser's IANA timezone so the new account starts
+                // in the user's real timezone (dates, scheduling) instead of the
+                // server default. Alpine fills it on load; validated server-side.
+                Hidden::make('timezone')
+                    ->extraAttributes(['x-init' => "\$wire.set('data.timezone', Intl.DateTimeFormat().resolvedOptions().timeZone, false)"]),
+
                 // Step 3: the Terms in a scroll box; reaching the end sets
                 // terms_read (see resources/views/auth/terms-box.blade.php),
                 // which unlocks the register button.
@@ -302,6 +308,9 @@ class Register extends BaseRegister
             // Remember the language they signed up in so the beta/welcome emails
             // and the pending screen match it (defaults to 'en' otherwise).
             'locale' => in_array(app()->getLocale(), ['en', 'de'], true) ? app()->getLocale() : 'en',
+            // The browser's timezone (validated), so dates/scheduling default to
+            // the user's real timezone rather than the server's.
+            'timezone' => $this->detectedTimezone(),
         ]);
 
         // The code proved mailbox ownership — mark verified, same as Google.
@@ -377,6 +386,14 @@ class Register extends BaseRegister
         session()->forget('pending_invite');
 
         return $accepted;
+    }
+
+    /** The browser-reported IANA timezone, if it's a valid identifier. */
+    protected function detectedTimezone(): ?string
+    {
+        $tz = trim((string) data_get($this->data, 'timezone'));
+
+        return $tz !== '' && in_array($tz, \DateTimeZone::listIdentifiers(), true) ? $tz : null;
     }
 
     protected function sendWelcomeEmail(Model $user): void
