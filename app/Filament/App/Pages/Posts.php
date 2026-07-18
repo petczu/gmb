@@ -644,7 +644,16 @@ class Posts extends Page implements HasTable
             'image_url' => $post->image_url,
             'cta_type' => $post->cta_type,
             'cta_url' => $post->cta_url,
-            'location_ids' => $post->location_ids,
+            'photo_category' => $post->photo_category,
+            'starts_at' => $post->starts_at,
+            'ends_at' => $post->ends_at,
+            'voucher_code' => $post->voucher_code,
+            'redeem_url' => $post->redeem_url,
+            'terms_url' => $post->terms_url,
+            'location_ids' => $post->location_ids ?? [],
+            // source_ids is a NOT NULL json column; a fresh draft hasn't been
+            // sent anywhere yet, so it starts empty.
+            'source_ids' => [],
             'status' => 'draft',
             'origin' => 'app',
         ]);
