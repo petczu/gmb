@@ -204,15 +204,6 @@ class Competitors extends Page implements HasTable
                         return new HtmlString('<span title="'.e($address).'">'.e(Str::limit($address, 52)).'</span>');
                     }),
 
-                // Which of your locations (cities) this competitor is compared
-                // against; "all" when it hasn't been narrowed to a city yet.
-                TextColumn::make('own_locations')
-                    ->label(__('pages/competitors.col_locations'))
-                    ->badge()
-                    ->color('gray')
-                    ->placeholder('—')
-                    ->state(fn (Competitor $record): array => $this->boundLocationsList($record)),
-
                 TextColumn::make('group')
                     ->label(__('pages/competitors.col_group'))
                     ->badge()
@@ -379,29 +370,6 @@ class Competitors extends Page implements HasTable
     protected function ownLocationOptions(): array
     {
         return $this->locationNameMap ??= Location::query()->orderBy('name')->pluck('name', 'id')->all();
-    }
-
-    /**
-     * The "Locations" column badges: one per city the competitor is compared
-     * against, or a single "All" while it hasn't been narrowed.
-     *
-     * @return list<string>
-     */
-    protected function boundLocationsList(Competitor $competitor): array
-    {
-        $own = $competitor->battle?->ownLocationIds() ?? [];
-        sort($own);
-
-        $all = $this->allOwnLocationIds();
-        sort($all);
-
-        if ($own === [] || $own === $all) {
-            return [__('pages/competitors.all_cities')];
-        }
-
-        $map = $this->ownLocationOptions();
-
-        return array_values(array_filter(array_map(fn (int $id): ?string => $map[$id] ?? null, $own)));
     }
 
     /** @return list<int> */

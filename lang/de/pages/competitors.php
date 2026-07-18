@@ -17,8 +17,6 @@ return [
     'col_name' => 'Wettbewerber',
     'col_rating' => 'Bewertung',
     'col_reviews' => 'Rezensionen',
-    'col_locations' => 'Standorte',
-    'all_cities' => 'Alle',
     'filter_location' => 'Standort',
     'col_vs' => 'Vergleich',
     'col_location' => 'Deine Seite',

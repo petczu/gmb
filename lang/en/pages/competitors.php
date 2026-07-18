@@ -17,8 +17,6 @@ return [
     'col_name' => 'Competitor',
     'col_rating' => 'Rating',
     'col_reviews' => 'Reviews',
-    'col_locations' => 'Locations',
-    'all_cities' => 'All',
     'filter_location' => 'Location',
     'col_vs' => 'Vs. you',
     'col_location' => 'Your side',
