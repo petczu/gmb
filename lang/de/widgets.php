@@ -46,6 +46,7 @@ return [
     'col_reply' => 'Antwort',
     'replied' => 'Beantwortet',
     'pending' => 'Ausstehend',
+    'scheduled' => 'Geplant',
 
     // Mitbewerber-Widget
     'competitors_title' => 'Mitbewerber-Vergleich',

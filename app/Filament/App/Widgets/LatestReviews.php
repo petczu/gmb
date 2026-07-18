@@ -42,6 +42,7 @@ class LatestReviews extends TableWidget
         return $table
             ->heading(__('widgets.latest_reviews'))
             ->query(fn (): Builder => Review::query()
+                ->with('latestQueueItem')
                 ->when($period->locationIds !== [], fn (Builder $q): Builder => $q->whereIn('location_id', $period->locationIds))
                 ->whereBetween('created_at_external', [$period->start, $period->end])
                 ->latest('created_at_external')
@@ -75,8 +76,18 @@ class LatestReviews extends TableWidget
                 TextColumn::make('reply_status')
                     ->label(__('widgets.col_reply'))
                     ->badge()
-                    ->formatStateUsing(fn (Review $record): string => $record->reply_text ? __('widgets.replied') : __('widgets.pending'))
-                    ->color(fn (Review $record): string => $record->reply_text ? 'success' : 'gray'),
+                    // ->state (not formatStateUsing) so the badge still renders
+                    // when reply_status is null (not-yet-replied rows).
+                    ->state(fn (Review $record): string => match (true) {
+                        (bool) $record->reply_text => __('widgets.replied'),
+                        $record->latestQueueItem?->status === 'scheduled' => __('widgets.scheduled'),
+                        default => __('widgets.pending'),
+                    })
+                    ->color(fn (Review $record): string => match (true) {
+                        (bool) $record->reply_text => 'success',
+                        $record->latestQueueItem?->status === 'scheduled' => 'info',
+                        default => 'gray',
+                    }),
             ]);
     }
 }

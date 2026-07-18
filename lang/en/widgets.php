@@ -46,6 +46,7 @@ return [
     'col_reply' => 'Reply',
     'replied' => 'Replied',
     'pending' => 'Pending',
+    'scheduled' => 'Scheduled',
 
     // Competitor benchmark widget
     'competitors_title' => 'Competitor benchmark',
