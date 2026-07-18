@@ -18,10 +18,16 @@
             .pc-toggle button { border:0; background:transparent; padding:.35rem .8rem; font-size:.85rem; cursor:pointer; color:inherit; }
             .pc-toggle button.active { background:#2d19ec; color:#fff; }
 
-            .pc-grid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); border:1px solid rgb(0 0 0 / .08); border-radius:.75rem; overflow:hidden; background:#fff; }
+            .pc-grid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); border:1px solid rgb(0 0 0 / .08); border-radius:.75rem; background:#fff; }
             .dark .pc-grid { background:#18181b; border-color: rgb(255 255 255 / .1); }
-            .pc-dow { padding:.5rem .6rem; font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#6b7280; border-bottom:1px solid rgb(0 0 0 / .08); background: rgb(0 0 0 / .02); }
-            .dark .pc-dow { border-color: rgb(255 255 255 / .1); background: rgb(255 255 255 / .03); color:#a1a1aa; }
+            /* Weekday header row sticks to the top so it stays visible while scrolling. */
+            .pc-dow { position:sticky; top:0; z-index:5; padding:.5rem .6rem; font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#6b7280; border-bottom:1px solid rgb(0 0 0 / .08); background:#f3f4f6; }
+            .dark .pc-dow { border-color: rgb(255 255 255 / .1); background:#26262b; color:#a1a1aa; }
+            /* Weekends read a shade darker so they stand out from work days. */
+            .pc-dow.weekend { background:#e5e7eb; color:#4b5563; }
+            .dark .pc-dow.weekend { background:#303036; color:#d4d4d8; }
+            .pc-day.weekend { background: rgb(0 0 0 / .035); }
+            .dark .pc-day.weekend { background: rgb(255 255 255 / .045); }
             .pc-day { min-height:7.5rem; padding:.4rem; border-bottom:1px solid rgb(0 0 0 / .06); border-right:1px solid rgb(0 0 0 / .06); }
             .pc-grid.week .pc-day { min-height:22rem; }
             .pc-day:nth-child(7n) { border-right:0; }
@@ -229,7 +235,8 @@
 
             <div class="pc-grid {{ $isWeekView ? 'week' : '' }}">
                 @for ($i = 0; $i < 7; $i++)
-                    <div class="pc-dow">
+                    {{-- With a Monday-start week, columns 6 and 7 are Sat/Sun. --}}
+                    <div class="pc-dow {{ $i >= 5 ? 'weekend' : '' }}">
                         {{ ($isWeekView ? $dowDays[$i] : $dowStart->addDays($i))->translatedFormat('D') }}
                         @if ($isWeekView)
                             <span style="{{ $dowDays[$i]->isToday() ? 'color:#fff; background:#dc2626; border-radius:.35rem; padding:.05rem .35rem; font-weight:700;' : '' }}">{{ $dowDays[$i]->day }}</span>
@@ -241,7 +248,7 @@
                     @foreach ($week as $day)
                         {{-- Drop target: notes and DRAFT posts can be dragged onto
                              another day (payload "note:{id}" / "draft:{id}"). --}}
-                        <div class="pc-day {{ $day['inMonth'] ? '' : 'out' }}"
+                        <div class="pc-day {{ $day['inMonth'] ? '' : 'out' }} {{ $day['date']->isWeekend() ? 'weekend' : '' }}"
                             x-data
                             @dragover.prevent="$event.dataTransfer.dropEffect = 'move'; $el.classList.add('drop')"
                             @dragleave="if (! $el.contains($event.relatedTarget)) $el.classList.remove('drop')"
