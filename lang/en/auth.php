@@ -23,7 +23,7 @@ return [
     'hero_register_subtitle' => 'More reviews coming in, every one of them answered, and a report at the end of the month that proves it.',
     'hero_register_points' => [
         'Replies written in your voice. Let them go out on their own or look each one over first',
-        'Monthly PDF reports your clients actually read',
+        'Monthly PDF reports that actually get read',
         'A QR page that brings reviews in, Google posts, and a quiet eye on your competitors',
     ],
     'hero_register_footnote' => 'Takes about 10 minutes: connect your Google Business Profile and you\'re off.',

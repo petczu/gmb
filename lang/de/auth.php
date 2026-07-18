@@ -23,7 +23,7 @@ return [
     'hero_register_subtitle' => 'Mehr Bewertungen, jede einzelne beantwortet, und am Monatsende ein Bericht, der es schwarz auf weiß zeigt.',
     'hero_register_points' => [
         'Antworten in deiner Stimme. Von allein rausgehen lassen oder jede vorher kurz anschauen',
-        'Monatliche PDF-Berichte, die deine Kunden wirklich lesen',
+        'Monatliche PDF-Berichte, die wirklich gelesen werden',
         'Eine QR-Seite, die Bewertungen bringt, Google-Posts und nebenbei ein Auge auf die Konkurrenz',
     ],
     'hero_register_footnote' => 'Dauert etwa 10 Minuten: Google-Unternehmensprofil verbinden und los geht\'s.',

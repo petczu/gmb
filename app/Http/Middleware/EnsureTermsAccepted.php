@@ -25,8 +25,9 @@ class EnsureTermsAccepted
             return $next($request);
         }
 
-        // Logging out must always work from the review screen.
-        if ($request->routeIs('filament.app.auth.logout')) {
+        // Logging out — and switching the review screen's language — must always
+        // work, even before the updated Terms are accepted.
+        if ($request->routeIs('filament.app.auth.logout', 'locale.switch')) {
             return $next($request);
         }
 

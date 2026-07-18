@@ -20,10 +20,20 @@
         .actions { display:flex; align-items:center; gap:1.25rem; }
         .btn { display:inline-block; background:#1800ff; color:#fff; border:0; border-radius:.6rem; padding:.75rem 1.6rem; font-weight:600; font-size:1rem; cursor:pointer; }
         .quiet { color:#6b7280; font-size:.9rem; text-decoration:underline; background:none; border:0; padding:0; cursor:pointer; }
+        .lang { position:fixed; top:1.3rem; right:1.5rem; z-index:20; display:inline-flex; gap:.25rem; font-size:.85rem; }
+        .lang a { padding:.2rem .5rem; border-radius:.4rem; color:#6b7280; text-decoration:none; }
+        .lang a.on { background:#eef2ff; color:#1800ff; font-weight:600; }
     </style>
 </head>
 <body>
     <a class="corner-logo" href="{{ url('/') }}">{!! view('filament.logo', ['theme' => 'light'])->render() !!}</a>
+
+    <nav class="lang" aria-label="Language">
+        @foreach (['en' => 'EN', 'de' => 'DE'] as $code => $label)
+            <a href="{{ route('locale.switch', $code) }}"
+               class="{{ app()->getLocale() === $code ? 'on' : '' }}">{{ $label }}</a>
+        @endforeach
+    </nav>
 
     <div class="wrap">
         <h1>{{ __('legal.accept_title') }}</h1>
