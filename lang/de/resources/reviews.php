@@ -7,6 +7,7 @@ return [
     'col_location' => 'Standort',
     'col_author' => 'Autor',
     'col_review' => 'Bewertung',
+    'only_rating' => 'Nur Bewertung',
     'col_reply' => 'Antwort',
     'col_status' => 'Status',
     'col_replied_by' => 'Beantwortet von',

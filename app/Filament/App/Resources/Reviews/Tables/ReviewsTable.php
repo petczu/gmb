@@ -94,6 +94,7 @@ class ReviewsTable
                     ->limit(70)
                     ->description(fn (Review $record): ?string => ($n = (int) $record->photo_count) > 0 ? '📷 '.$n : null)
                     ->state(fn (Review $record): ?string => $record->originalText())
+                    ->placeholder(__('resources/reviews.only_rating'))
                     ->tooltip(fn (Review $record): ?string => $record->translatedText()
                         ? $record->originalText()."\n\n(Google: ".$record->translatedText().')'
                         : $record->originalText())

@@ -67,6 +67,7 @@ class LatestReviews extends TableWidget
                     ->label(__('widgets.col_review'))
                     ->wrap()
                     ->limit(70)
+                    ->placeholder(__('widgets.only_rating'))
                     ->state(fn (Review $record): ?string => $record->originalText()),
 
                 TextColumn::make('created_at_external')

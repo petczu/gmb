@@ -42,6 +42,7 @@ return [
     'col_location' => 'Location',
     'col_author' => 'Author',
     'col_review' => 'Review',
+    'only_rating' => 'Only rating',
     'col_date' => 'Date',
     'col_reply' => 'Reply',
     'replied' => 'Replied',
