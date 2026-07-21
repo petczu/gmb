@@ -3,7 +3,9 @@
         .cmp-row { display: flex; align-items: center; gap: 1rem; padding: .65rem 0; font-size: .85rem; }
         .cmp-row + .cmp-row { border-top: 1px solid rgb(243 244 246); }
         .dark .cmp-row + .cmp-row { border-color: rgba(255,255,255,.08); }
-        .cmp-name { flex: 1 1 32%; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cmp-name { flex: 1 1 32%; min-width: 0; font-weight: 600; display: flex; flex-direction: column; gap: .1rem; }
+        .cmp-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cmp-addr { font-weight: 400; font-size: .72rem; color: rgb(107 114 128); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .cmp-ratings { flex: 0 0 auto; display: flex; align-items: baseline; gap: .45rem; white-space: nowrap; }
         .cmp-you { font-weight: 700; }
         .cmp-vs { color: rgb(156 163 175); font-size: .75rem; }
@@ -52,7 +54,12 @@
         @else
             @foreach ($rows as $row)
                 <div class="cmp-row">
-                    <span class="cmp-name" title="{{ $row['name'] }}">{{ $row['name'] }}</span>
+                    <span class="cmp-name">
+                        <span class="cmp-title" title="{{ $row['name'] }}">{{ $row['name'] }}</span>
+                        @if (! empty($row['address']))
+                            <span class="cmp-addr" title="{{ $row['address'] }}">{{ $row['address'] }}</span>
+                        @endif
+                    </span>
 
                     <span class="cmp-ratings">
                         <span class="cmp-you">{{ $row['ownRating'] !== null ? number_format($row['ownRating'], 1).'★' : '—' }}</span>

@@ -93,8 +93,15 @@ class CompetitorBenchmarkWidget extends Widget
                 ]),
             );
 
+            // Single-competitor battle → show its address; a named group has no
+            // single address, so leave it blank.
+            $address = $battle->competitors->count() === 1
+                ? ($battle->competitors->first()->address ?: null)
+                : null;
+
             return [
                 'name' => $battle->displayName(),
+                'address' => $address,
                 'ownRating' => $ownRating,
                 'theirRating' => $theirRating,
                 'delta' => $ownRating !== null && $theirRating !== null ? round($ownRating - $theirRating, 1) : null,
