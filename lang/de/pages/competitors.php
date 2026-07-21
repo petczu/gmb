@@ -18,6 +18,7 @@ return [
     'col_rating' => 'Bewertung',
     'col_reviews' => 'Rezensionen',
     'filter_location' => 'Standort',
+    'filter_city' => 'Stadt',
     'col_vs' => 'Vergleich',
     'col_location' => 'Deine Seite',
     'col_checked' => 'Aktualisiert',

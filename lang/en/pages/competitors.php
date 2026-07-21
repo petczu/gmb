@@ -18,6 +18,7 @@ return [
     'col_rating' => 'Rating',
     'col_reviews' => 'Reviews',
     'filter_location' => 'Location',
+    'filter_city' => 'City',
     'col_vs' => 'Vs. you',
     'col_location' => 'Your side',
     'col_checked' => 'Updated',

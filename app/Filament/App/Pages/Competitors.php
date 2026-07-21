@@ -228,6 +228,13 @@ class Competitors extends Page implements HasTable
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when($data['value'] ?? null, fn (Builder $q, $id): Builder => $q
                             ->whereHas('battle', fn (Builder $b): Builder => $b->whereJsonContains('own_location_ids', (int) $id)))),
+
+                SelectFilter::make('city')
+                    ->label(__('pages/competitors.filter_city'))
+                    ->options(fn (): array => $this->cityOptions())
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['value'] ?? null, fn (Builder $q, $city): Builder => $q
+                            ->where('address', 'like', '%'.$city.'%'))),
             ])
             ->recordActions([
                 ActionGroup::make([
@@ -376,6 +383,50 @@ class Competitors extends Page implements HasTable
     protected function allOwnLocationIds(): array
     {
         return Location::query()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+    }
+
+    /**
+     * Distinct cities parsed from competitor addresses, for the City filter.
+     *
+     * @return array<string, string>
+     */
+    protected function cityOptions(): array
+    {
+        $cities = Competitor::query()->whereNotNull('address')->pluck('address')
+            ->map(fn (?string $address): ?string => $this->extractCity($address))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        return $cities->mapWithKeys(fn (string $city): array => [$city => $city])->all();
+    }
+
+    /**
+     * Best-effort city from an address. First the text right before a 4-6 digit
+     * postal code (e.g. "…, Riyadh 11564, …" → "Riyadh"); otherwise the last
+     * address component (skipping a trailing country), which covers addresses
+     * with no postal code (e.g. "…, Dubai"). Null when nothing parses.
+     */
+    protected function extractCity(?string $address): ?string
+    {
+        if ($address === null || trim($address) === '') {
+            return null;
+        }
+
+        if (preg_match('/([\p{L}][\p{L} .\'-]*?)\s+\d{4,6}\b/u', $address, $matches) === 1) {
+            return trim($matches[1]);
+        }
+
+        $countries = ['saudi arabia', 'united arab emirates', 'uae', 'austria', 'germany', 'deutschland', 'österreich'];
+        $parts = array_values(array_filter(array_map('trim', explode(',', $address))));
+        if ($parts !== [] && in_array(mb_strtolower(end($parts)), $countries, true)) {
+            array_pop($parts);
+        }
+
+        $last = $parts === [] ? '' : trim((string) preg_replace('/\s*\d{3,}.*$/u', '', (string) end($parts)));
+
+        return $last !== '' ? $last : null;
     }
 
     protected function battleFormSchema(): array
