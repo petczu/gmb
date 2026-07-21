@@ -227,7 +227,7 @@ class Competitors extends Page implements HasTable
                     ->options(fn (): array => $this->ownLocationOptions())
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when($data['value'] ?? null, fn (Builder $q, $id): Builder => $q
-                            ->whereHas('battle', fn (Builder $b): Builder => $b->whereJsonContains('own_location_ids', (int) $id)))),
+                            ->whereIn('id', $this->competitorIdsNearLocation((int) $id)))),
 
                 SelectFilter::make('city')
                     ->label(__('pages/competitors.filter_city'))
@@ -383,6 +383,33 @@ class Competitors extends Page implements HasTable
     protected function allOwnLocationIds(): array
     {
         return Location::query()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+    }
+
+    /**
+     * Ids of competitors within CompetitorGeo::RADIUS_KM of one own location —
+     * by the competitor's OWN coordinates, so a grouped competitor from another
+     * city (the group's own_location_ids span several cities) is excluded.
+     * Falls back to the battle's own_location_ids when coordinates are missing.
+     *
+     * @return list<int>
+     */
+    protected function competitorIdsNearLocation(int $locationId): array
+    {
+        $selected = Location::query()->find($locationId);
+
+        if ($selected === null || $selected->latitude === null || $selected->longitude === null) {
+            return Competitor::query()
+                ->whereHas('battle', fn (Builder $b): Builder => $b->whereJsonContains('own_location_ids', $locationId))
+                ->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        }
+
+        $lat = (float) $selected->latitude;
+        $lng = (float) $selected->longitude;
+
+        return Competitor::query()->whereNotNull('latitude')->whereNotNull('longitude')
+            ->get(['id', 'latitude', 'longitude'])
+            ->filter(fn (Competitor $c): bool => CompetitorGeo::distanceKm($lat, $lng, (float) $c->latitude, (float) $c->longitude) <= CompetitorGeo::RADIUS_KM)
+            ->pluck('id')->map(fn ($id): int => (int) $id)->all();
     }
 
     /**
