@@ -7,6 +7,7 @@ namespace App\Filament\App\Widgets;
 use App\Models\CompetitorBattle;
 use App\Models\Location;
 use App\Models\LocationGroup;
+use App\Services\Competitors\CompetitorGeo;
 use App\Services\Competitors\CompetitorTrends;
 use App\Services\Competitors\PlacesClient;
 use App\Support\DashboardPeriod;
@@ -276,13 +277,15 @@ class CompetitorGrowthChart extends ChartWidget
     {
         $battles = CompetitorBattle::query()->with('competitors')->latest('created_at')->get();
 
-        // With a location selected, keep only competitors compared against it
-        // (same city); "all locations" (empty filter) keeps every competitor.
+        // With a location selected, keep only competitors in its city — matched
+        // by each competitor's own coordinates so a grouped battle's multi-city
+        // own_location_ids don't leak in competitors from other cities.
         $period = DashboardPeriod::fromFilters($this->pageFilters);
         if ($period->locationIds !== []) {
-            $battles = $battles->filter(
-                fn (CompetitorBattle $b): bool => array_intersect($b->ownLocationIds(), $period->locationIds) !== [],
-            );
+            $selected = Location::query()->whereIn('id', $period->locationIds)->get(['latitude', 'longitude']);
+
+            $battles = $battles->filter(fn (CompetitorBattle $b): bool => CompetitorGeo::anyCompetitorInSelected($b->competitors, $selected)
+                ?? (array_intersect($b->ownLocationIds(), $period->locationIds) !== []));
         }
 
         return $battles->values();

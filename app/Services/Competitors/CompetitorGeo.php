@@ -18,6 +18,31 @@ class CompetitorGeo
     /** Own locations within this radius of a competitor count as its city. */
     public const RADIUS_KM = 35.0;
 
+    /**
+     * Does any of the given competitors sit within RADIUS_KM of any of the
+     * selected locations, by the competitor's OWN coordinates? Returns null when
+     * coordinates are unavailable on either side — the caller should then fall
+     * back to the battle's own_location_ids. Used to scope the dashboard's
+     * competitor widgets to a selected location without letting a grouped
+     * battle's multi-city own_location_ids leak competitors from other cities.
+     *
+     * @param  Collection<int, object{latitude: ?float, longitude: ?float}>  $competitors
+     * @param  Collection<int, object{latitude: ?float, longitude: ?float}>  $selectedLocations
+     */
+    public static function anyCompetitorInSelected(Collection $competitors, Collection $selectedLocations): ?bool
+    {
+        $located = $competitors->filter(fn (object $c): bool => $c->latitude !== null && $c->longitude !== null);
+        $targets = $selectedLocations->filter(fn (object $l): bool => $l->latitude !== null && $l->longitude !== null);
+
+        if ($located->isEmpty() || $targets->isEmpty()) {
+            return null;
+        }
+
+        return $located->contains(fn (object $c): bool => $targets->contains(
+            fn (object $l): bool => self::distanceKm((float) $l->latitude, (float) $l->longitude, (float) $c->latitude, (float) $c->longitude) <= self::RADIUS_KM,
+        ));
+    }
+
     /** Great-circle distance in km between two points (haversine). */
     public static function distanceKm(float $lat1, float $lng1, float $lat2, float $lng2): float
     {

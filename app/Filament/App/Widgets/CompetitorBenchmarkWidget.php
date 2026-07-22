@@ -7,6 +7,7 @@ namespace App\Filament\App\Widgets;
 use App\Models\Competitor;
 use App\Models\CompetitorBattle;
 use App\Models\Location;
+use App\Services\Competitors\CompetitorGeo;
 use App\Services\Competitors\CompetitorTrends;
 use App\Services\Competitors\PlacesClient;
 use App\Support\DashboardPeriod;
@@ -61,13 +62,17 @@ class CompetitorBenchmarkWidget extends Widget
             ->latest('created_at')
             ->get();
 
-        // Honour the dashboard's location filter: with a location selected, show
-        // only competitors compared against it (same city). "All locations"
-        // (empty filter) shows every competitor.
+        // Honour the dashboard's location filter: keep a battle only if one of
+        // its competitors sits within range of a selected location, by the
+        // competitor's OWN coordinates. A grouped battle's own_location_ids span
+        // every member's city, so filtering by that would wrongly keep a
+        // Dubai-only group under a Riyadh filter. Fall back to own_location_ids
+        // when coordinates are missing.
         if ($period->locationIds !== []) {
-            $battles = $battles->filter(
-                fn (CompetitorBattle $b): bool => array_intersect($b->ownLocationIds(), $period->locationIds) !== [],
-            );
+            $selected = Location::query()->whereIn('id', $period->locationIds)->get(['latitude', 'longitude']);
+
+            $battles = $battles->filter(fn (CompetitorBattle $b): bool => CompetitorGeo::anyCompetitorInSelected($b->competitors, $selected)
+                ?? (array_intersect($b->ownLocationIds(), $period->locationIds) !== []));
         }
 
         $trends = app(CompetitorTrends::class);

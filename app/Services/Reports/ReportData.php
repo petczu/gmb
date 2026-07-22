@@ -7,6 +7,7 @@ namespace App\Services\Reports;
 use App\Models\Competitor;
 use App\Models\Location;
 use App\Models\Review;
+use App\Services\Competitors\CompetitorGeo;
 use App\Services\Competitors\CompetitorTrends;
 use App\Services\Listings\ListingPerformance;
 use App\Support\DashboardPeriod;
@@ -121,11 +122,19 @@ class ReportData
             ->orderByDesc('rating')
             ->get();
 
-        // With a location selected, keep only competitors compared against it
-        // (same city); "all locations" keeps every competitor. Filter via the
-        // battle's own locations (the legacy location_id may be null).
+        // With a location selected, keep only competitors in its city — by each
+        // competitor's own coordinates, so a grouped battle's multi-city
+        // own_location_ids don't leak in competitors from other cities. Fall back
+        // to own_location_ids / the legacy location_id when coordinates are absent.
         if ($period->locationIds !== []) {
-            $competitors = $competitors->filter(function (Competitor $c) use ($period): bool {
+            $selectedLocations = Location::query()->whereIn('id', $period->locationIds)->get(['latitude', 'longitude']);
+
+            $competitors = $competitors->filter(function (Competitor $c) use ($period, $selectedLocations): bool {
+                $match = CompetitorGeo::anyCompetitorInSelected(collect([$c]), $selectedLocations);
+                if ($match !== null) {
+                    return $match;
+                }
+
                 $own = $c->battle?->ownLocationIds() ?? [];
                 if ($own === [] && $c->location_id !== null) {
                     $own = [(int) $c->location_id];
