@@ -133,9 +133,10 @@ class CompetitorBattleTrendsTest extends TestCase
         $start = CarbonImmutable::parse('2026-07-08');
         $end = CarbonImmutable::parse('2026-07-10');
 
-        // Growth: rebased to 0 at the window start.
+        // Growth: rebased to 0 at the window start; the leading zero is hidden
+        // (null) so the line starts at the first real change.
         $growth = app(CompetitorTrends::class)->growthSeries(['p1'], [], $start, $end, 'growth');
-        $this->assertSame([0, 5, 12], $growth['places']['p1']);
+        $this->assertSame([null, 5, 12], $growth['places']['p1']);
 
         // Total: absolute review counts.
         $total = app(CompetitorTrends::class)->growthSeries(['p1'], [], $start, $end, 'total');

@@ -278,6 +278,11 @@ class CompetitorTrends
             $own[] = $running;
         }
 
+        // Hide the flat run before the first review (e.g. a location that only
+        // opened mid-window): leading zeros become null so the line starts at
+        // the first real data point instead of implying "0 reviews".
+        $own = $this->hideLeadingZeros($own);
+
         $placeIds = array_values(array_unique(array_filter($placeIds)));
 
         // Prefer the exact per-day history from the individual reviews backfill
@@ -349,7 +354,36 @@ class CompetitorTrends
             $places[$placeId] = $series;
         }
 
+        // Same treatment for competitors: a line only starts once it has data.
+        $places = array_map(fn (array $series): array => $this->hideLeadingZeros($series), $places);
+
         return ['labels' => $labels, 'own' => $own, 'places' => $places];
+    }
+
+    /**
+     * Replace a leading run of zeros/nulls with null so a chart line starts at
+     * its first real value (a business open only part of the window shouldn't
+     * read as a flat "0 reviews" before it existed). A never-positive series is
+     * returned unchanged so genuinely empty lines still render at zero.
+     *
+     * @param  list<int|null>  $series
+     * @return list<int|null>
+     */
+    private function hideLeadingZeros(array $series): array
+    {
+        if (! collect($series)->contains(fn ($v): bool => $v !== null && $v > 0)) {
+            return $series;
+        }
+
+        foreach ($series as $i => $value) {
+            if ($value === null || $value === 0) {
+                $series[$i] = null;
+            } else {
+                break;
+            }
+        }
+
+        return $series;
     }
 
     /**
