@@ -160,28 +160,32 @@ class ReviewsTable
                     ->placeholder('—')
                     ->toggleable()
                     ->visibleFrom('md')
-                    ->icon(fn (Review $record): ?Heroicon => $record->reply_text === null ? null : match ($record->reply_source) {
-                        'ai_auto', 'ai_draft' => Heroicon::OutlinedSparkles,
-                        'mcp' => Heroicon::OutlinedChatBubbleLeftRight,
-                        'api' => Heroicon::OutlinedCodeBracket,
-                        'external' => Heroicon::OutlinedGlobeAlt,
-                        default => Heroicon::OutlinedUser,
-                    })
-                    ->color(fn (Review $record): string => match ($record->reply_source) {
+                    ->icon(fn (Review $record): ?Heroicon => $record->reply_text === null
+                        ? (self::draftReplier($record) !== null ? Heroicon::OutlinedSparkles : null)
+                        : match ($record->reply_source) {
+                            'ai_auto', 'ai_draft' => Heroicon::OutlinedSparkles,
+                            'mcp' => Heroicon::OutlinedChatBubbleLeftRight,
+                            'api' => Heroicon::OutlinedCodeBracket,
+                            'external' => Heroicon::OutlinedGlobeAlt,
+                            default => Heroicon::OutlinedUser,
+                        })
+                    ->color(fn (Review $record): string => $record->reply_text === null ? 'info' : match ($record->reply_source) {
                         'ai_auto', 'ai_draft', 'mcp' => 'info',
                         'api' => 'warning',
                         'external' => 'gray',
                         default => 'success',
                     })
-                    ->state(fn (Review $record): ?string => $record->reply_text === null ? null : match ($record->reply_source) {
-                        'ai_auto', 'ai_draft' => $record->aiAgent?->name
-                            ?? $record->latestQueueItem?->aiAgent?->name
-                            ?? __('resources/reviews.replied_ai'),
-                        'mcp' => __('resources/reviews.replied_assistant'),
-                        'api' => __('resources/reviews.replied_api'),
-                        'external' => __('resources/reviews.replied_google'),
-                        default => __('resources/reviews.replied_human'),
-                    }),
+                    ->state(fn (Review $record): ?string => $record->reply_text === null
+                        ? self::draftReplier($record)
+                        : match ($record->reply_source) {
+                            'ai_auto', 'ai_draft' => $record->aiAgent?->name
+                                ?? $record->latestQueueItem?->aiAgent?->name
+                                ?? __('resources/reviews.replied_ai'),
+                            'mcp' => __('resources/reviews.replied_assistant'),
+                            'api' => __('resources/reviews.replied_api'),
+                            'external' => __('resources/reviews.replied_google'),
+                            default => __('resources/reviews.replied_human'),
+                        }),
 
                 TextColumn::make('created_at_external')
                     ->label(__('resources/reviews.col_date'))
@@ -589,15 +593,35 @@ class ReviewsTable
     }
 
     /**
-     * The reply text drafted but not yet posted: the queued reply awaiting
-     * approval or scheduled to post. Null for failed/skipped/none.
+     * The reply text drafted but not posted: the queued reply awaiting approval,
+     * scheduled to post, or one whose posting failed (so the failed tab still
+     * shows what we tried to send). Null when there is no draft text.
      */
     private static function pendingReplyDraft(Review $record): ?string
     {
         $item = $record->latestQueueItem;
 
-        return $item !== null && in_array($item->status, ['pending', 'scheduled'], true)
+        return $item !== null
+            && in_array($item->status, ['pending', 'scheduled', 'failed'], true)
+            && filled($item->generated_text)
             ? $item->generated_text
             : null;
+    }
+
+    /**
+     * The AI agent behind an unposted draft (pending/scheduled/failed) for the
+     * "Replied by" column, so a failed AI reply still shows who drafted it.
+     */
+    private static function draftReplier(Review $record): ?string
+    {
+        $item = $record->latestQueueItem;
+        if ($item === null || ! in_array($item->status, ['pending', 'scheduled', 'failed'], true)) {
+            return null;
+        }
+        if ($item->ai_agent_id === null && $item->model === null) {
+            return null;
+        }
+
+        return $item->aiAgent?->name ?? __('resources/reviews.replied_ai');
     }
 }
