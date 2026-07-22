@@ -37,6 +37,11 @@ Schedule::command('auto-reply:post-due')->everyFiveMinutes();
 // Remind owners daily about replies that have been waiting >24h for approval.
 Schedule::command('auto-reply:approvals-reminder')->dailyAt('08:00');
 
+// Re-post replies that failed to publish for a transient reason (rate limit,
+// "try again later"). Structural failures (review gone, unauthorized) are
+// skipped, so this only heals temporary hiccups.
+Schedule::command('auto-reply:retry-failed')->everySixHours()->withoutOverlapping();
+
 // Auto top-up AI credits for opted-in workspaces below their threshold.
 Schedule::command('ai:auto-recharge')->everyFifteenMinutes();
 

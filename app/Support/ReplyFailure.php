@@ -24,4 +24,28 @@ class ReplyFailure
             default => __('resources/auto_reply.error_generic'),
         };
     }
+
+    /**
+     * Is a stored failure worth retrying automatically? Transient reasons
+     * (generic "try again later" / rate limiting) are; a missing review/location
+     * or an authorization problem is structural, so retrying just fails again.
+     * An unknown/empty reason is treated as retryable.
+     */
+    public static function isRetryable(?string $storedError): bool
+    {
+        $error = trim((string) $storedError);
+        if ($error === '') {
+            return true;
+        }
+
+        foreach (['error_not_found', 'error_unauthorized'] as $key) {
+            foreach (['en', 'de'] as $locale) {
+                if ($error === trim((string) __('resources/auto_reply.'.$key, [], $locale))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
 }
