@@ -9,10 +9,12 @@ use App\Models\User;
 use App\Models\Workspace;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Notifications\DatabaseNotification as FilamentDatabaseNotification;
 use Filament\Notifications\Notification;
 use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use ReflectionMethod;
 use Throwable;
 
@@ -57,7 +59,7 @@ class NotificationDispatcher
 
             // In-app bell for members who can actually sign in (guests can't).
             if (! $isGuest) {
-                $this->toDatabase($user, $mailable, $category);
+                $this->toDatabase($user, $mailable, $category, $workspace);
             }
         }
     }
@@ -69,35 +71,62 @@ class NotificationDispatcher
      * glance. Best-effort: a bell failure must never break the (already sent)
      * email.
      */
-    private function toDatabase(User $user, Mailable $mailable, string $category): void
+    private function toDatabase(User $user, Mailable $mailable, string $category, Workspace $workspace): void
     {
         try {
-            $title = trim((string) $mailable->envelope()->subject);
-            if ($title === '') {
+            $data = $this->bellData($mailable, $category, $workspace);
+            if ($data === null) {
                 return;
             }
 
-            [$icon, $color] = $this->presentation($mailable, $category);
-
-            $notification = Notification::make()
-                ->title($title)
-                ->icon($icon)
-                ->iconColor($color);
-
-            $url = $this->mailableUrl($mailable);
-            if ($url !== null) {
-                $notification->actions([
-                    Action::make('open')->url($url)->markAsRead(),
-                ]);
-            }
-
-            $notification->sendToDatabase($user);
+            $user->notifications()->create([
+                'id' => (string) Str::uuid(),
+                'type' => FilamentDatabaseNotification::class,
+                'data' => $data,
+                'read_at' => null,
+            ]);
         } catch (Throwable $e) {
             Log::warning('In-app notification failed', [
                 'user' => $user->id,
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * The Filament database-notification payload for the bell, tagged with the
+     * workspace so the panel can scope the list. Null when the mailable has no
+     * subject (nothing to show).
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function bellData(Mailable $mailable, string $category, Workspace $workspace): ?array
+    {
+        $title = trim((string) $mailable->envelope()->subject);
+        if ($title === '') {
+            return null;
+        }
+
+        [$icon, $color] = $this->presentation($mailable, $category);
+
+        $notification = Notification::make()
+            ->title($title)
+            ->icon($icon)
+            ->iconColor($color);
+
+        $url = $this->mailableUrl($mailable);
+        if ($url !== null) {
+            $notification->actions([
+                Action::make('open')->url($url)->markAsRead(),
+            ]);
+        }
+
+        // Filament reads data->format; we add data->workspace_id alongside so
+        // ScopedDatabaseNotifications can filter the bell per workspace.
+        $data = $notification->getDatabaseMessage();
+        $data['workspace_id'] = (string) $workspace->id;
+
+        return $data;
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Listeners\GrantCreditPack;
 use App\Listeners\SendBillingEmails;
+use App\Livewire\ScopedDatabaseNotifications;
 use App\Models\CashierSubscription;
 use App\Models\CashierSubscriptionItem;
 use App\Models\EmailSuppression;
@@ -68,6 +69,13 @@ class AppServiceProvider extends ServiceProvider
         // MCP OAuth (Passport) consent screen shown to the AI client connecting
         // over /mcp/{workspace}. Uses the published mcp.authorize view.
         Passport::authorizationView(fn ($parameters) => view('mcp.authorize', $parameters));
+
+        // Scope the notifications bell to the active workspace. Overrides
+        // Filament's 'database-notifications' alias with our workspace-aware
+        // component (registered after Filament's own boot).
+        $this->app->booted(function (): void {
+            Livewire::component('database-notifications', ScopedDatabaseNotifications::class);
+        });
 
         // Livewire temp uploads must use a CENTRAL disk — stancl suffixes the
         // local/public disks per tenant, which breaks file uploads inside the

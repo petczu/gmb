@@ -4,31 +4,27 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Models\Workspace;
 use App\Services\Notifications\NotificationCategory;
 use App\Services\Notifications\NotificationDispatcher;
-use Filament\Notifications\DatabaseNotification;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Support\Facades\Notification;
 use ReflectionMethod;
 use Tests\TestCase;
 
 /**
  * The dispatcher mirrors each email as an in-app database notification (the
- * panel bell) for members who can sign in, using the mailable's subject as the
- * title. Faked so it doesn't depend on the central notifications table (the
- * queued Filament notification restores the User on its own connection).
+ * panel bell), tagged with the workspace so the bell can be scoped per
+ * workspace. No subject → no bell.
  */
 class InAppNotificationTest extends TestCase
 {
-    private function member(): User
+    private function workspace(): Workspace
     {
-        $user = new User;
-        $user->forceFill(['id' => 1]);
-        $user->exists = true;
+        $workspace = new Workspace;
+        $workspace->id = 'ws-test';
 
-        return $user;
+        return $workspace;
     }
 
     private function mailableWithSubject(string $subject): Mailable
@@ -44,28 +40,27 @@ class InAppNotificationTest extends TestCase
         };
     }
 
-    private function invokeToDatabase(User $user, Mailable $mailable): void
+    /** @return array<string, mixed>|null */
+    private function bellData(Mailable $mailable): ?array
     {
         $dispatcher = app(NotificationDispatcher::class);
-        $method = new ReflectionMethod($dispatcher, 'toDatabase');
-        $method->invoke($dispatcher, $user, $mailable, NotificationCategory::OPERATIONS);
+        $method = new ReflectionMethod($dispatcher, 'bellData');
+
+        return $method->invoke($dispatcher, $mailable, NotificationCategory::OPERATIONS, $this->workspace());
     }
 
-    public function test_it_sends_a_bell_notification_for_the_member(): void
+    public function test_bell_payload_is_tagged_with_the_workspace(): void
     {
-        Notification::fake();
+        $data = $this->bellData($this->mailableWithSubject('You have a new review'));
 
-        $this->invokeToDatabase($this->member(), $this->mailableWithSubject('You have a new review'));
-
-        Notification::assertSentTo($this->member(), DatabaseNotification::class);
+        $this->assertIsArray($data);
+        $this->assertSame('You have a new review', $data['title']);
+        $this->assertSame('ws-test', $data['workspace_id']);
+        $this->assertSame('filament', $data['format']);
     }
 
-    public function test_it_skips_notifications_without_a_subject(): void
+    public function test_no_bell_payload_without_a_subject(): void
     {
-        Notification::fake();
-
-        $this->invokeToDatabase($this->member(), $this->mailableWithSubject(''));
-
-        Notification::assertNothingSent();
+        $this->assertNull($this->bellData($this->mailableWithSubject('')));
     }
 }
