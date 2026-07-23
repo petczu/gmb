@@ -143,7 +143,9 @@ return [
         'col_author' => 'Autor',
         'col_review' => 'Bewertung',
         'detail' => 'Bitte versuche, die Antwort erneut über die App zu veröffentlichen.',
+        'detail_retry' => 'Das scheint vorübergehend zu sein, daher versuchen wir in den nächsten Stunden automatisch, sie erneut zu veröffentlichen. Nichts zu tun. Falls es weiterhin fehlschlägt, findest du sie unter Bewertungen → Fehlgeschlagen.',
         'detail_not_found' => 'Google meldet, dass diese Bewertung nicht mehr existiert. Sie wurde vermutlich vom Autor gelöscht oder von Google gefiltert. Nichts zu tun: der Entwurf wurde geparkt und wird nicht erneut versucht.',
+        'detail_unauthorized' => 'Die Google-Verbindung ist nicht berechtigt, für diesen Standort zu antworten, daher versuchen wir es nicht weiter. Verbinde das Konto neu und veröffentliche die Antwort erneut über die App.',
         'cta' => 'Freigaben öffnen',
     ],
 

@@ -27,13 +27,20 @@ class ReplyFailedMail extends TemplatedMailable
 
     protected function templateData(): array
     {
-        // 'not_found' = the review is gone on Google; suggesting a retry
-        // would be misleading, so the detail line explains it instead.
-        $detail = $this->reason === 'not_found'
-            ? __('emails.reply_failed.detail_not_found', [], $this->lang)
-            : __('emails.reply_failed.detail', [], $this->lang);
+        // Structural failures can't be fixed by retrying, so the detail line
+        // explains the cause; transient ones say we'll retry automatically.
+        $detailKey = match ($this->reason) {
+            'not_found' => 'emails.reply_failed.detail_not_found',
+            'unauthorized' => 'emails.reply_failed.detail_unauthorized',
+            default => 'emails.reply_failed.detail_retry',
+        };
 
-        return ['name' => $this->name, 'business' => $this->businessName, 'url' => $this->reviewsUrl, 'detail' => $detail];
+        return [
+            'name' => $this->name,
+            'business' => $this->businessName,
+            'url' => $this->reviewsUrl,
+            'detail' => __($detailKey, [], $this->lang),
+        ];
     }
 
     protected function blocks(): array

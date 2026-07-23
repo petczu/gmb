@@ -125,9 +125,9 @@ class AutoReplyPostDueCommand extends Command
             $base = rtrim((string) config('app.url'), '/').'/reviews';
             $reviewsUrl = $review !== null ? $base.'?review='.$review->id : $base;
 
-            // A 404 means the review is gone on Google (deleted by its author or
-            // filtered) — "try again" would be misleading advice.
-            $notFound = str_contains($error, '404') || str_contains(strtolower($error), 'not found');
+            // Categorise the failure so the email can say whether we'll retry
+            // (transient) or explain a structural cause (review gone / auth).
+            $reason = ReplyFailure::reason($error);
 
             app(NotificationDispatcher::class)->dispatch(
                 $workspace,
@@ -139,7 +139,7 @@ class AutoReplyPostDueCommand extends Command
                     snippet: $snippet,
                     reviewsUrl: $reviewsUrl,
                     lang: $lang,
-                    reason: $notFound ? 'not_found' : 'error',
+                    reason: $reason,
                 ),
             );
         } catch (Throwable $e) {

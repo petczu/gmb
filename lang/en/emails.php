@@ -143,7 +143,9 @@ return [
         'col_author' => 'Author',
         'col_review' => 'Review',
         'detail' => 'Please try posting the reply again from the app.',
+        'detail_retry' => 'This looks temporary, so we’ll automatically try to post it again over the next few hours. No action needed. If it keeps failing you’ll find it under Reviews → Failed.',
         'detail_not_found' => 'Google says this review no longer exists. It may have been deleted by its author or filtered by Google. Nothing to do: the draft was parked and will not be retried.',
+        'detail_unauthorized' => 'The Google connection isn’t authorized to reply for this location, so we won’t keep retrying. Reconnect the account, then post the reply again from the app.',
         'cta' => 'Open approvals',
     ],
 
