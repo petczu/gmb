@@ -46,7 +46,7 @@
         : route('review-page.go', ['slug' => $page->slug, 'target' => $t['key'] ?? '']);
 @endphp
 <!DOCTYPE html>
-<html lang="{{ $lang }}">
+<html lang="{{ $lang }}" dir="{{ \App\Support\Locales::direction($lang) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
