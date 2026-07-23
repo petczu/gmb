@@ -71,7 +71,7 @@ class EmailTemplateRendererTest extends TestCase
     public function test_every_catalogue_template_has_defaults_in_every_locale(): void
     {
         foreach (EmailTemplateCatalog::keys() as $key) {
-            foreach (EmailTemplateCatalog::LOCALES as $locale) {
+            foreach (EmailTemplateCatalog::locales() as $locale) {
                 $this->assertNotSame('', EmailTemplateCatalog::defaultSubject($key, $locale), "$key/$locale subject");
                 $this->assertNotSame('', EmailTemplateCatalog::defaultBody($key, $locale), "$key/$locale body");
             }

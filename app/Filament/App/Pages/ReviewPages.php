@@ -8,6 +8,7 @@ use App\Models\ReviewPage;
 use App\Models\ReviewPageStat;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
+use App\Support\Locales;
 use BackedEnum;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -213,7 +214,7 @@ class ReviewPages extends Page implements HasForms
             'custom_domain' => null,
             'theme' => 'dark',
             'accent' => '#2d19ec',
-            'languages' => ['en', 'de'],
+            'languages' => Locales::codes(),
             'use_workspace_logo' => true,
             'headline_en' => 'Leave a Review',
             'headline_de' => 'Bewertung abgeben',
@@ -344,7 +345,7 @@ class ReviewPages extends Page implements HasForms
                 ]),
                 CheckboxList::make('languages')
                     ->label(__('pages/review_pages.languages'))
-                    ->options(['en' => 'English', 'de' => 'Deutsch'])
+                    ->options(Locales::options())
                     ->columns(2)->required()->live(),
             ]);
     }
@@ -446,7 +447,7 @@ class ReviewPages extends Page implements HasForms
         return [
             'theme' => ($d['theme'] ?? 'dark') === 'light' ? 'light' : 'dark',
             'accent' => $d['accent'] ?? '#2d19ec',
-            'languages' => array_values(array_intersect(['en', 'de'], (array) ($d['languages'] ?? ['en']))) ?: ['en'],
+            'languages' => array_values(array_intersect(Locales::codes(), (array) ($d['languages'] ?? ['en']))) ?: ['en'],
             'logo_url' => ! empty($d['use_workspace_logo']) ? $this->workspace()->logoUrl() : null,
             'headline' => ['en' => $d['headline_en'] ?? '', 'de' => $d['headline_de'] ?? ''],
             'subtitle' => ['en' => $d['subtitle_en'] ?? '', 'de' => $d['subtitle_de'] ?? ''],

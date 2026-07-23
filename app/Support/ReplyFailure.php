@@ -48,7 +48,7 @@ class ReplyFailure
         }
 
         foreach (['error_not_found', 'error_unauthorized'] as $key) {
-            foreach (['en', 'de'] as $locale) {
+            foreach (Locales::codes() as $locale) {
                 if ($error === trim((string) __('resources/auto_reply.'.$key, [], $locale))) {
                     return false;
                 }

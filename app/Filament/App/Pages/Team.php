@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
+use App\Support\Locales;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -266,8 +267,8 @@ class Team extends Page implements HasTable
                         // account adopts it on accept (notifications, reports).
                         Select::make('locale')
                             ->label(__('pages/team.guest_language'))
-                            ->options(['en' => 'English', 'de' => 'Deutsch'])
-                            ->default(fn (): string => in_array(app()->getLocale(), ['en', 'de'], true) ? app()->getLocale() : 'en')
+                            ->options(Locales::options())
+                            ->default(fn (): string => in_array(app()->getLocale(), Locales::codes(), true) ? app()->getLocale() : 'en')
                             ->selectablePlaceholder(false)
                             ->helperText(__('pages/team.guest_language_helper')),
                     ])
@@ -275,7 +276,7 @@ class Team extends Page implements HasTable
                         $workspace = $this->workspace();
                         $email = mb_strtolower(trim($data['email']));
 
-                        $locale = in_array($data['locale'] ?? null, ['en', 'de'], true) ? $data['locale'] : 'en';
+                        $locale = in_array($data['locale'] ?? null, Locales::codes(), true) ? $data['locale'] : 'en';
                         $locationIds = array_values(array_map('intval', $data['allowed_locations'] ?? []));
 
                         // Guests skip the invite email entirely: they get no
@@ -373,7 +374,7 @@ class Team extends Page implements HasTable
             workspaceName: $this->workspace()->name,
             acceptUrl: route('invite.show', $invitation->token),
             role: (string) $invitation->role,
-            lang: in_array($invitation->locale, ['en', 'de'], true) ? $invitation->locale : 'en',
+            lang: in_array($invitation->locale, Locales::codes(), true) ? $invitation->locale : 'en',
         ));
 
         ActivityLogger::log('team.invite_resent', ['email' => $invitation->email]);

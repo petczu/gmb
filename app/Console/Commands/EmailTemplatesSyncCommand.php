@@ -32,7 +32,7 @@ class EmailTemplatesSyncCommand extends Command
                 continue;
             }
 
-            foreach (EmailTemplateCatalog::LOCALES as $locale) {
+            foreach (EmailTemplateCatalog::locales() as $locale) {
                 $defaults = [
                     'subject' => EmailTemplateCatalog::defaultSubject($key, $locale),
                     'body' => EmailTemplateCatalog::defaultBody($key, $locale),

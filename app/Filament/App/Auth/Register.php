@@ -13,6 +13,7 @@ use App\Services\Auth\EmailOtp;
 use App\Services\Auth\TooManyCodeRequests;
 use App\Services\Workspaces\InvitationAcceptor;
 use App\Services\Workspaces\WorkspaceProvisioner;
+use App\Support\Locales;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
 use Filament\Auth\Pages\Register as BaseRegister;
@@ -307,7 +308,7 @@ class Register extends BaseRegister
             'password' => Str::password(32),
             // Remember the language they signed up in so the beta/welcome emails
             // and the pending screen match it (defaults to 'en' otherwise).
-            'locale' => in_array(app()->getLocale(), ['en', 'de'], true) ? app()->getLocale() : 'en',
+            'locale' => in_array(app()->getLocale(), Locales::codes(), true) ? app()->getLocale() : 'en',
             // The browser's timezone (validated), so dates/scheduling default to
             // the user's real timezone rather than the server's.
             'timezone' => $this->detectedTimezone(),

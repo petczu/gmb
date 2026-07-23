@@ -9,6 +9,7 @@ use App\Models\ReportSchedule;
 use App\Models\Workspace;
 use App\Services\Reports\ReportPdf;
 use App\Support\DashboardPeriod;
+use App\Support\Locales;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -71,7 +72,7 @@ class SendReportEmail implements ShouldQueue
             // One PDF for all recipients → language is the SCHEDULE's, not each
             // recipient's. Set the app locale so the report blade labels AND the
             // email itself render in that language, then restore.
-            $language = in_array($schedule->language, ['en', 'de'], true) ? $schedule->language : 'en';
+            $language = in_array($schedule->language, Locales::codes(), true) ? $schedule->language : 'en';
             app()->setLocale($language);
 
             $result = $pdf->generate($period, $language, $schedule->blocks);

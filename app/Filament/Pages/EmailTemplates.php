@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Mail\Templates\EmailTemplateCatalog;
 use App\Mail\Templates\EmailTemplateRenderer;
 use App\Models\EmailTemplate;
+use App\Support\Locales;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -74,7 +75,7 @@ class EmailTemplates extends Page implements HasForms
                             ->afterStateUpdated(fn (callable $set, callable $get) => $this->reload($set, $get)),
                         ToggleButtons::make('locale')
                             ->label('Language')
-                            ->options(['en' => 'English', 'de' => 'Deutsch'])
+                            ->options(Locales::options())
                             ->inline()
                             ->live()
                             ->afterStateUpdated(fn (callable $set, callable $get) => $this->reload($set, $get)),

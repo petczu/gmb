@@ -10,6 +10,7 @@ use App\Models\Workspace;
 use App\Services\Notifications\ChatChannels;
 use App\Services\Notifications\NotificationCategory;
 use App\Services\Notifications\NotificationRecipients;
+use App\Support\Locales;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
@@ -152,7 +153,7 @@ class Notifications extends Page implements HasForms
                     Grid::make(2)->schema([
                         Select::make('chat_language')
                             ->label(__('pages/notifications.chat_language'))
-                            ->options(['en' => 'English', 'de' => 'Deutsch'])
+                            ->options(Locales::options())
                             ->selectablePlaceholder(false),
                         Select::make('chat_categories')
                             ->label(__('pages/notifications.chat_categories'))

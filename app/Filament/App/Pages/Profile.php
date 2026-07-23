@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Support\Locales;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\Contracts\MultiFactorAuthenticationProvider;
@@ -105,7 +106,7 @@ class Profile extends Page implements HasForms
                     ->schema([
                         Select::make('locale')
                             ->label(__('pages/profile.interface_language'))
-                            ->options(['en' => 'English', 'de' => 'Deutsch'])
+                            ->options(Locales::options())
                             ->default('en')
                             ->selectablePlaceholder(false),
                         Select::make('timezone')

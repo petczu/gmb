@@ -19,6 +19,7 @@ use App\Services\Reports\ReportData;
 use App\Services\Reports\ReportGenerator;
 use App\Support\AiRateLimit;
 use App\Support\DashboardPeriod;
+use App\Support\Locales;
 use App\Support\ReportBlocks;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -124,7 +125,7 @@ class Reports extends Page implements HasForms
 
                             Select::make('language')
                                 ->label(__('pages/reports.report_language'))
-                                ->options(['en' => 'English', 'de' => 'Deutsch'])
+                                ->options(Locales::options())
                                 ->default('en')
                                 ->selectablePlaceholder(false)
                                 ->live(),
@@ -387,7 +388,7 @@ class Reports extends Page implements HasForms
                     'frequency' => $data['frequency'],
                     'send_day' => (int) $data['send_day'],
                     'period' => $period,
-                    'language' => in_array($filters['language'] ?? 'en', ['en', 'de'], true) ? $filters['language'] : 'en',
+                    'language' => in_array($filters['language'] ?? 'en', Locales::codes(), true) ? $filters['language'] : 'en',
                     // location_id mirrors a single selection for backwards
                     // compatibility; location_ids is the source of truth.
                     'location_id' => count($locationIds) === 1 ? $locationIds[0] : null,
@@ -432,7 +433,7 @@ class Reports extends Page implements HasForms
         // Save a snapshot (rendered HTML) so it can be re-viewed later without
         // spending another AI generation.
         $previousLocale = app()->getLocale();
-        app()->setLocale(in_array($language, ['en', 'de'], true) ? $language : 'en');
+        app()->setLocale(in_array($language, Locales::codes(), true) ? $language : 'en');
         $html = view('reports.monthly', [
             'data' => $report,
             'insights' => $result['insights'],

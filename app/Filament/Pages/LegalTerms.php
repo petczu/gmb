@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Models\LegalDocument;
 use App\Models\User;
 use App\Support\AiRateLimit;
+use App\Support\Locales;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -82,7 +83,7 @@ class LegalTerms extends Page implements HasForms
                     ->schema([
                         ToggleButtons::make('locale')
                             ->label('Language')
-                            ->options(['en' => 'English', 'de' => 'Deutsch'])
+                            ->options(Locales::options())
                             ->inline()
                             ->live()
                             ->afterStateUpdated(function (?string $state, callable $set): void {
@@ -177,7 +178,7 @@ class LegalTerms extends Page implements HasForms
     /** Save the edited locale's body; a bump raises the version on ALL locales. */
     protected function persistBody(bool $bump): void
     {
-        $locale = in_array($this->data['locale'] ?? 'en', ['en', 'de'], true) ? $this->data['locale'] : 'en';
+        $locale = in_array($this->data['locale'] ?? 'en', Locales::codes(), true) ? $this->data['locale'] : 'en';
         $version = max(1, LegalDocument::currentVersion(LegalDocument::TERMS));
 
         LegalDocument::query()->updateOrCreate(

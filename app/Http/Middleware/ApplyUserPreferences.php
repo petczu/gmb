@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Support\Locales;
 use Closure;
 use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class ApplyUserPreferences
             FilamentTimezone::set($tz);
         }
 
-        if (in_array($locale = $request->user()?->locale, ['en', 'de'], true)) {
+        if (in_array($locale = $request->user()?->locale, Locales::codes(), true)) {
             app()->setLocale($locale);
         }
 

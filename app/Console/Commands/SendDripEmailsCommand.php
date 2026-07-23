@@ -11,6 +11,7 @@ use App\Models\Location;
 use App\Models\ReviewPage;
 use App\Models\User;
 use App\Services\Onboarding\DripSeries;
+use App\Support\Locales;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -71,7 +72,7 @@ class SendDripEmailsCommand extends Command
                         key: $key,
                         name: $user->name,
                         userId: $user->id,
-                        lang: in_array($user->locale, ['en', 'de'], true) ? $user->locale : 'en',
+                        lang: in_array($user->locale, Locales::codes(), true) ? $user->locale : 'en',
                     ));
                     $sent++;
                     $this->line("sent: {$user->email} → {$key}");

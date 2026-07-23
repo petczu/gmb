@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\LegalDocument;
+use App\Support\Locales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\HtmlString;
@@ -25,10 +26,10 @@ class TermsController extends Controller
             return redirect('/');
         }
 
-        $locale = in_array($request->user()?->getAttribute('locale'), ['en', 'de'], true)
+        $locale = in_array($request->user()?->getAttribute('locale'), Locales::codes(), true)
             ? $request->user()->getAttribute('locale')
             : app()->getLocale();
-        app()->setLocale(in_array($locale, ['en', 'de'], true) ? $locale : 'en');
+        app()->setLocale(in_array($locale, Locales::codes(), true) ? $locale : 'en');
 
         $body = LegalDocument::bodyFor(LegalDocument::TERMS, app()->getLocale()) ?? '';
 

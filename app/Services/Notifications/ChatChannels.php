@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Notifications;
 
 use App\Models\Workspace;
+use App\Support\Locales;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -32,7 +33,7 @@ class ChatChannels
             'telegram_enabled' => (bool) ($raw['telegram_enabled'] ?? filled($raw['telegram_bot_token'] ?? null)),
             'telegram_bot_token' => $raw['telegram_bot_token'] ?? null,
             'telegram_chat_id' => $raw['telegram_chat_id'] ?? null,
-            'language' => in_array($raw['language'] ?? null, ['en', 'de'], true) ? $raw['language'] : 'en',
+            'language' => in_array($raw['language'] ?? null, Locales::codes(), true) ? $raw['language'] : 'en',
             'categories' => array_values($raw['categories'] ?? [NotificationCategory::REPUTATION]),
         ];
     }

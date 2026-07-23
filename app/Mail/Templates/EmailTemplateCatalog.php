@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail\Templates;
 
+use App\Support\Locales;
 use App\Support\ReviewTips;
 
 /**
@@ -20,7 +21,10 @@ use App\Support\ReviewTips;
 class EmailTemplateCatalog
 {
     /** Locales the templates are maintained in. */
-    public const LOCALES = ['en', 'de'];
+    public static function locales(): array
+    {
+        return Locales::codes();
+    }
 
     /**
      * @return array<string, array{title: string, category: string, sample: array<string, string>}>

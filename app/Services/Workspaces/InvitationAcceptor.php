@@ -6,6 +6,7 @@ namespace App\Services\Workspaces;
 
 use App\Models\Invitation;
 use App\Models\User;
+use App\Support\Locales;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -50,7 +51,7 @@ class InvitationAcceptor
 
         // Adopt the language the inviter picked (notifications, reports). The
         // member can switch it anytime via the UI language switcher.
-        if (in_array($invitation->locale, ['en', 'de'], true) && $user->getAttribute('locale') !== $invitation->locale) {
+        if (in_array($invitation->locale, Locales::codes(), true) && $user->getAttribute('locale') !== $invitation->locale) {
             $user->forceFill(['locale' => $invitation->locale])->save();
         }
 

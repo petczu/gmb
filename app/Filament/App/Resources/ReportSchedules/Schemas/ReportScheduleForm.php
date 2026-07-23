@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Notifications\NotificationRecipients;
+use App\Support\Locales;
 use App\Support\ReportBlocks;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
@@ -82,7 +83,7 @@ class ReportScheduleForm
 
                     Select::make('language')
                         ->label(__('resources/report_schedules.language'))
-                        ->options(['en' => 'English', 'de' => 'Deutsch'])
+                        ->options(Locales::options())
                         ->default('en')
                         ->selectablePlaceholder(false)
                         ->required(),

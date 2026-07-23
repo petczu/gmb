@@ -6,9 +6,13 @@ namespace App\Http\Controllers;
 
 use App\Models\GeneratedReport;
 use App\Models\ReportShare;
+use App\Models\Workspace;
+use App\Services\Reports\ReportBranding;
 use App\Services\Reports\ReportData;
 use App\Services\Reports\ReportGenerator;
 use App\Support\DashboardPeriod;
+use App\Support\Locales;
+use App\Support\ReportBlocks;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -127,7 +131,7 @@ class ReportController extends Controller
      */
     protected function payload(Request $request, ReportData $data, ReportGenerator $generator): array
     {
-        $language = in_array($request->query('language'), ['en', 'de'], true) ? $request->query('language') : 'en';
+        $language = in_array($request->query('language'), Locales::codes(), true) ? $request->query('language') : 'en';
         app()->setLocale($language); // localizes the report labels via __()
 
         $period = DashboardPeriod::fromFilters([
@@ -146,8 +150,8 @@ class ReportController extends Controller
             'data' => $report,
             'insights' => $generator->cachedOrFallback($period, $report, $language),
             'generatedAt' => CarbonImmutable::now()->format('M j, Y'),
-            'blocks' => \App\Support\ReportBlocks::normalize($request->query('blocks')),
-            'brand' => \App\Services\Reports\ReportBranding::for(\App\Models\Workspace::find(session('current_workspace_id'))),
+            'blocks' => ReportBlocks::normalize($request->query('blocks')),
+            'brand' => ReportBranding::for(Workspace::find(session('current_workspace_id'))),
         ];
     }
 }

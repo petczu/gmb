@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Invitation;
 use App\Models\User;
 use App\Services\Workspaces\InvitationAcceptor;
+use App\Support\Locales;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
@@ -102,7 +103,7 @@ class InvitationController extends Controller
      */
     private function applyInvitationLocale(?Invitation $invitation): void
     {
-        $supported = ['en', 'de'];
+        $supported = Locales::codes();
 
         $locale = session('locale');
         if (! in_array($locale, $supported, true)) {

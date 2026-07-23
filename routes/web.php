@@ -15,6 +15,7 @@ use App\Http\Middleware\EnsureBetaApproved;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Http\Middleware\SetLocale;
 use App\Models\User;
+use App\Support\Locales;
 use App\Support\MarketingSite;
 use Illuminate\Support\Facades\Route;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
@@ -132,7 +133,7 @@ Route::middleware('web')->get('unsubscribe/product/{user}', function (User $user
 // Language switcher (persists the visitor's choice) + public legal pages.
 Route::middleware(['web', SetLocale::class])->group(function (): void {
     Route::get('locale/{locale}', function (string $locale) {
-        if (in_array($locale, ['en', 'de'], true)) {
+        if (in_array($locale, Locales::codes(), true)) {
             session(['locale' => $locale]);
 
             // Persist to the signed-in user so SetLocale (which prefers the
