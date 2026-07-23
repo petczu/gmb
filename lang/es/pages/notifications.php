@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'channels' => 'Canales',
+    'channels_desc' => 'Cómo se entregan las notificaciones. Pronto habrá más canales.',
+    'channel_email' => 'Correo · activo',
+    'channel_sms' => 'SMS · próximamente',
+    'channel_whatsapp' => 'WhatsApp · próximamente',
+
+    'recipients' => 'Destinatarios',
+    'recipients_help' => 'Elige grupos (por rol o todos) o miembros concretos. Si lo dejas vacío, se avisa al propietario del espacio.',
+    'default_owner' => 'Propietario del espacio',
+    'included' => 'Incluidos',
+    'excluded' => 'Excluidos',
+    'excluded_none' => 'Nadie excluido',
+    'excluded_help' => 'Se restan del grupo incluido: por ejemplo, incluir un rol entero y dejar fuera a una persona.',
+    'guest' => 'invitado',
+    'saved' => 'Destinatarios de notificaciones guardados',
+
+    'groups' => 'Grupos',
+    'people' => 'Personas',
+    'everyone' => 'Todos',
+    'group_owner' => 'Propietarios',
+    'group_admin' => 'Administradores',
+    'group_member' => 'Miembros',
+    'group_guest' => 'Invitados',
+    'group_role' => ':role',
+
+    'cat_review_growth' => 'Crecimiento de reseñas',
+    'cat_review_growth_desc' => 'Progreso del objetivo, consejos semanales, la celebración al alcanzarlo y avisos de anomalías (estancamiento, racha negativa, pico, caída de valoración).',
+    'cat_reputation' => 'Reputación',
+    'cat_reputation_desc' => 'Resúmenes de reseñas nuevas y reseñas que necesitan atención.',
+    'cat_operations' => 'Operaciones',
+    'cat_operations_desc' => 'Cuenta desconectada, sincronización restablecida, respuesta fallida, aprobaciones pendientes.',
+    'cat_billing' => 'Facturación',
+    'cat_billing_desc' => 'Pagos, avisos de fin de prueba, cambios de suscripción y límites de uso de IA.',
+
+    'chat_title' => 'Slack y Telegram',
+    'chat_desc' => 'Envía avisos breves a un canal de Slack o a un chat de Telegram, además del correo.',
+    'slack_webhook' => 'URL del webhook entrante de Slack',
+    'slack_help' => 'Slack → Apps → Incoming Webhooks → Añadir al canal, y pega aquí la URL.',
+    'telegram_token' => 'Token del bot de Telegram',
+    'telegram_token_help' => 'Crea un bot con @BotFather y pega su token.',
+    'telegram_chat' => 'ID del chat de Telegram',
+    'telegram_chat_help' => 'Añade el bot a tu grupo o chat y usa su ID (por ejemplo, con @userinfobot).',
+    'chat_language' => 'Idioma de los mensajes',
+    'chat_categories' => 'Enviar estas categorías',
+    'chat_test' => 'Enviar mensaje de prueba',
+    'chat_test_sent' => 'Mensaje de prueba enviado: revisa tu canal.',
+    'email_always_on' => 'Siempre activo: los destinatarios se configuran por categoría más abajo.',
+    'channel_on' => 'Activo',
+    'channel_enable' => 'Activar canal',
+];
