@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'channels' => 'القنوات',
+    'channels_desc' => 'كيفية تسليم الإشعارات. المزيد من القنوات في الطريق.',
+    'channel_email' => 'البريد الإلكتروني · نشط',
+    'channel_sms' => 'الرسائل النصية · قريبًا',
+    'channel_whatsapp' => 'WhatsApp · قريبًا',
+
+    'recipients' => 'المستلمون',
+    'recipients_help' => 'اختر مجموعات (حسب الدور أو الجميع) و/أو أعضاء منفردين. اتركه فارغًا كي يكون الافتراضي مالك مساحة العمل.',
+    'default_owner' => 'مالك مساحة العمل',
+    'included' => 'مُضمَّن',
+    'excluded' => 'مستبعَد',
+    'excluded_none' => 'لا أحد مستبعَد',
+    'excluded_help' => 'مُزال من المجموعة المُضمَّنة، مثل تضمين دور بأكمله مع استثناء شخص واحد.',
+    'guest' => 'ضيف',
+    'saved' => 'تم حفظ مستلمي الإشعارات',
+
+    'groups' => 'المجموعات',
+    'people' => 'الأشخاص',
+    'everyone' => 'الجميع',
+    'group_owner' => 'المالكون',
+    'group_admin' => 'المسؤولون',
+    'group_member' => 'الأعضاء',
+    'group_guest' => 'الضيوف',
+    'group_role' => ':role',
+
+    'cat_review_growth' => 'نمو التقييمات',
+    'cat_review_growth_desc' => 'تقدّم الهدف، والتوجيه والنصائح الأسبوعية، واحتفال بلوغ الهدف، وتنبيهات الحالات الشاذة (توقّف، سلسلة سلبية، ارتفاع، انخفاض التقييم).',
+    'cat_reputation' => 'السمعة',
+    'cat_reputation_desc' => 'ملخّصات التقييمات الجديدة والتقييمات التي تحتاج إلى انتباه.',
+    'cat_operations' => 'العمليات',
+    'cat_operations_desc' => 'فصل الحساب، استعادة المزامنة، فشل الرد، موافقات معلّقة.',
+    'cat_billing' => 'الفوترة',
+    'cat_billing_desc' => 'المدفوعات، وتذكيرات التجربة، وتغييرات الاشتراك، وحدود استخدام الذكاء الاصطناعي.',
+
+    'chat_title' => 'Slack وTelegram',
+    'chat_desc' => 'أرسل تنبيهات قصيرة إلى قناة Slack أو محادثة Telegram بالإضافة إلى البريد الإلكتروني.',
+    'slack_webhook' => 'عنوان URL لـ Slack incoming webhook',
+    'slack_help' => 'Slack ← Apps ← Incoming Webhooks ← إضافة إلى قناة، ثم الصق العنوان هنا.',
+    'telegram_token' => 'رمز بوت Telegram',
+    'telegram_token_help' => 'أنشئ بوتًا عبر @BotFather والصق رمزه.',
+    'telegram_chat' => 'معرّف محادثة Telegram',
+    'telegram_chat_help' => 'أضف البوت إلى مجموعتك أو محادثتك واستخدم معرّف المحادثة (مثلًا عبر @userinfobot).',
+    'chat_language' => 'لغة الرسالة',
+    'chat_categories' => 'أرسل هذه الفئات',
+    'chat_test' => 'إرسال رسالة اختبار',
+    'chat_test_sent' => 'تم إرسال رسالة الاختبار، تحقق من قناتك.',
+    'email_always_on' => 'مُفعّل دائمًا، ويُضبط المستلمون لكل فئة أدناه.',
+    'channel_on' => 'مُفعّل',
+    'channel_enable' => 'تفعيل القناة',
+];
