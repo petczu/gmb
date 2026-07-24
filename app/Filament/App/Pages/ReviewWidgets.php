@@ -328,10 +328,45 @@ class ReviewWidgets extends Page implements HasForms
         ]);
 
         $saved = $this->widgetId !== null ? ReviewWidget::find($this->widgetId) : null;
-        $widget->snapshot = $saved?->snapshot ?? $this->demoSnapshot();
+        $snapshot = $saved?->snapshot ?? $this->demoSnapshot();
+
+        // Reflect the Sources filters in the preview live, so toggling min
+        // rating / order / max reviews visibly changes it before saving. (The
+        // saved embed applies these when the snapshot is rebuilt.)
+        $snapshot['reviews'] = $this->applyPreviewFilters($snapshot['reviews'] ?? [], $widget->settings);
+
+        $widget->snapshot = $snapshot;
         $widget->setRelation('workspace', $this->workspace());
 
         return $widget;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $reviews
+     * @param  array<string, mixed>  $settings
+     * @return array<int, array<string, mixed>>
+     */
+    protected function applyPreviewFilters(array $reviews, array $settings): array
+    {
+        $minRating = (int) ($settings['min_rating'] ?? 4);
+        $requireText = (bool) ($settings['require_text'] ?? true);
+        $max = max(1, (int) ($settings['max_reviews'] ?? 12));
+
+        $reviews = array_values(array_filter($reviews, function (array $r) use ($minRating, $requireText): bool {
+            if ((int) ($r['rating'] ?? 0) < $minRating) {
+                return false;
+            }
+
+            return ! $requireText || filled($r['text'] ?? null);
+        }));
+
+        // Order: 'random' is left in place to avoid reshuffling on every
+        // keystroke; 'highest' sorts by rating, otherwise newest-first.
+        if (($settings['sort'] ?? 'newest') === 'highest') {
+            usort($reviews, fn (array $a, array $b): int => (int) $b['rating'] <=> (int) $a['rating']);
+        }
+
+        return array_slice($reviews, 0, $max);
     }
 
     public function previewMarkup(): HtmlString
@@ -347,12 +382,27 @@ class ReviewWidgets extends Page implements HasForms
     {
         $now = now();
 
+        $mk = fn (int $offset, string $author, int $rating, string $text, ?string $reply = null): array => [
+            'id' => -$offset - 1,
+            'author' => $author,
+            'rating' => $rating,
+            'text' => $text,
+            'reply' => $reply,
+            'location' => null,
+            'date' => $now->copy()->subDays($offset * 3)->translatedFormat('d M Y'),
+            'date_iso' => $now->copy()->subDays($offset * 3)->toIso8601String(),
+            'link' => null,
+        ];
+
         return [
             'summary' => ['average' => 4.8, 'count' => 128],
             'reviews' => [
-                ['id' => -1, 'author' => 'Anna S.', 'rating' => 5, 'text' => __('pages/review_widgets.demo_1'), 'reply' => null, 'location' => null, 'date' => $now->translatedFormat('d M Y'), 'date_iso' => $now->toIso8601String(), 'link' => null],
-                ['id' => -2, 'author' => 'Michael R.', 'rating' => 5, 'text' => __('pages/review_widgets.demo_2'), 'reply' => __('pages/review_widgets.demo_reply'), 'location' => null, 'date' => $now->copy()->subDays(4)->translatedFormat('d M Y'), 'date_iso' => $now->copy()->subDays(4)->toIso8601String(), 'link' => null],
-                ['id' => -3, 'author' => 'Julia K.', 'rating' => 4, 'text' => __('pages/review_widgets.demo_3'), 'reply' => null, 'location' => null, 'date' => $now->copy()->subDays(9)->translatedFormat('d M Y'), 'date_iso' => $now->copy()->subDays(9)->toIso8601String(), 'link' => null],
+                $mk(0, 'Anna S.', 5, __('pages/review_widgets.demo_1')),
+                $mk(1, 'Michael R.', 5, __('pages/review_widgets.demo_2'), __('pages/review_widgets.demo_reply')),
+                $mk(2, 'Julia K.', 4, __('pages/review_widgets.demo_3')),
+                $mk(3, 'David L.', 5, __('pages/review_widgets.demo_2')),
+                $mk(4, 'Sophie M.', 3, __('pages/review_widgets.demo_3')),
+                $mk(5, 'Thomas W.', 4, __('pages/review_widgets.demo_1')),
             ],
         ];
     }

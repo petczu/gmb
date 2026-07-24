@@ -59,7 +59,7 @@
 .{{ $scope }} .rw-list { display: flex; flex-direction: column; gap: var(--rw-gap); }
 /* Masonry */
 .{{ $scope }} .rw-masonry { column-width: {{ $colW }}px; column-gap: var(--rw-gap); }
-.{{ $scope }} .rw-masonry .rw-card { margin-bottom: var(--rw-gap); display: inline-flex; width: 100%; }
+.{{ $scope }} .rw-masonry .rw-card { margin-bottom: var(--rw-gap); width: 100%; }
 /* Slider */
 .{{ $scope }} .rw-slider { position: relative; }
 .{{ $scope }} .rw-track { display: flex; gap: var(--rw-gap); overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
