@@ -64,6 +64,11 @@ class Reports extends Page implements HasForms
         return __('nav.report_builder');
     }
 
+    public function getTitle(): string
+    {
+        return __('nav.report_builder');
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return tenancy()->initialized && (auth()->user()?->can('view_reports') ?? false);

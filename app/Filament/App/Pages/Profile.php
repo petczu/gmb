@@ -47,6 +47,11 @@ class Profile extends Page implements HasForms
         return __('nav.profile');
     }
 
+    public function getTitle(): string
+    {
+        return __('nav.profile');
+    }
+
     // Reached from the top-right user menu, not the sidebar.
     public static function shouldRegisterNavigation(): bool
     {
@@ -187,13 +192,16 @@ class Profile extends Page implements HasForms
         $state = $this->form->getState();
         $u = auth()->user();
 
+        $newLocale = $state['locale'] ?? 'en';
+        $localeChanged = $u->locale !== $newLocale;
+
         $u->fill([
             'name' => $state['name'],
             'email' => $state['email'],
             'avatar_path' => $state['avatar_path'] ?? null,
             'timezone' => $state['timezone'] ?? null,
             'week_start' => $state['week_start'] ?? 'monday',
-            'locale' => $state['locale'] ?? 'en',
+            'locale' => $newLocale,
         ]);
 
         $u->forceFill(['product_emails' => (bool) ($state['product_emails'] ?? true)]);
@@ -204,6 +212,17 @@ class Profile extends Page implements HasForms
 
         $u->save();
 
+        // Apply the new locale to this request so the flashed toast is already
+        // translated, then reload the whole page: the Livewire save only
+        // re-renders the form, but the sidebar, page title and navigation groups
+        // are part of the Filament shell and only pick up the new language on a
+        // full page load.
+        app()->setLocale($newLocale);
+
         Notification::make()->title(__('pages/profile.profile_saved'))->success()->send();
+
+        if ($localeChanged) {
+            $this->redirect(static::getUrl(), navigate: false);
+        }
     }
 }

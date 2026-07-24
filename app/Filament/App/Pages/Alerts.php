@@ -53,6 +53,11 @@ class Alerts extends Page implements HasForms
         return __('nav.alerts');
     }
 
+    public function getTitle(): string
+    {
+        return __('nav.alerts');
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return tenancy()->initialized && (auth()->user()?->can('manage_notifications') ?? false);

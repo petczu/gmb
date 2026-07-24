@@ -49,6 +49,11 @@ class Company extends Page implements HasForms
         return __('nav.company');
     }
 
+    public function getTitle(): string
+    {
+        return __('nav.company');
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return tenancy()->initialized && (auth()->user()?->can('manage_company') ?? false);

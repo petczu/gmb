@@ -61,6 +61,11 @@ class Team extends Page implements HasTable
         return __('nav.team');
     }
 
+    public function getTitle(): string
+    {
+        return __('nav.team');
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return tenancy()->initialized && auth()->user()?->can('manage_team');

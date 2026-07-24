@@ -52,6 +52,11 @@ class Notifications extends Page implements HasForms
         return __('nav.notifications');
     }
 
+    public function getTitle(): string
+    {
+        return __('nav.notifications');
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return tenancy()->initialized && (auth()->user()?->can('manage_notifications') ?? false);

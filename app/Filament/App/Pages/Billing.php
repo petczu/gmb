@@ -52,6 +52,11 @@ class Billing extends Page
         return __('nav.billing');
     }
 
+    public function getTitle(): string
+    {
+        return __('nav.billing');
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return tenancy()->initialized && (auth()->user()?->can('manage_billing') ?? false);

@@ -162,13 +162,19 @@ class AppPanelProvider extends PanelProvider
             // Pillar-based navigation, mirroring Localith's IA. Dashboard stays
             // ungrouped at the top; remaining pillars (Posts, Reports, SEO) are
             // added as those features land.
+            // The array KEY (the English group string used by each page's
+            // $navigationGroup) is what Filament matches on; the label closure
+            // is what renders. Keying by the string keeps the match working in
+            // every locale, while a translated label would break it (Filament
+            // compares the page's raw group string against the group label, so
+            // a translated label only matches in English).
             ->navigationGroups([
-                NavigationGroup::make('Listings')->label(fn (): string => __('nav.group_listings')),
-                NavigationGroup::make('Reviews')->label(fn (): string => __('nav.group_reviews')),
+                'Listings' => NavigationGroup::make()->label(fn (): string => __('nav.group_listings')),
+                'Reviews' => NavigationGroup::make()->label(fn (): string => __('nav.group_reviews')),
                 // Reports is a CLUSTER (single ungrouped nav item, no group
                 // heading) — a "Reports" group above a lone "Reports" item
                 // read as a duplicate.
-                NavigationGroup::make('Settings')->label(fn (): string => __('nav.group_settings')),
+                'Settings' => NavigationGroup::make()->label(fn (): string => __('nav.group_settings')),
             ])
             // Top-right user (avatar) menu.
             ->userMenuItems([
