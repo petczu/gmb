@@ -20,6 +20,15 @@ class SyncWorkspaceReviewsJob implements ShouldQueue
 
     public int $tries = 2;
 
+    /**
+     * Syncing a whole workspace fetches reviews per location, and Zernio can be
+     * slow to respond (up to the 30s per-request timeout) or rate-limit us into
+     * backoff sleeps. The default 120s worker timeout killed multi-location
+     * syncs mid-run, so give this job a generous ceiling of its own. Kept below
+     * the redis `retry_after` (960s) so it is never re-reserved while running.
+     */
+    public int $timeout = 900;
+
     /** @var array<int, int> seconds */
     public array $backoff = [60, 300];
 

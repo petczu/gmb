@@ -38,8 +38,16 @@ class SyncWorkspaceReviews implements ShouldBeUnique, ShouldQueue
 
     public array $backoff = [30, 60, 120];
 
+    /**
+     * Zernio can be slow (up to the 30s per-request timeout) or rate-limit us
+     * into backoff sleeps, so a multi-location workspace easily exceeds the
+     * default 120s worker timeout. Give it a generous ceiling, below the redis
+     * `retry_after` (960s) so it is never re-reserved while running.
+     */
+    public int $timeout = 900;
+
     /** One pending/running sync per workspace at a time. */
-    public int $uniqueFor = 900;
+    public int $uniqueFor = 1200;
 
     public function __construct(public string $workspaceId) {}
 
