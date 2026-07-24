@@ -5,49 +5,28 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\ReviewWidget;
-use App\Models\Workspace;
-use App\Services\Reviews\ReviewSync;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Foundation\Queue\Queueable;
 
 /**
- * Refreshes a workspace's reviews off the request cycle. Dispatched after a
- * location is connected (the picker) so the user isn't blocked while hundreds
- * of reviews are pulled from Zernio.
+ * Dispatched after a location is connected (the picker). Dispatcher only: it
+ * fans out one staggered {@see SyncLocationReviewsJob} per location so the
+ * user isn't blocked and Zernio isn't hammered by a single long job.
  *
- * Unique per workspace: connecting many locations in a row dispatches many
- * jobs, and each one syncs the WHOLE workspace — running them in parallel
- * multiplied the Zernio calls and tripped the 429 rate limit.
- *
- * ReviewSync initializes the tenant itself from the given workspace, so this
- * job is safe to run from the central queue context.
+ * Unique per workspace: connecting several locations in a row dispatches many
+ * of these; the lock collapses them into one fan-out.
  */
 class SyncWorkspaceReviews implements ShouldBeUnique, ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     public int $tries = 3;
 
     public array $backoff = [30, 60, 120];
 
-    /**
-     * Zernio can be slow (up to the 30s per-request timeout) or rate-limit us
-     * into backoff sleeps, so a multi-location workspace easily exceeds the
-     * default 120s worker timeout. Give it a generous ceiling, below the redis
-     * `retry_after` (960s) so it is never re-reserved while running.
-     */
-    public int $timeout = 900;
-
-    /** One pending/running sync per workspace at a time. */
-    public int $uniqueFor = 1200;
+    /** One pending/running fan-out per workspace at a time. */
+    public int $uniqueFor = 300;
 
     public function __construct(public string $workspaceId) {}
 
@@ -56,24 +35,18 @@ class SyncWorkspaceReviews implements ShouldBeUnique, ShouldQueue
         return $this->workspaceId;
     }
 
-    public function handle(ReviewSync $sync): void
+    public function handle(): void
     {
-        $workspace = Workspace::find($this->workspaceId);
+        $count = SyncLocationReviewsJob::fanOutForWorkspace($this->workspaceId);
 
-        if ($workspace === null) {
-            return;
-        }
+        // Rebuild embedded review-widget snapshots once the per-location syncs
+        // have had time to finish, so the public embed picks up fresh reviews.
+        $after = ($count * SyncLocationReviewsJob::STAGGER_SECONDS) + 120;
 
-        $stats = $sync->syncWorkspace($workspace);
-
-        Log::info('SyncWorkspaceReviews done', ['workspace' => $this->workspaceId] + $stats);
-
-        // Keep embedded review widgets fresh: a sync can bring in new reviews
-        // that should surface in the snapshot the public embed serves.
         ReviewWidget::query()
             ->where('workspace_id', $this->workspaceId)
             ->where('active', true)
             ->pluck('id')
-            ->each(fn (int $id) => BuildReviewWidgetSnapshotJob::dispatch($id));
+            ->each(fn (int $id) => BuildReviewWidgetSnapshotJob::dispatch($id)->delay(now()->addSeconds($after)));
     }
 }
