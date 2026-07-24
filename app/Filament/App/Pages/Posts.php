@@ -945,6 +945,14 @@ class Posts extends Page implements HasTable
             FileUpload::make('image')
                 ->label(__('pages/posts.field_image'))
                 ->image()
+                // Resize down in the browser BEFORE upload: keeps the file small
+                // (well under any server upload_max_filesize / body limit, which
+                // is what leaves big uploads stuck mid-progress) and matches the
+                // resolution Google actually uses for post images.
+                ->imageResizeMode('contain')
+                ->imageResizeUpscale(false)
+                ->imageResizeTargetWidth('1600')
+                ->imageResizeTargetHeight('1600')
                 ->disk('uploads')
                 ->directory('posts')
                 ->maxSize(4096)
