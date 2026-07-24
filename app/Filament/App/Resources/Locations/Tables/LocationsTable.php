@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\Locations\Tables;
 
 use App\Filament\App\Pages\BusinessProfile;
+use App\Jobs\DisconnectZernioAccountJob;
 use App\Models\Location;
 use App\Models\LocationGroup;
 use App\Models\Workspace;
@@ -146,6 +147,8 @@ class LocationsTable
                         ->modalHeading(__('resources/locations.disconnect_heading'))
                         ->modalDescription(__('resources/locations.disconnect_desc'))
                         ->action(function (Location $record): void {
+                            $accountId = (string) $record->zernio_account_id;
+
                             ActivityLogger::log('location.disconnected', ['location' => $record->name]);
                             $record->reviews()->delete();
                             $record->delete();
@@ -154,6 +157,13 @@ class LocationsTable
                             $workspace = Workspace::find(session('current_workspace_id'));
                             if ($workspace !== null) {
                                 app(LocationBilling::class)->syncQuantity($workspace);
+
+                                // If that was the last location of its Google account,
+                                // unlink the account on Zernio (in the background) so
+                                // dead connections don't linger and keep counting.
+                                if ($accountId !== '' && ! Location::query()->where('zernio_account_id', $accountId)->exists()) {
+                                    DisconnectZernioAccountJob::dispatch((string) $workspace->id, $accountId);
+                                }
                             }
 
                             Notification::make()->title(__('resources/locations.disconnected'))->success()->send();

@@ -7,6 +7,7 @@ namespace App\Services\Reviews;
 use App\Models\GoogleAccount;
 use App\Models\Workspace;
 use GuzzleHttp\Client as GuzzleClient;
+use Illuminate\Support\Facades\Log;
 use Zernio\Api\AccountsApi;
 use Zernio\Api\ConnectApi;
 use Zernio\Api\ProfilesApi;
@@ -213,6 +214,32 @@ class ZernioConnectionManager
     public function unlink(GoogleAccount $account): void
     {
         $account->delete();
+    }
+
+    /**
+     * Fully disconnect a Google account: delete it on Zernio (so a dead
+     * connection doesn't linger and keep counting) and remove the central
+     * GoogleAccount row. Best-effort on the Zernio side — a failure there must
+     * not leave the local row behind.
+     */
+    public function disconnectAccount(string $workspaceId, string $accountId): void
+    {
+        if ($accountId !== '' && ! str_starts_with($accountId, 'fake')) {
+            try {
+                $this->accountsApi()->deleteAccount($accountId);
+            } catch (\Throwable $e) {
+                Log::warning('Zernio account disconnect failed', [
+                    'workspace' => $workspaceId,
+                    'account' => $accountId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        GoogleAccount::query()
+            ->where('workspace_id', $workspaceId)
+            ->where('zernio_account_id', $accountId)
+            ->delete();
     }
 
     /**
