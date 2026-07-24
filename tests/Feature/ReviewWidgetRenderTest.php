@@ -93,7 +93,7 @@ class ReviewWidgetRenderTest extends TestCase
     {
         $snippet = $this->widget()->embedSnippet();
 
-        $this->assertStringContainsString('w/abctoken123.js', $snippet);
+        $this->assertStringContainsString('widget.js?id=abctoken123', $snippet);
         $this->assertStringContainsString('id="reviews-widget-abctoken123"', $snippet);
     }
 }
