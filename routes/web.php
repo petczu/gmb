@@ -19,6 +19,8 @@ use App\Models\User;
 use App\Support\Locales;
 use App\Support\MarketingSite;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -121,6 +123,10 @@ Route::withoutMiddleware([
     StartSession::class,
     AddQueuedCookiesToResponse::class,
     ShareErrorsFromSession::class,
+    // The CSRF middleware reads the session (to set the XSRF cookie) even on
+    // GET, so it must go too or it throws "Session store not set".
+    PreventRequestForgery::class,
+    EncryptCookies::class,
 ])->group(function (): void {
     Route::get('w/{token}.js', [ReviewWidgetController::class, 'js'])
         ->where('token', '[a-z0-9]+')->name('review-widget.js');
