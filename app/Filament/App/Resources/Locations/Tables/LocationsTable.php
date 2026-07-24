@@ -34,6 +34,7 @@ class LocationsTable
                 Action::make('create')
                     ->label(__('resources/locations.empty_cta'))
                     ->icon(Heroicon::OutlinedPlus)
+                    ->extraAttributes(['x-on:click' => "\$el.style.opacity='.7';\$el.style.pointerEvents='none';"])
                     ->url(fn (): string => route('zernio.google.connect')),
             ])
             ->columns([

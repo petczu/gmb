@@ -239,6 +239,7 @@ class Onboarding extends Page implements HasForms
                     Action::make('connectGoogle')
                         ->label(__('onboarding.wiz_connect_google'))
                         ->icon(Heroicon::OutlinedLink)
+                        ->extraAttributes(['x-on:click' => "\$el.style.opacity='.7';\$el.style.pointerEvents='none';"])
                         ->url(route('zernio.google.connect')),
 
                     Action::make('skipLocation')

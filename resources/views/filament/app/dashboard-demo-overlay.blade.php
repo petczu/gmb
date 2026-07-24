@@ -9,6 +9,8 @@
     .demo-cta-text { font-size: .875rem; line-height: 1.55; color: #6b7280; margin: 0 0 1rem; }
     .dark .demo-cta-text { color: #a1a1aa; }
     .demo-cta-note { display: block; margin-top: .6rem; font-size: .75rem; color: #9ca3af; }
+    .demo-spin { animation: demo-spin .7s linear infinite; }
+    @keyframes demo-spin { to { transform: rotate(360deg); } }
 </style>
 
 <div style="position:fixed; inset:0; z-index:45; display:flex; align-items:center; justify-content:center; padding:1rem; pointer-events:none;">
@@ -18,10 +20,22 @@
         </div>
         <div class="demo-cta-title">{{ __('pages/dashboard.demo_title') }}</div>
         <p class="demo-cta-text">{{ __('pages/dashboard.demo_text') }}</p>
+        {{-- Resolving the Zernio connect URL server-side can take 10-15s, so the
+             button flips to a spinner on click and blocks further clicks until
+             the browser navigates away. --}}
         <a href="{{ route('zernio.google.connect') }}"
+           x-data="{ loading: false }"
+           @click="loading = true"
+           :style="loading ? 'pointer-events:none; opacity:.75;' : ''"
            style="display:inline-flex; align-items:center; gap:6px; border-radius:8px; padding:8px 14px; font-size:14px; line-height:20px; font-weight:500; text-decoration:none; background:rgb(24,0,255); color:#fff;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>
-            {{ __('pages/dashboard.empty_cta') }}
+            <span x-show="!loading" style="display:inline-flex; align-items:center; gap:6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>
+                {{ __('pages/dashboard.empty_cta') }}
+            </span>
+            <span x-show="loading" x-cloak style="display:inline-flex; align-items:center; gap:6px;">
+                <svg class="demo-spin" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M12 3a9 9 0 1 0 9 9" /></svg>
+                {{ __('pages/dashboard.connecting') }}
+            </span>
         </a>
         <span class="demo-cta-note">{{ __('pages/dashboard.demo_note') }}</span>
     </div>

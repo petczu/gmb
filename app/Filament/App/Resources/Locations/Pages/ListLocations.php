@@ -71,6 +71,9 @@ class ListLocations extends ListRecords
                 ->color('primary')
                 // Hidden while empty so only the centered empty-state button shows.
                 ->visible(fn (): bool => $isZernio && Location::query()->exists())
+                // Resolving the connect URL can take 10-15s; dim + block the
+                // button on click so the wait reads as "working".
+                ->extraAttributes(['x-on:click' => "\$el.style.opacity='.7';\$el.style.pointerEvents='none';"])
                 ->url(fn (): string => route('zernio.google.connect')),
 
             // Dev convenience without a key: seed two demo locations + reviews.

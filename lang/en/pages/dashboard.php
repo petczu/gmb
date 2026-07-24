@@ -41,6 +41,7 @@ return [
         'Monthly reports and review collection pages built on real data',
     ],
     'empty_cta' => 'Connect Google Business Profile',
+    'connecting' => 'Connecting…',
     'empty_footnote' => 'Takes about two minutes.',
     'empty_mock_reply' => 'AI reply drafted',
     'empty_mock_reviews' => 'Reviews · 30d',
