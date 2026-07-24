@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'channels' => 'チャンネル',
+    'channels_desc' => '通知の配信方法です。より多くのチャンネルを準備中です。',
+    'channel_email' => 'メール · 有効',
+    'channel_sms' => 'SMS · 近日公開',
+    'channel_whatsapp' => 'WhatsApp · 近日公開',
+
+    'recipients' => '受信者',
+    'recipients_help' => 'グループ（役割別または全員）や個々のメンバーを選択します。空欄のままにするとワークスペースのオーナーがデフォルトになります。',
+    'default_owner' => 'ワークスペースのオーナー',
+    'included' => '含む',
+    'excluded' => '除外',
+    'excluded_none' => '除外者なし',
+    'excluded_help' => '含めた対象から除外します。例: 役割全体を含めつつ、1人だけ除外する。',
+    'guest' => 'ゲスト',
+    'saved' => '通知の受信者を保存しました',
+
+    'groups' => 'グループ',
+    'people' => 'メンバー',
+    'everyone' => '全員',
+    'group_owner' => 'オーナー',
+    'group_admin' => '管理者',
+    'group_member' => 'メンバー',
+    'group_guest' => 'ゲスト',
+    'group_role' => ':role',
+
+    'cat_review_growth' => 'レビューの増加',
+    'cat_review_growth_desc' => '目標の進捗、毎週のコーチングとヒント、目標達成のお祝い、および異常アラート（停滞、ネガティブの連続、急増、評価の低下）。',
+    'cat_reputation' => '評判',
+    'cat_reputation_desc' => '新しいレビューのダイジェストと、対応が必要なレビュー。',
+    'cat_operations' => '運用',
+    'cat_operations_desc' => 'アカウントの連携解除、同期の復旧、返信の失敗、承認待ち。',
+    'cat_billing' => 'お支払い',
+    'cat_billing_desc' => 'お支払い、トライアルのリマインダー、サブスクリプションの変更、AI使用量の上限。',
+
+    'chat_title' => 'SlackとTelegram',
+    'chat_desc' => 'メールに加えて、SlackチャンネルやTelegramチャットに短いアラートを送信します。',
+    'slack_webhook' => 'Slack受信WebhookのURL',
+    'slack_help' => 'Slack → アプリ → Incoming Webhooks → チャンネルに追加、その後URLをここに貼り付けてください。',
+    'telegram_token' => 'Telegramボットトークン',
+    'telegram_token_help' => '@BotFatherでボットを作成し、そのトークンを貼り付けてください。',
+    'telegram_chat' => 'TelegramチャットID',
+    'telegram_chat_help' => 'ボットをグループやチャットに追加し、そのチャットID（例: @userinfobot経由）を使用してください。',
+    'chat_language' => 'メッセージの言語',
+    'chat_categories' => 'これらのカテゴリを送信',
+    'chat_test' => 'テストメッセージを送信',
+    'chat_test_sent' => 'テストメッセージを送信しました。チャンネルをご確認ください。',
+    'email_always_on' => '常にオンです。受信者は以下のカテゴリごとに設定します。',
+    'channel_on' => 'オン',
+    'channel_enable' => 'チャンネルを有効化',
+];
