@@ -6,6 +6,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PostmarkWebhookController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewPageController;
+use App\Http\Controllers\ReviewWidgetController;
 use App\Http\Controllers\TermsController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceSwitchController;
@@ -17,7 +18,10 @@ use App\Http\Middleware\SetLocale;
 use App\Models\User;
 use App\Support\Locales;
 use App\Support\MarketingSite;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
 
 // The app panel is mounted at the root path (see AppPanelProvider), so "/" is
@@ -108,6 +112,20 @@ Route::middleware(['web', 'auth', EnsureBetaApproved::class, SetCurrentWorkspace
 Route::middleware('web')->group(function (): void {
     Route::get('r/{slug}', [ReviewPageController::class, 'show'])->name('review-page.show');
     Route::get('r/{slug}/go/{target}', [ReviewPageController::class, 'go'])->name('review-page.go');
+});
+
+// PUBLIC review-showcase widgets, embedded on the customer's own site. Central
+// snapshot, no tenancy. Session/cookie middleware is stripped so the responses
+// stay cacheable and set no third-party cookies.
+Route::withoutMiddleware([
+    StartSession::class,
+    AddQueuedCookiesToResponse::class,
+    ShareErrorsFromSession::class,
+])->group(function (): void {
+    Route::get('w/{token}.js', [ReviewWidgetController::class, 'js'])
+        ->where('token', '[a-z0-9]+')->name('review-widget.js');
+    Route::get('w/{token}', [ReviewWidgetController::class, 'embed'])
+        ->where('token', '[a-z0-9]+')->name('review-widget.embed');
 });
 
 // Public developer documentation (markdown pages + Scalar API reference).

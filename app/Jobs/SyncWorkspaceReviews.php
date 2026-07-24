@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Models\ReviewWidget;
 use App\Models\Workspace;
 use App\Services\Reviews\ReviewSync;
 use Illuminate\Bus\Queueable;
@@ -58,5 +59,13 @@ class SyncWorkspaceReviews implements ShouldBeUnique, ShouldQueue
         $stats = $sync->syncWorkspace($workspace);
 
         Log::info('SyncWorkspaceReviews done', ['workspace' => $this->workspaceId] + $stats);
+
+        // Keep embedded review widgets fresh: a sync can bring in new reviews
+        // that should surface in the snapshot the public embed serves.
+        ReviewWidget::query()
+            ->where('workspace_id', $this->workspaceId)
+            ->where('active', true)
+            ->pluck('id')
+            ->each(fn (int $id) => BuildReviewWidgetSnapshotJob::dispatch($id));
     }
 }

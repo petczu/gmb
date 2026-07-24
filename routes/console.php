@@ -25,6 +25,9 @@ Schedule::command('subscriptions:trial-reminders')->dailyAt('09:00');
 // location backfills its history and is intentionally not emailed).
 Schedule::command('reviews:sync')->hourly();
 
+// Keep embedded review widgets fresh for organically arriving reviews.
+Schedule::command('widgets:refresh-snapshots')->dailyAt('04:30');
+
 // Safety net for the review-reply AUTOMATIONS: the webhook dispatches
 // RunReviewAutomation per new review; this pass catches sync-discovered
 // reviews and failed jobs. --since guards a freshly connected location's
