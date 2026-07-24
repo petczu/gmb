@@ -123,7 +123,8 @@ class ReviewWidget extends Model
 
     public function jsUrl(): string
     {
-        return route('review-widget.js', $this->token);
+        // Pretty uniform form (…/widget.js?id=token); the path form still works.
+        return route('review-widget.loader', ['id' => $this->token]);
     }
 
     /** The `<script>` snippet the customer pastes into their page. */

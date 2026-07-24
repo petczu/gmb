@@ -17,6 +17,12 @@ use Illuminate\View\View;
  */
 class ReviewWidgetController extends Controller
 {
+    /** Pretty loader alias: /widget.js?id={token} → same as /w/{token}.js. */
+    public function loader(Request $request): Response
+    {
+        return $this->js($request, (string) $request->query('id', ''));
+    }
+
     /** The `<script>` embed: injects styles + markup into the mount div. */
     public function js(Request $request, string $token): Response
     {

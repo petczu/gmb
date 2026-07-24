@@ -128,6 +128,9 @@ Route::withoutMiddleware([
     PreventRequestForgery::class,
     EncryptCookies::class,
 ])->group(function (): void {
+    // Pretty, uniform loader: the widget id travels in the query string.
+    Route::get('widget.js', [ReviewWidgetController::class, 'loader'])->name('review-widget.loader');
+    // Path forms (kept for already-embedded snippets).
     Route::get('w/{token}.js', [ReviewWidgetController::class, 'js'])
         ->where('token', '[a-z0-9]+')->name('review-widget.js');
     Route::get('w/{token}', [ReviewWidgetController::class, 'embed'])
