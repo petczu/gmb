@@ -217,9 +217,11 @@ class ReviewsTable
                     }),
 
                 SelectFilter::make('rating')
+                    ->label(__('resources/reviews.col_rating'))
                     ->options([5 => '5★', 4 => '4★', 3 => '3★', 2 => '2★', 1 => '1★']),
 
                 SelectFilter::make('location')
+                    ->label(__('resources/reviews.col_location'))
                     ->relationship('location', 'name')
                     ->multiple()
                     ->searchable()

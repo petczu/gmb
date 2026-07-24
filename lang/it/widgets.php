@@ -71,4 +71,9 @@ return [
     'rating_trend_heading' => 'Andamento valutazione e volume',
     'star_distribution_heading' => 'Distribuzione delle stelle',
     'col_rating' => 'Valutazione',
+
+    // i18n label backfill (batch 2)
+    'chart_avg_rating' => 'Valutazione media',
+    'chart_avg_rating_prev' => 'Valutazione media (precedente)',
+    'chart_reviews' => 'Recensioni',
 ];

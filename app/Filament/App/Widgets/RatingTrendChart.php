@@ -43,7 +43,7 @@ class RatingTrendChart extends ChartWidget
             return [
                 'datasets' => [
                     [
-                        'label' => 'Avg rating',
+                        'label' => __('widgets.chart_avg_rating'),
                         'data' => $demo['ratings'],
                         'borderColor' => '#2563eb',
                         'backgroundColor' => 'rgba(37, 99, 235, 0.1)',
@@ -52,7 +52,7 @@ class RatingTrendChart extends ChartWidget
                         'yAxisID' => 'y',
                     ],
                     [
-                        'label' => 'Reviews',
+                        'label' => __('widgets.chart_reviews'),
                         'data' => $demo['volumes'],
                         'type' => 'bar',
                         'borderColor' => '#d1d5db',
@@ -74,7 +74,7 @@ class RatingTrendChart extends ChartWidget
 
         $datasets = [
             [
-                'label' => 'Avg rating',
+                'label' => __('widgets.chart_avg_rating'),
                 'data' => $avgCur,
                 'borderColor' => '#2563eb',
                 'backgroundColor' => 'rgba(37, 99, 235, 0.1)',
@@ -83,7 +83,7 @@ class RatingTrendChart extends ChartWidget
                 'yAxisID' => 'y',
             ],
             [
-                'label' => 'Reviews',
+                'label' => __('widgets.chart_reviews'),
                 'data' => $volCur,
                 'type' => 'bar',
                 'borderColor' => '#d1d5db',
@@ -95,7 +95,7 @@ class RatingTrendChart extends ChartWidget
         if ($period->compare) {
             [$avgPrev] = $this->bucket($period, $period->prevStart, $bucketDays, $bucketCount, withLabels: false);
             $datasets[] = [
-                'label' => 'Avg rating (previous)',
+                'label' => __('widgets.chart_avg_rating_prev'),
                 'data' => $avgPrev,
                 'borderColor' => '#9ca3af',
                 'borderDash' => [5, 4],

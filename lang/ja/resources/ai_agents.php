@@ -68,4 +68,8 @@ return [
     'shared_rules_placeholder' => "例:\nドイツ語の返信では「Raum」または「Escape Room」を使い、ドイツ語の名詞として「Room」は決して使わない。\n割引や返金を約束しない。\n返信に名前を署名しない。",
     'shared_rules_save' => 'ルールを保存',
     'shared_rules_saved' => '共通ルールを保存しました',
+
+    // i18n label backfill (batch 2)
+    'preview_reply' => 'エージェントの返信',
+    'anonymous' => '匿名',
 ];

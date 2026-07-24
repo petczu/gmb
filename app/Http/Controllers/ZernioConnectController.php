@@ -45,7 +45,7 @@ class ZernioConnectController extends Controller
         try {
             $result = $manager->connectUrl($workspace, route('zernio.google.callback'));
         } catch (Throwable $e) {
-            Notification::make()->title('Could not start Google connection')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('errors.google_connect_start_failed'))->body($e->getMessage())->danger()->send();
 
             return redirect($this->returnUrl());
         }
@@ -90,7 +90,7 @@ class ZernioConnectController extends Controller
         try {
             $linked = $manager->linkConnectedAccounts($workspace);
         } catch (Throwable $e) {
-            Notification::make()->title('Google connection failed')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('errors.google_connect_failed'))->body($e->getMessage())->danger()->send();
 
             return redirect($this->returnUrl());
         }

@@ -71,4 +71,9 @@ return [
     'competitor_chart_mode_growth' => 'Przyrost',
     'competitor_chart_mode_total' => 'Łącznie',
     'competitor_chart_you' => 'Ty',
+
+    // i18n label backfill (batch 2)
+    'chart_avg_rating' => 'Śr. ocena',
+    'chart_avg_rating_prev' => 'Śr. ocena (poprzednia)',
+    'chart_reviews' => 'Opinie',
 ];

@@ -69,4 +69,8 @@ return [
     'shared_rules_placeholder' => "np.\nW odpowiedziach po polsku pisz „pokój” lub „escape room”, nigdy „room” jako polskie słowo.\nNigdy nie obiecuj zniżek ani zwrotów.\nPodpisuj odpowiedzi bez imienia.",
     'shared_rules_save' => 'Zapisz zasady',
     'shared_rules_saved' => 'Wspólne zasady zapisane',
+
+    // i18n label backfill (batch 2)
+    'preview_reply' => 'Odpowiedź agenta',
+    'anonymous' => 'Anonim',
 ];

@@ -68,4 +68,8 @@ return [
     'shared_rules_placeholder' => "مثال:\nفي الردود بالألمانية قل \"Raum\" أو \"Escape Room\"، لا \"Room\" كاسم ألماني.\nلا تعِد أبدًا بخصومات أو استردادات.\nوقّع الردود بدون اسم.",
     'shared_rules_save' => 'حفظ القواعد',
     'shared_rules_saved' => 'تم حفظ القواعد المشتركة',
+
+    // i18n label backfill (batch 2)
+    'preview_reply' => 'رد الوكيل',
+    'anonymous' => 'مجهول',
 ];

@@ -257,6 +257,7 @@ class Billing extends Page
     public function subscribeAction(): Action
     {
         return Action::make('subscribe')
+            ->label(__('pages/billing.subscribe'))
             ->modalIcon(Heroicon::OutlinedBuildingOffice2)
             ->modalHeading(__('pages/billing.subscribe_heading'))
             ->modalDescription(__('pages/billing.subscribe_desc'))

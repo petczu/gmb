@@ -38,4 +38,8 @@ return [
     '401_reply' => 'KI-Antwort: leicht zu beheben, der Anmelde-Button ist direkt unten.',
     '401_signin' => 'Anmelden',
     '401_home' => 'Zur Startseite',
+
+    // i18n label backfill (batch 2)
+    'google_connect_start_failed' => 'Google-Verbindung konnte nicht gestartet werden',
+    'google_connect_failed' => 'Google-Verbindung fehlgeschlagen',
 ];

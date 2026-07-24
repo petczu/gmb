@@ -40,7 +40,7 @@ class StarDistributionChart extends ChartWidget
             return [
                 'datasets' => [
                     [
-                        'label' => 'Reviews',
+                        'label' => __('widgets.chart_reviews'),
                         'data' => DemoDashboard::starCounts(),
                         'backgroundColor' => ['#16a34a', '#65a30d', '#ca8a04', '#ea580c', '#dc2626'],
                     ],
@@ -66,7 +66,7 @@ class StarDistributionChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Reviews',
+                    'label' => __('widgets.chart_reviews'),
                     'data' => $data,
                     'backgroundColor' => ['#16a34a', '#65a30d', '#ca8a04', '#ea580c', '#dc2626'],
                 ],

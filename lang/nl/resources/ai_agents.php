@@ -68,4 +68,8 @@ return [
     'shared_rules_placeholder' => "bijv.\nSchrijf in Nederlandse reacties \"ruimte\" of \"escape room\", nooit \"Room\" als Nederlands zelfstandig naamwoord.\nBeloof nooit kortingen of terugbetalingen.\nOnderteken reacties zonder naam.",
     'shared_rules_save' => 'Regels opslaan',
     'shared_rules_saved' => 'Gedeelde regels opgeslagen',
+
+    // i18n label backfill (batch 2)
+    'preview_reply' => 'Reactie van agent',
+    'anonymous' => 'Anoniem',
 ];

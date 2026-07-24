@@ -38,4 +38,8 @@ return [
     '401_reply' => 'رد الذكاء الاصطناعي: يسهل حلّه، فزر تسجيل الدخول أدناه مباشرة.',
     '401_signin' => 'تسجيل الدخول',
     '401_home' => 'الذهاب إلى الصفحة الرئيسية',
+
+    // i18n label backfill (batch 2)
+    'google_connect_start_failed' => 'تعذّر بدء الاتصال بـ Google',
+    'google_connect_failed' => 'فشل الاتصال بـ Google',
 ];

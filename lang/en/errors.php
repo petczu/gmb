@@ -38,4 +38,8 @@ return [
     '401_reply' => 'AI reply: easily fixed, the sign-in button is right below.',
     '401_signin' => 'Sign in',
     '401_home' => 'Go to homepage',
+
+    // Google connection (Zernio) toasts
+    'google_connect_start_failed' => 'Could not start Google connection',
+    'google_connect_failed' => 'Google connection failed',
 ];

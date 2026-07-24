@@ -38,4 +38,8 @@ return [
     '401_reply' => 'AIの返信：簡単に解決できます。サインインボタンは下にあります。',
     '401_signin' => 'サインイン',
     '401_home' => 'ホームページへ',
+
+    // i18n label backfill (batch 2)
+    'google_connect_start_failed' => 'Google 連携を開始できませんでした',
+    'google_connect_failed' => 'Google 連携に失敗しました',
 ];

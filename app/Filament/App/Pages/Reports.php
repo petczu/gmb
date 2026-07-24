@@ -301,6 +301,7 @@ class Reports extends Page implements HasForms
         $left = $cap >= PHP_INT_MAX ? null : max(0, $cap - $used);
 
         return Action::make('generate')
+            ->label(__('pages/reports.generate_report'))
             ->visible(fn (): bool => auth()->user()?->can('generate_reports') ?? false)
             ->modalIcon('heroicon-o-sparkles')
             ->modalHeading(__('pages/reports.generate_heading'))
@@ -319,6 +320,7 @@ class Reports extends Page implements HasForms
     public function scheduleAction(): Action
     {
         return Action::make('schedule')
+            ->label(__('pages/reports.schedule_report'))
             ->modalIcon('heroicon-o-clock')
             ->modalHeading(__('pages/reports.schedule_heading'))
             ->modalDescription(__('pages/reports.schedule_desc'))

@@ -38,4 +38,8 @@ return [
     '401_reply' => 'Yapay zeka yanıtı: kolayca çözülür, giriş düğmesi tam aşağıda.',
     '401_signin' => 'Giriş yap',
     '401_home' => 'Ana sayfaya git',
+
+    // i18n label backfill (batch 2)
+    'google_connect_start_failed' => 'Google bağlantısı başlatılamadı',
+    'google_connect_failed' => 'Google bağlantısı başarısız oldu',
 ];

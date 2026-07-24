@@ -17,6 +17,8 @@ return [
     'col_updated' => 'Updated',
     'test_preview' => 'Test & preview',
     'test_heading' => 'Test reply',
+    'preview_reply' => 'Agent reply',
+    'anonymous' => 'Anonymous',
     'close' => 'Close',
     'no_reviews_to_test' => 'No reviews to test on yet, sync some reviews first.',
     'generation_failed' => 'Generation failed: :error',

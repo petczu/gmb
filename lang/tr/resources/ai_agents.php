@@ -68,4 +68,8 @@ return [
     'shared_rules_placeholder' => "örn.\nAlmanca yanıtlarda \"Room\" yerine \"Raum\" ya da \"Escape Room\" de, Almanca isim olarak asla \"Room\" deme.\nAsla indirim ya da iade vaat etme.\nYanıtları isim olmadan imzala.",
     'shared_rules_save' => 'Kuralları kaydet',
     'shared_rules_saved' => 'Ortak kurallar kaydedildi',
+
+    // i18n label backfill (batch 2)
+    'preview_reply' => 'Aracının yanıtı',
+    'anonymous' => 'Anonim',
 ];

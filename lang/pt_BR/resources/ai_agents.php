@@ -68,4 +68,8 @@ return [
     'col_name' => 'Nome',
     'col_tone' => 'Tom',
     'name' => 'Nome',
+
+    // i18n label backfill (batch 2)
+    'preview_reply' => 'Resposta do agente',
+    'anonymous' => 'Anônimo',
 ];

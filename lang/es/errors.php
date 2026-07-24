@@ -38,4 +38,8 @@ return [
     '401_reply' => 'Respuesta de IA: se arregla fácil, el botón de acceso está justo abajo.',
     '401_signin' => 'Iniciar sesión',
     '401_home' => 'Ir al inicio',
+
+    // i18n label backfill (batch 2)
+    'google_connect_start_failed' => 'No se pudo iniciar la conexión con Google',
+    'google_connect_failed' => 'La conexión con Google falló',
 ];

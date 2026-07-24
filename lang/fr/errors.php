@@ -38,4 +38,8 @@ return [
     '401_reply' => 'Réponse IA : vite réglé, le bouton de connexion est juste en dessous.',
     '401_signin' => 'Se connecter',
     '401_home' => 'Aller à l’accueil',
+
+    // i18n label backfill (batch 2)
+    'google_connect_start_failed' => 'Impossible de démarrer la connexion Google',
+    'google_connect_failed' => 'Échec de la connexion Google',
 ];

@@ -72,4 +72,9 @@ return [
     'rating_trend_heading' => 'Tendência de nota e volume',
     'star_distribution_heading' => 'Distribuição de estrelas',
     'col_rating' => 'Nota',
+
+    // i18n label backfill (batch 2)
+    'chart_avg_rating' => 'Nota média',
+    'chart_avg_rating_prev' => 'Nota média (anterior)',
+    'chart_reviews' => 'Avaliações',
 ];

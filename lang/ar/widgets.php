@@ -71,4 +71,9 @@ return [
     'competitor_chart_mode_growth' => 'النمو',
     'competitor_chart_mode_total' => 'الإجمالي',
     'competitor_chart_you' => 'أنت',
+
+    // i18n label backfill (batch 2)
+    'chart_avg_rating' => 'متوسط التقييم',
+    'chart_avg_rating_prev' => 'متوسط التقييم (السابق)',
+    'chart_reviews' => 'المراجعات',
 ];

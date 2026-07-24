@@ -38,4 +38,8 @@ return [
     '401_reply' => 'AI-reactie: snel opgelost, de inlogknop staat hier direct onder.',
     '401_signin' => 'Inloggen',
     '401_home' => 'Naar de homepage',
+
+    // i18n label backfill (batch 2)
+    'google_connect_start_failed' => 'Kan Google-verbinding niet starten',
+    'google_connect_failed' => 'Google-verbinding mislukt',
 ];

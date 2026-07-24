@@ -70,4 +70,9 @@ return [
     'competitor_chart_mode_growth' => 'Groei',
     'competitor_chart_mode_total' => 'Totaal',
     'competitor_chart_you' => 'Jij',
+
+    // i18n label backfill (batch 2)
+    'chart_avg_rating' => 'Gem. beoordeling',
+    'chart_avg_rating_prev' => 'Gem. beoordeling (vorige)',
+    'chart_reviews' => 'Reviews',
 ];

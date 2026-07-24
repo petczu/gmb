@@ -71,4 +71,9 @@ return [
     'competitor_chart_mode_growth' => 'Artış',
     'competitor_chart_mode_total' => 'Toplam',
     'competitor_chart_you' => 'Siz',
+
+    // i18n label backfill (batch 2)
+    'chart_avg_rating' => 'Ort. puan',
+    'chart_avg_rating_prev' => 'Ort. puan (önceki)',
+    'chart_reviews' => 'Yorumlar',
 ];

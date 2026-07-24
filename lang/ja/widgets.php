@@ -72,4 +72,9 @@ return [
     'competitor_chart_mode_growth' => '増加',
     'competitor_chart_mode_total' => '合計',
     'competitor_chart_you' => '自店舗',
+
+    // i18n label backfill (batch 2)
+    'chart_avg_rating' => '平均評価',
+    'chart_avg_rating_prev' => '平均評価（前期間）',
+    'chart_reviews' => 'レビュー',
 ];

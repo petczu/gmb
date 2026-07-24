@@ -40,6 +40,9 @@ return [
     // Chart headings
     'rating_trend_heading' => 'Rating & volume trend',
     'star_distribution_heading' => 'Star distribution',
+    'chart_avg_rating' => 'Avg rating',
+    'chart_avg_rating_prev' => 'Avg rating (previous)',
+    'chart_reviews' => 'Reviews',
 
     // LatestReviews
     'latest_reviews' => 'Latest reviews',

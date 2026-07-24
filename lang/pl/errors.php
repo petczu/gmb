@@ -38,4 +38,8 @@ return [
     '401_reply' => 'Odpowiedź AI: łatwo to naprawić, przycisk logowania jest tuż poniżej.',
     '401_signin' => 'Zaloguj się',
     '401_home' => 'Przejdź do strony głównej',
+
+    // i18n label backfill (batch 2)
+    'google_connect_start_failed' => 'Nie można rozpocząć połączenia z Google',
+    'google_connect_failed' => 'Połączenie z Google nie powiodło się',
 ];
