@@ -35,6 +35,7 @@ use Laravel\Passport\Passport;
 use Livewire\Livewire;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use SocialiteProviders\Microsoft\MicrosoftExtendSocialite;
+use Zernio\Configuration;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -66,6 +67,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The Zernio PHP SDK serializes boolean query params as 0/1 by default,
+        // but Zernio only accepts the string literals true/false (e.g.
+        // includeOverLimit=0 → 400 "includeOverLimit is invalid"). Flip the
+        // default once so every SDK client (they all share this configuration)
+        // sends valid booleans.
+        Configuration::getDefaultConfiguration()
+            ->setBooleanFormatForQueryString(Configuration::BOOLEAN_FORMAT_STRING);
+
         // MCP OAuth (Passport) consent screen shown to the AI client connecting
         // over /mcp/{workspace}. Uses the published mcp.authorize view.
         Passport::authorizationView(fn ($parameters) => view('mcp.authorize', $parameters));

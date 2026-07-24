@@ -36,7 +36,7 @@ class ZernioConnectionManager
     public function ensureProfile(Workspace $workspace): string
     {
         $name = $workspace->name ?: 'Workspace '.$workspace->id;
-        $profiles = $this->profilesApi()->listProfiles()->getProfiles() ?? [];
+        $profiles = $this->profilesApi()->listProfiles(true)->getProfiles() ?? [];
 
         // Stored id still exists on Zernio's side?
         if ($workspace->zernio_profile_id) {
@@ -82,7 +82,7 @@ class ZernioConnectionManager
     /** Id of the existing Zernio profile with this exact name, or null. */
     private function profileIdByName(string $name): ?string
     {
-        foreach ($this->profilesApi()->listProfiles()->getProfiles() ?? [] as $profile) {
+        foreach ($this->profilesApi()->listProfiles(true)->getProfiles() ?? [] as $profile) {
             if ((string) $profile->getName() === $name) {
                 return (string) $profile->getId();
             }
