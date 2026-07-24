@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'language' => 'Taal',
+    'select_language' => 'Taal kiezen',
     'save' => 'Opslaan',
     'close' => 'Sluiten',
     'from' => 'Van',

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'language' => '言語',
+    'select_language' => '言語を選択',
     'save' => '保存',
     'close' => '閉じる',
     'from' => '開始',

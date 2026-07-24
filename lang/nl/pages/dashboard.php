@@ -41,6 +41,7 @@ return [
         'Maandelijkse rapporten en reviewverzamelpagina\'s gebouwd op echte data',
     ],
     'empty_cta' => 'Google Bedrijfsprofiel verbinden',
+    'connecting' => 'Verbinden…',
     'empty_footnote' => 'Duurt ongeveer twee minuten.',
     'empty_mock_reply' => 'AI-reactie opgesteld',
     'empty_mock_reviews' => 'Reviews · 30d',

@@ -41,6 +41,7 @@ return [
         'Report mensili e pagine di raccolta recensioni costruiti su dati reali',
     ],
     'empty_cta' => 'Collega la scheda Google Business',
+    'connecting' => 'Connessione…',
     'empty_footnote' => 'Richiede circa due minuti.',
     'empty_mock_reply' => 'Risposta IA redatta',
     'empty_mock_reviews' => 'Recensioni · 30 gg',

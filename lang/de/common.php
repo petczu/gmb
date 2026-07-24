@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'language' => 'Sprache',
+    'select_language' => 'Sprache wählen',
     'save' => 'Speichern',
     'close' => 'Schließen',
     'from' => 'Von',

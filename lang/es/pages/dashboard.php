@@ -41,6 +41,7 @@ return [
         'Informes mensuales y páginas de captación de reseñas con datos reales',
     ],
     'empty_cta' => 'Conectar el Perfil de Empresa de Google',
+    'connecting' => 'Conectando…',
     'empty_footnote' => 'Se tarda unos dos minutos.',
     'empty_mock_reply' => 'Respuesta de IA redactada',
     'empty_mock_reviews' => 'Reseñas · 30 d',

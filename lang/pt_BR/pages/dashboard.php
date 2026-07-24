@@ -41,6 +41,7 @@ return [
         'Relatórios mensais e páginas de coleta de avaliações construídos com dados reais',
     ],
     'empty_cta' => 'Conectar Perfil da Empresa no Google',
+    'connecting' => 'Conectando…',
     'empty_footnote' => 'Leva cerca de dois minutos.',
     'empty_mock_reply' => 'Resposta de IA elaborada',
     'empty_mock_reviews' => 'Avaliações · 30 d',

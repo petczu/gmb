@@ -41,6 +41,7 @@ return [
         'Gerçek verilere dayalı aylık raporlar ve yorum toplama sayfaları',
     ],
     'empty_cta' => 'Google İşletme Profilini bağla',
+    'connecting' => 'Bağlanıyor…',
     'empty_footnote' => 'Yaklaşık iki dakika sürer.',
     'empty_mock_reply' => 'Yapay zeka yanıtı taslaklandı',
     'empty_mock_reviews' => 'Yorumlar · 30g',

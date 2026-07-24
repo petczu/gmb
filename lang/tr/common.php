@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'language' => 'Dil',
+    'select_language' => 'Dil seçin',
     'save' => 'Kaydet',
     'close' => 'Kapat',
     'from' => 'Başlangıç',

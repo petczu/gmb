@@ -41,6 +41,7 @@ return [
         'Miesięczne raporty i strony do zbierania opinii oparte na prawdziwych danych',
     ],
     'empty_cta' => 'Podłącz Profil Firmy Google',
+    'connecting' => 'Łączenie…',
     'empty_footnote' => 'Zajmuje około dwóch minut.',
     'empty_mock_reply' => 'Odpowiedź AI przygotowana',
     'empty_mock_reviews' => 'Opinie · 30 dni',

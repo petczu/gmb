@@ -41,6 +41,7 @@ return [
         'Rapports mensuels et pages de collecte d’avis bâtis sur de vraies données',
     ],
     'empty_cta' => 'Connecter la fiche d’établissement Google',
+    'connecting' => 'Connexion…',
     'empty_footnote' => 'Comptez environ deux minutes.',
     'empty_mock_reply' => 'Réponse IA rédigée',
     'empty_mock_reviews' => 'Avis · 30 j',

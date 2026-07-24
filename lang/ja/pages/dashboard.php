@@ -41,6 +41,7 @@ return [
         '実データに基づく月次レポートとレビュー収集ページ',
     ],
     'empty_cta' => 'Googleビジネスプロフィールを連携',
+    'connecting' => '接続中…',
     'empty_footnote' => '所要時間は約2分です。',
     'empty_mock_reply' => 'AI返信を下書きしました',
     'empty_mock_reviews' => 'レビュー · 30日',

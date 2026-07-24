@@ -41,6 +41,7 @@ return [
         'Monatsberichte und Bewertungsseiten auf Basis echter Daten',
     ],
     'empty_cta' => 'Google Business-Profil verbinden',
+    'connecting' => 'Verbindung…',
     'empty_footnote' => 'Dauert etwa zwei Minuten.',
     'empty_mock_reply' => 'KI-Antwort entworfen',
     'empty_mock_reviews' => 'Bewertungen · 30 T.',
