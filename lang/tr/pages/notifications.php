@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'channels' => 'Kanallar',
+    'channels_desc' => 'Bildirimlerin nasıl iletileceği. Daha fazla kanal yolda.',
+    'channel_email' => 'E-posta · etkin',
+    'channel_sms' => 'SMS · yakında',
+    'channel_whatsapp' => 'WhatsApp · yakında',
+
+    'recipients' => 'Alıcılar',
+    'recipients_help' => 'Gruplar (role göre ya da herkes) ve/veya bireysel üyeler seçin. Varsayılan olarak çalışma alanı sahibine gitmesi için boş bırakın.',
+    'default_owner' => 'Çalışma alanı sahibi',
+    'included' => 'Dahil',
+    'excluded' => 'Hariç',
+    'excluded_none' => 'Kimse hariç değil',
+    'excluded_help' => 'Dahil edilen kümeden çıkarıldı, örneğin tüm bir rolü dahil edip bir kişiyi dışarıda bırakın.',
+    'guest' => 'misafir',
+    'saved' => 'Bildirim alıcıları kaydedildi',
+
+    'groups' => 'Gruplar',
+    'people' => 'Kişiler',
+    'everyone' => 'Herkes',
+    'group_owner' => 'Sahipler',
+    'group_admin' => 'Yöneticiler',
+    'group_member' => 'Üyeler',
+    'group_guest' => 'Misafirler',
+    'group_role' => ':role',
+
+    'cat_review_growth' => 'Yorum artışı',
+    'cat_review_growth_desc' => 'Hedef ilerlemesi, haftalık rehberlik & ipuçları, hedefe ulaşma kutlaması ve anormallik uyarıları (durakladı, olumsuz seri, artış, puan düşüşü).',
+    'cat_reputation' => 'İtibar',
+    'cat_reputation_desc' => 'Yeni yorum özetleri ve ilgi gerektiren yorumlar.',
+    'cat_operations' => 'Operasyonlar',
+    'cat_operations_desc' => 'Hesap bağlantısı kesildi, senkronizasyon geri geldi, yanıt başarısız, onaylar beklemede.',
+    'cat_billing' => 'Faturalandırma',
+    'cat_billing_desc' => 'Ödemeler, deneme hatırlatıcıları, abonelik değişiklikleri ve yapay zeka kullanım sınırları.',
+
+    'chat_title' => 'Slack & Telegram',
+    'chat_desc' => 'E-postaya ek olarak bir Slack kanalına ya da Telegram sohbetine kısa uyarılar gönderin.',
+    'slack_webhook' => 'Slack gelen webhook URL\'si',
+    'slack_help' => 'Slack → Apps → Incoming Webhooks → Add to channel, ardından URL\'yi buraya yapıştırın.',
+    'telegram_token' => 'Telegram bot belirteci',
+    'telegram_token_help' => '@BotFather ile bir bot oluşturun ve belirtecini yapıştırın.',
+    'telegram_chat' => 'Telegram sohbet kimliği',
+    'telegram_chat_help' => 'Botu grubunuza ya da sohbetinize ekleyin ve sohbet kimliğini kullanın (örn. @userinfobot aracılığıyla).',
+    'chat_language' => 'Mesaj dili',
+    'chat_categories' => 'Bu kategorileri gönder',
+    'chat_test' => 'Test mesajı gönder',
+    'chat_test_sent' => 'Test mesajı gönderildi, kanalınızı kontrol edin.',
+    'email_always_on' => 'Her zaman açık, alıcılar aşağıda kategori bazında yapılandırılır.',
+    'channel_on' => 'Açık',
+    'channel_enable' => 'Kanalı etkinleştir',
+];
