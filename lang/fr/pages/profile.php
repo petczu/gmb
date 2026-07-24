@@ -24,4 +24,10 @@ return [
 
     // Notification
     'profile_saved' => 'Profil enregistré',
+
+    // i18n label backfill
+    'name' => 'Nom',
+    'email' => 'E-mail',
+    'new_password' => 'Nouveau mot de passe',
+    'timezone' => 'Fuseau horaire',
 ];

@@ -4,6 +4,26 @@ declare(strict_types=1);
 
 return [
     'performance_report' => 'パフォーマンスレポート',
+
+    // Report builder blocks & presets
+    'block_glance' => '概要（KPI）',
+    'block_performance' => 'プロフィールのパフォーマンス（表示、通話、クリック）',
+    'block_summary' => 'エグゼクティブサマリー（AI）',
+    'block_topics' => 'お客様が話題にしていること（AI）',
+    'block_staff' => 'スタッフへの言及、ボーナス（AI）',
+    'block_cadence' => '収集のペースとスパムリスク',
+    'block_themes' => 'テーマと感情（AI）',
+    'block_responses' => '返信のパフォーマンス',
+    'block_distribution' => '評価の分布',
+    'block_volume' => '経時的なレビュー件数',
+    'block_competitors' => '競合ベンチマーク',
+    'block_highlights' => 'レビューのハイライト',
+    'block_recommendations' => '推奨事項（AI）',
+    'block_methodology' => '方法論と注記',
+    'preset_standard' => '標準',
+    'preset_full' => 'フル',
+    'preset_bonus' => 'スタッフとボーナス',
+    'preset_compliance' => '収集コンプライアンス',
     'generated' => '作成日 :date',
     'reviews_received' => '受信したレビュー',
     'average_rating' => '平均評価',

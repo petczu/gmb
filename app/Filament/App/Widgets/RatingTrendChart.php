@@ -20,11 +20,14 @@ class RatingTrendChart extends ChartWidget
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
-    protected ?string $heading = 'Rating & volume trend';
-
     protected static ?int $sort = 3;
 
     protected static bool $isLazy = false;
+
+    public function getHeading(): ?string
+    {
+        return __('widgets.rating_trend_heading');
+    }
 
     public static function canView(): bool
     {

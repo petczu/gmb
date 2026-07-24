@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'email' => 'E-mail',
+    'role' => 'Rol',
     'col_name' => 'Naam',
     'col_email' => 'E-mail',
     'col_role' => 'Rol',

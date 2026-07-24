@@ -6,6 +6,8 @@ return [
     'col_name' => 'Ad',
     'col_email' => 'E-posta',
     'col_role' => 'Rol',
+    'email' => 'E-posta',
+    'role' => 'Rol',
 
     'edit' => 'Düzenle',
     'location_access' => 'Konum erişimi',

@@ -59,4 +59,6 @@ return [
     'deletion_scheduled' => 'Eliminazione dello spazio programmata',
     'deletion_scheduled_body' => 'Puoi annullarla entro 30 giorni da questa pagina.',
     'settings_saved' => 'Impostazioni dell’azienda salvate',
+
+    'website' => 'Sito web',
 ];

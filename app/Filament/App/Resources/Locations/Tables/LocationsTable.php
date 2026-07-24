@@ -52,6 +52,7 @@ class LocationsTable
                     ->state(fn (Location $record): ?string => LocationGroup::forLocation((int) $record->id)?->name),
 
                 TextColumn::make('address')
+                    ->label(__('resources/locations.col_address'))
                     ->limit(45)
                     ->tooltip(fn (Location $record): ?string => mb_strlen((string) $record->address) > 45 ? $record->address : null)
                     ->toggleable()
@@ -59,6 +60,7 @@ class LocationsTable
                     ->visibleFrom('lg'),
 
                 TextColumn::make('rating')
+                    ->label(__('resources/locations.col_rating'))
                     ->badge()
                     ->formatStateUsing(fn (?string $state): string => $state !== null ? $state.' ★' : '—')
                     ->color(fn (?string $state): string => match (true) {
@@ -76,6 +78,7 @@ class LocationsTable
                     ->visibleFrom('md'),
 
                 TextColumn::make('status')
+                    ->label(__('resources/locations.col_status'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'active', 'connected' => 'success',

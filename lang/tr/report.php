@@ -3,6 +3,25 @@
 declare(strict_types=1);
 
 return [
+    'block_glance' => 'Bir bakışta (KPI\'lar)',
+    'block_performance' => 'Profil performansı (görüntülemeler, aramalar, tıklamalar)',
+    'block_summary' => 'Yönetici özeti (Yapay zeka)',
+    'block_topics' => 'Müşteriler neden söz ediyor (Yapay zeka)',
+    'block_staff' => 'Personel anmaları, primler (Yapay zeka)',
+    'block_cadence' => 'Toplama ritmi & spam riski',
+    'block_themes' => 'Temalar & duygu durumu (Yapay zeka)',
+    'block_responses' => 'Yanıt performansı',
+    'block_distribution' => 'Puan dağılımı',
+    'block_volume' => 'Zaman içinde yorum hacmi',
+    'block_competitors' => 'Rakip kıyaslaması',
+    'block_highlights' => 'Yorum öne çıkanları',
+    'block_recommendations' => 'Öneriler (Yapay zeka)',
+    'block_methodology' => 'Yöntem & notlar',
+    'preset_standard' => 'Standart',
+    'preset_full' => 'Tam',
+    'preset_bonus' => 'Personel & primler',
+    'preset_compliance' => 'Toplama uyumu',
+
     'performance_report' => 'Performans raporu',
     'generated' => ':date tarihinde oluşturuldu',
     'reviews_received' => 'Alınan yorumlar',

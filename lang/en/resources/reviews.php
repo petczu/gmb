@@ -6,6 +6,7 @@ return [
     // Columns
     'col_location' => 'Location',
     'col_author' => 'Author',
+    'col_rating' => 'Rating',
     'col_review' => 'Review',
     'only_rating' => 'Only rating',
     'col_reply' => 'Reply',

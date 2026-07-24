@@ -72,4 +72,7 @@ return [
     'perm_view_competitors_desc' => 'Aprire il confronto con i concorrenti e aggiungerne',
     'perm_manage_company' => 'Impostazioni dell’azienda',
     'perm_manage_company_desc' => 'Modificare il profilo aziendale, l’immagine coordinata e la categoria di attività',
+
+    'col_name' => 'Nome',
+    'name' => 'Nome',
 ];

@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'rating_trend_heading' => 'Puan & hacim trendi',
+    'star_distribution_heading' => 'Yıldız dağılımı',
+    'col_rating' => 'Puan',
+
     // ReviewStatsOverview
     'average_rating' => 'Ortalama puan',
     'average_rating_desc' => 'Dönemdeki yorumlar genelinde',

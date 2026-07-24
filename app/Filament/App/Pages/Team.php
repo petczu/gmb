@@ -154,8 +154,8 @@ class Team extends Page implements HasTable
                         'allowed_locations' => $this->allowedLocationsOf($record),
                     ])
                     ->schema([
-                        TextInput::make('name')->required()->maxLength(120),
-                        TextInput::make('email')->email()->required()->maxLength(160),
+                        TextInput::make('name')->label(__('pages/team.name'))->required()->maxLength(120),
+                        TextInput::make('email')->label(__('pages/team.email'))->email()->required()->maxLength(160),
                         Select::make('allowed_locations')
                             ->label(__('pages/team.location_access'))
                             ->multiple()
@@ -178,7 +178,7 @@ class Team extends Page implements HasTable
                     ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
                     ->visible(fn (User $record): bool => $record->getAttribute('invite_status') === 'active')
                     ->schema([
-                        Select::make('role')->options($this->roleOptions())->required()
+                        Select::make('role')->label(__('pages/team.role'))->options($this->roleOptions())->required()
                             ->default(fn (User $record): string => $this->roleOf($record) ?: 'member'),
                     ])
                     ->action(function (User $record, array $data): void {
@@ -238,13 +238,14 @@ class Team extends Page implements HasTable
                     ->label(__('pages/team.add_member'))
                     ->icon(Heroicon::OutlinedUserPlus)
                     ->schema([
-                        TextInput::make('email')->email()->required()
+                        TextInput::make('email')->label(__('pages/team.email'))->email()->required()
                             ->helperText(fn (Get $get): string => $get('role') === 'guest'
                                 ? __('pages/team.add_guest_helper')
                                 : __('pages/team.add_member_email_helper')),
                         // One flow for everyone: picking "guest" switches to the
                         // notification-only contact path (no login invite).
                         Select::make('role')
+                            ->label(__('pages/team.role'))
                             ->options($this->roleOptions())
                             ->default('member')
                             ->required()

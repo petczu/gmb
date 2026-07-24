@@ -65,4 +65,9 @@ return [
     'shared_rules_placeholder' => "ex.\nEn français, écrire « salle » et jamais « room ».\nNe jamais promettre de remise ni de remboursement.\nSigner les réponses sans nom.",
     'shared_rules_save' => 'Enregistrer les règles',
     'shared_rules_saved' => 'Règles communes enregistrées',
+
+    // i18n label backfill
+    'col_name' => 'Nom',
+    'col_tone' => 'Ton',
+    'name' => 'Nom',
 ];

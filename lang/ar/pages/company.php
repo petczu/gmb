@@ -16,6 +16,7 @@ return [
     'entity_individual' => 'فرد',
     'display_name' => 'الاسم المعروض',
     'legal_name' => 'الاسم القانوني للشركة',
+    'website' => 'الموقع الإلكتروني',
     'contact_email' => 'بريد التواصل',
     'contact_phone' => 'هاتف التواصل',
 

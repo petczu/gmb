@@ -84,4 +84,9 @@ return [
     'sync_err_notfound' => 'Wird noch synchronisiert: Der Anbieter hat diesen Standort noch nicht geliefert.',
     'sync_err_server' => 'Der Anbieter hatte einen vorübergehenden Fehler. Erneuter Versuch beim nächsten Sync.',
     'sync_err_generic' => 'Letzter Sync fehlgeschlagen. Erneuter Versuch beim nächsten Sync.',
+
+    // i18n label backfill
+    'col_address' => 'Adresse',
+    'col_rating' => 'Bewertung',
+    'col_status' => 'Status',
 ];

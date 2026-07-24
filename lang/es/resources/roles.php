@@ -72,4 +72,8 @@ return [
     'perm_view_competitors_desc' => 'Abrir la comparativa de competidores y añadir competidores',
     'perm_manage_company' => 'Ajustes de la empresa',
     'perm_manage_company_desc' => 'Editar el perfil de empresa, la marca y la categoría del negocio',
+
+    // i18n label backfill
+    'col_name' => 'Nombre',
+    'name' => 'Nombre',
 ];

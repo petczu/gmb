@@ -6,6 +6,8 @@ return [
     'col_name' => '名前',
     'col_email' => 'メール',
     'col_role' => '役割',
+    'email' => 'メール',
+    'role' => '役割',
 
     'edit' => '編集',
     'location_access' => '店舗へのアクセス',

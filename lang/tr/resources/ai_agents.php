@@ -9,6 +9,9 @@ return [
     'empty_cta' => 'Yeni yapay zeka aracısı',
 
     // Table
+    'col_name' => 'Ad',
+    'col_tone' => 'Üslup',
+    'name' => 'Ad',
     'col_native_lang' => 'Ana dil',
     'col_default' => 'Varsayılan',
     'col_updated' => 'Güncellendi',

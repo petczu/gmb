@@ -67,4 +67,8 @@ return [
     'competitor_chart_mode_growth' => 'Crescita',
     'competitor_chart_mode_total' => 'Totale',
     'competitor_chart_you' => 'Tu',
+
+    'rating_trend_heading' => 'Andamento valutazione e volume',
+    'star_distribution_heading' => 'Distribuzione delle stelle',
+    'col_rating' => 'Valutazione',
 ];

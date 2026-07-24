@@ -1,7 +1,7 @@
 <div x-data="{ open: false }"
      x-on:ask-ai-answer.window="$wire.answer()"
      x-on:ask-ai-scroll.window="$nextTick(() => { if ($refs.thread) $refs.thread.scrollTop = $refs.thread.scrollHeight })"
-     style="position:fixed; right:1.4rem; bottom:1.4rem; z-index:40;">
+     style="position:fixed; inset-inline-end:1.4rem; bottom:1.4rem; z-index:40;">
     {{-- Single Livewire root: styles must live INSIDE it, never as a sibling. --}}
     <style>
         .ask-ai-md > :first-child { margin-top: 0; }
@@ -36,14 +36,14 @@
          it never touches (otherwise the thread stops scrolling). --}}
     <div x-show="open" x-cloak
          x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="translate-x-full"
+         x-transition:enter-start="translate-x-full rtl:-translate-x-full"
          x-transition:enter-end="translate-x-0"
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="translate-x-0"
-         x-transition:leave-end="translate-x-full"
+         x-transition:leave-end="translate-x-full rtl:-translate-x-full"
          x-on:keydown.escape.window="open = false"
          x-effect="if (open) $nextTick(() => { if ($refs.thread) $refs.thread.scrollTop = $refs.thread.scrollHeight })"
-         style="position:fixed; top:0; right:0; bottom:0; width:30rem; max-width:100vw; z-index:42;">
+         style="position:fixed; top:0; inset-inline-end:0; bottom:0; width:30rem; max-width:100vw; z-index:42;">
     <div style="height:100%; background:#fff; box-shadow:-24px 0 60px rgba(0,0,0,.18); display:grid; grid-template-rows:auto minmax(0,1fr) auto; overflow:hidden;">
 
         {{-- Top: header + optional history dropdown (grid row 1, auto height). --}}

@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 return [
+    'col_name' => 'Nazwa',
+    'col_enabled' => 'Włączona',
+    'name' => 'Nazwa',
+    'enabled' => 'Włączona',
+
     // Empty state
     'empty_heading' => 'Nie masz jeszcze automatyzacji',
     'empty_desc' => 'Skonfiguruj automatyzację, aby automatycznie odpowiadać na nowe opinie według oceny i lokalizacji.',

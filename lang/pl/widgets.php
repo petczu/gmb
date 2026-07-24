@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'rating_trend_heading' => 'Trend oceny i liczby opinii',
+    'star_distribution_heading' => 'Rozkład gwiazdek',
+    'col_rating' => 'Ocena',
+
     // ReviewStatsOverview
     'average_rating' => 'Średnia ocena',
     'average_rating_desc' => 'Na podstawie opinii z okresu',

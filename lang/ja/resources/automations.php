@@ -9,6 +9,10 @@ return [
     'empty_cta' => '新しい自動化',
 
     // Table columns
+    'col_name' => '名前',
+    'col_enabled' => '有効',
+    'name' => '名前',
+    'enabled' => '有効',
     'col_rating' => '評価',
     'rating_any' => 'すべて',
     'col_reply' => '返信',

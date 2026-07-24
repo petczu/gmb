@@ -45,6 +45,7 @@ class AiAgentForm
             ->description(__('resources/ai_agents.section_desc'))
             ->schema([
                 TextInput::make('name')
+                    ->label(__('resources/ai_agents.name'))
                     ->required()
                     ->maxLength(120),
 

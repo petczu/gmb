@@ -65,4 +65,8 @@ return [
     'shared_rules_placeholder' => "es.\nNelle risposte in tedesco usa «Raum» o «Escape Room», mai «Room» come sostantivo tedesco.\nNon promettere mai sconti o rimborsi.\nFirma le risposte senza un nome.",
     'shared_rules_save' => 'Salva le regole',
     'shared_rules_saved' => 'Regole comuni salvate',
+
+    'col_name' => 'Nome',
+    'col_tone' => 'Tono di voce',
+    'name' => 'Nome',
 ];

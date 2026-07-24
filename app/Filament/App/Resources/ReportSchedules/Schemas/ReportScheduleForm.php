@@ -28,9 +28,9 @@ class ReportScheduleForm
     {
         return $schema->components([
             Section::make(__('resources/report_schedules.schedule_section'))->schema([
-                TextInput::make('name')->required()->maxLength(120)->default(__('resources/report_schedules.default_name')),
+                TextInput::make('name')->label(__('resources/report_schedules.name'))->required()->maxLength(120)->default(__('resources/report_schedules.default_name')),
 
-                Toggle::make('enabled')->default(true),
+                Toggle::make('enabled')->label(__('resources/report_schedules.enabled'))->default(true),
 
                 Grid::make(2)->schema([
                     Select::make('frequency')

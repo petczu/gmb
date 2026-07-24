@@ -79,4 +79,10 @@ return [
     'content_default_message' => 'Message par défaut',
     'ai_agent' => 'Agent IA',
     'default_message' => 'Message par défaut',
+
+    // i18n label backfill
+    'col_name' => 'Nom',
+    'col_enabled' => 'Activée',
+    'name' => 'Nom',
+    'enabled' => 'Activée',
 ];

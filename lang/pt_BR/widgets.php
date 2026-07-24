@@ -67,4 +67,9 @@ return [
     'competitor_chart_mode_growth' => 'Crescimento',
     'competitor_chart_mode_total' => 'Total',
     'competitor_chart_you' => 'Você',
+
+    // Chart headings + table column
+    'rating_trend_heading' => 'Tendência de nota e volume',
+    'star_distribution_heading' => 'Distribuição de estrelas',
+    'col_rating' => 'Nota',
 ];

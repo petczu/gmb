@@ -59,4 +59,7 @@ return [
     'deletion_scheduled' => 'Suppression de l’espace programmée',
     'deletion_scheduled_body' => 'Vous pouvez l’annuler sous 30 jours depuis cette page.',
     'settings_saved' => 'Paramètres de l’entreprise enregistrés',
+
+    // i18n label backfill
+    'website' => 'Site web',
 ];

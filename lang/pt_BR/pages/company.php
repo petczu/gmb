@@ -59,4 +59,5 @@ return [
     'deletion_scheduled' => 'Espaço de trabalho agendado para exclusão',
     'deletion_scheduled_body' => 'Você pode cancelar em até 30 dias a partir desta página.',
     'settings_saved' => 'Configurações da empresa salvas',
+    'website' => 'Site',
 ];

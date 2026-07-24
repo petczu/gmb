@@ -72,4 +72,8 @@ return [
     'perm_view_competitors_desc' => 'Ouvrir le comparatif concurrents et ajouter des concurrents',
     'perm_manage_company' => 'Paramètres de l’entreprise',
     'perm_manage_company_desc' => 'Modifier le profil de l’entreprise, l’identité visuelle et la catégorie d’activité',
+
+    // i18n label backfill
+    'col_name' => 'Nom',
+    'name' => 'Nom',
 ];

@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    'rating_trend_heading' => 'Trend beoordeling en volume',
+    'star_distribution_heading' => 'Verdeling van sterren',
+    'col_rating' => 'Beoordeling',
     // ReviewStatsOverview
     'average_rating' => 'Gemiddelde beoordeling',
     'average_rating_desc' => 'Over de reviews in de periode',

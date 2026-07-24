@@ -40,4 +40,7 @@ return [
     'status_pending' => 'In attesa',
     'role_hint_member' => 'Riceve un invito via email e accede con il proprio account.',
     'role_hint_guest' => 'Un ospite non può accedere. Riceve solo le notifiche che gli inoltri (nuove recensioni, report).',
+
+    'email' => 'Email',
+    'role' => 'Ruolo',
 ];

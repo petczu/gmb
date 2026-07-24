@@ -6,6 +6,8 @@ return [
     'empty_heading' => 'Henüz rol yok',
     'empty_desc' => 'Her ekip üyesinin neyi görebileceğini ve yapabileceğini denetlemek için roller oluşturun.',
     'empty_cta' => 'Yeni rol',
+    'col_name' => 'Ad',
+    'name' => 'Ad',
     'col_permissions' => 'İzinler',
     'col_members' => 'Üyeler',
     'new_role' => 'Yeni rol',

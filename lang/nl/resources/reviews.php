@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'col_rating' => 'Beoordeling',
     // Columns
     'col_location' => 'Locatie',
     'col_author' => 'Auteur',

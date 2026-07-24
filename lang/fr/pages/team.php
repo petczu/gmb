@@ -40,4 +40,8 @@ return [
     'status_pending' => 'En attente',
     'role_hint_member' => 'Reçoit une invitation par e-mail et se connecte avec son propre compte.',
     'role_hint_guest' => 'Un invité ne peut pas se connecter. Il reçoit uniquement les notifications que vous lui adressez (nouveaux avis, rapports).',
+
+    // i18n label backfill
+    'email' => 'E-mail',
+    'role' => 'Rôle',
 ];

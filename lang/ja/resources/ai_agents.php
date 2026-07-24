@@ -9,6 +9,9 @@ return [
     'empty_cta' => '新しいAIエージェント',
 
     // Table
+    'col_name' => '名前',
+    'col_tone' => 'トーン',
+    'name' => '名前',
     'col_native_lang' => '母国語',
     'col_default' => 'デフォルト',
     'col_updated' => '更新日',

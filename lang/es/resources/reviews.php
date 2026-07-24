@@ -94,4 +94,7 @@ return [
     // Deep-link banner from the new-reviews digest email
     'from_email' => '{1} Mostrando 1 reseña de tu notificación por correo|[2,*] Mostrando :count reseñas de tu notificación por correo',
     'from_email_clear' => 'Ver todas las reseñas',
+
+    // i18n label backfill
+    'col_rating' => 'Valoración',
 ];

@@ -94,4 +94,6 @@ return [
     // Deep-link banner from the new-reviews digest email
     'from_email' => '{1} Viene mostrata 1 recensione dalla tua notifica e-mail|[2,*] Vengono mostrate :count recensioni dalla tua notifica e-mail',
     'from_email_clear' => 'Mostra tutte le recensioni',
+
+    'col_rating' => 'Valutazione',
 ];

@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'name' => 'Naam',
+    'email' => 'E-mail',
+    'new_password' => 'Nieuw wachtwoord',
+    'timezone' => 'Tijdzone',
     'profile_section' => 'Profiel',
     'photo' => 'Foto',
 

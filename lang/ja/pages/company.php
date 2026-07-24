@@ -18,6 +18,7 @@ return [
     'legal_name' => '正式な会社名',
     'contact_email' => '連絡先メール',
     'contact_phone' => '連絡先電話',
+    'website' => 'ウェブサイト',
 
     // Billing details section
     'billing_section' => '請求情報',

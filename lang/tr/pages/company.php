@@ -18,6 +18,7 @@ return [
     'legal_name' => 'Yasal şirket adı',
     'contact_email' => 'İletişim e-postası',
     'contact_phone' => 'İletişim telefonu',
+    'website' => 'Web sitesi',
 
     // Billing details section
     'billing_section' => 'Fatura bilgileri',

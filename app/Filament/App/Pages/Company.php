@@ -122,6 +122,7 @@ class Company extends Page implements HasForms
                         // ("google.com"), so the strict `url` rule would reject
                         // them. Strip any typed scheme, validate the full URL.
                         TextInput::make('website')
+                            ->label(__('pages/company.website'))
                             ->prefix('https://')
                             ->maxLength(200)
                             ->dehydrateStateUsing(fn (?string $state): ?string => filled($state)

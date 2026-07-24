@@ -84,4 +84,9 @@ return [
     'sync_err_notfound' => 'Aún sincronizando: el proveedor todavía no ha devuelto esta ubicación.',
     'sync_err_server' => 'El proveedor ha tenido un error temporal. Se reintentará en la próxima sincronización.',
     'sync_err_generic' => 'La última sincronización ha fallado. Se reintentará en la próxima.',
+
+    // i18n label backfill
+    'col_address' => 'Dirección',
+    'col_rating' => 'Valoración',
+    'col_status' => 'Estado',
 ];

@@ -62,4 +62,10 @@ return [
     'recipients_none' => 'Aucune exception',
     'recipients_placeholder' => 'ajouter un e-mail + Entrée',
     'recipients_helper' => 'Laissez vide pour envoyer à tous les membres de l’espace.',
+
+    // i18n label backfill
+    'col_name' => 'Nom',
+    'col_enabled' => 'Activé',
+    'name' => 'Nom',
+    'enabled' => 'Activé',
 ];

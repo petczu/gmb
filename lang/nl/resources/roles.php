@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'col_name' => 'Naam',
+    'name' => 'Naam',
     'empty_heading' => 'Nog geen rollen',
     'empty_desc' => 'Maak rollen aan om te bepalen wat elk teamlid kan zien en doen.',
     'empty_cta' => 'Nieuwe rol',

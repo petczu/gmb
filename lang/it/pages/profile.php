@@ -22,6 +22,11 @@ return [
     'two_factor_desc' => 'Aggiungi un secondo passaggio all\'accesso tramite un\'app di autenticazione o codici via email.',
     'mfa_get_codes' => 'Ottieni i codici',
 
+    'name' => 'Nome',
+    'email' => 'Email',
+    'new_password' => 'Nuova password',
+    'timezone' => 'Fuso orario',
+
     // Notification
     'profile_saved' => 'Profilo salvato',
 ];

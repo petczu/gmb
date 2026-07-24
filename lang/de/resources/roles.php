@@ -72,4 +72,8 @@ return [
     'perm_view_competitors_desc' => 'Wettbewerbs-Vergleich öffnen und Wettbewerber hinzufügen',
     'perm_manage_company' => 'Firmeneinstellungen',
     'perm_manage_company_desc' => 'Firmenprofil, Branding und Branche bearbeiten',
+
+    // i18n label backfill
+    'col_name' => 'Name',
+    'name' => 'Name',
 ];

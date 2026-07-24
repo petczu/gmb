@@ -65,4 +65,9 @@ return [
     'shared_rules_placeholder' => "z. B.\nIn deutschen Antworten \"Raum\" oder \"Escape Room\" sagen, nie \"Room\" als deutsches Substantiv.\nNie Rabatte oder Erstattungen versprechen.\nAntworten ohne Namen unterschreiben.",
     'shared_rules_save' => 'Regeln speichern',
     'shared_rules_saved' => 'Gemeinsame Regeln gespeichert',
+
+    // i18n label backfill
+    'col_name' => 'Name',
+    'col_tone' => 'Ton',
+    'name' => 'Name',
 ];

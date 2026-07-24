@@ -7,6 +7,7 @@ return [
     'col_location' => 'الموقع',
     'col_author' => 'الكاتب',
     'col_review' => 'التقييم',
+    'col_rating' => 'التقييم',
     'only_rating' => 'تقييم بالنجوم فقط',
     'col_reply' => 'الرد',
     'col_status' => 'الحالة',

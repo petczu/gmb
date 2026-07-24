@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     // Columns
+    'col_rating' => 'Ocena',
     'col_location' => 'Lokalizacja',
     'col_author' => 'Autor',
     'col_review' => 'Opinia',

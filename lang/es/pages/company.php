@@ -59,4 +59,7 @@ return [
     'deletion_scheduled' => 'Espacio programado para eliminarse',
     'deletion_scheduled_body' => 'Puedes cancelarlo en 30 días desde esta página.',
     'settings_saved' => 'Ajustes de la empresa guardados',
+
+    // i18n label backfill
+    'website' => 'Sitio web',
 ];

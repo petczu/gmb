@@ -62,4 +62,8 @@ return [
     'recipients_none' => 'Sem exceções',
     'recipients_placeholder' => 'adicione o e-mail + Enter',
     'recipients_helper' => 'Deixe em branco para enviar a todos os membros do espaço de trabalho.',
+    'col_name' => 'Nome',
+    'col_enabled' => 'Ativado',
+    'name' => 'Nome',
+    'enabled' => 'Ativado',
 ];

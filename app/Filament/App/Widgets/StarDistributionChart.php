@@ -19,11 +19,14 @@ class StarDistributionChart extends ChartWidget
     use Concerns\SurvivesBeingHidden;
     use InteractsWithPageFilters;
 
-    protected ?string $heading = 'Star distribution';
-
     protected static ?int $sort = 2;
 
     protected static bool $isLazy = false;
+
+    public function getHeading(): ?string
+    {
+        return __('widgets.star_distribution_heading');
+    }
 
     public static function canView(): bool
     {

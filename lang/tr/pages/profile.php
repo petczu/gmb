@@ -5,6 +5,10 @@ declare(strict_types=1);
 return [
     'profile_section' => 'Profil',
     'photo' => 'Fotoğraf',
+    'name' => 'Ad',
+    'email' => 'E-posta',
+    'new_password' => 'Yeni parola',
+    'timezone' => 'Saat dilimi',
 
     'password_section' => 'Parola',
     'password_section_desc' => 'Mevcut parolanızı korumak için boş bırakın.',

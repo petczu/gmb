@@ -84,4 +84,8 @@ return [
     'sync_err_notfound' => 'Sincronizzazione in corso: il provider non ha ancora restituito questa sede.',
     'sync_err_server' => 'Il provider ha riscontrato un errore temporaneo. Verrà ritentato alla prossima sincronizzazione.',
     'sync_err_generic' => 'L\'ultima sincronizzazione non è riuscita. Verrà ritentata alla prossima sincronizzazione.',
+
+    'col_address' => 'Indirizzo',
+    'col_rating' => 'Valutazione',
+    'col_status' => 'Stato',
 ];

@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'rating_trend_heading' => 'اتجاه التقييم والحجم',
+    'star_distribution_heading' => 'توزيع النجوم',
+    'col_rating' => 'التقييم',
+
     // ReviewStatsOverview
     'average_rating' => 'متوسط التقييم',
     'average_rating_desc' => 'عبر التقييمات خلال الفترة',

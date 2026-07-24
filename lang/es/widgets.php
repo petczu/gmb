@@ -67,4 +67,9 @@ return [
     'competitor_chart_mode_growth' => 'Crecimiento',
     'competitor_chart_mode_total' => 'Total',
     'competitor_chart_you' => 'Tú',
+
+    // i18n label backfill
+    'rating_trend_heading' => 'Tendencia de valoración y volumen',
+    'star_distribution_heading' => 'Distribución de estrellas',
+    'col_rating' => 'Valoración',
 ];

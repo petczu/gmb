@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 return [
+    'col_name' => 'Nazwa',
+    'col_enabled' => 'Włączony',
+    'name' => 'Nazwa',
+    'enabled' => 'Włączony',
+
     'empty_heading' => 'Brak zaplanowanych raportów',
     'empty_desc' => 'Zaplanuj cykliczne raporty PDF, aby były generowane i wysyłane e-mailem automatycznie.',
     'empty_cta' => 'Nowy harmonogram',

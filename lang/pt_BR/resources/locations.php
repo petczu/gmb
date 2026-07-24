@@ -84,4 +84,7 @@ return [
     'sync_err_notfound' => 'Ainda sincronizando: o provedor ainda não retornou este local.',
     'sync_err_server' => 'O provedor teve um erro temporário. Nova tentativa na próxima sincronização.',
     'sync_err_generic' => 'A última sincronização falhou. Nova tentativa na próxima sincronização.',
+    'col_address' => 'Endereço',
+    'col_rating' => 'Nota',
+    'col_status' => 'Status',
 ];

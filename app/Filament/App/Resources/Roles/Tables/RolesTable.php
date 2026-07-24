@@ -33,6 +33,7 @@ class RolesTable
             ])
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('resources/roles.col_name'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'owner' => 'success',

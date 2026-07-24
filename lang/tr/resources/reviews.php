@@ -7,6 +7,7 @@ return [
     'col_location' => 'Konum',
     'col_author' => 'Yazar',
     'col_review' => 'Yorum',
+    'col_rating' => 'Puan',
     'only_rating' => 'Yalnızca puan',
     'col_reply' => 'Yanıt',
     'col_status' => 'Durum',

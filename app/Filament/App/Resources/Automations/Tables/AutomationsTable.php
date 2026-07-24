@@ -35,10 +35,12 @@ class AutomationsTable
             ])
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('resources/automations.col_name'))
                     ->searchable()
                     ->sortable(),
 
                 IconColumn::make('enabled')
+                    ->label(__('resources/automations.col_enabled'))
                     ->boolean(),
 
                 TextColumn::make('rating_filter')

@@ -53,6 +53,7 @@ class LatestReviews extends TableWidget
                     ->label(__('widgets.col_location')),
 
                 TextColumn::make('rating')
+                    ->label(__('widgets.col_rating'))
                     ->badge()
                     ->formatStateUsing(fn (int $state): string => str_repeat('★', $state).str_repeat('☆', 5 - $state))
                     ->color(fn (int $state): string => match (true) {

@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'col_name' => 'Naam',
+    'col_enabled' => 'Ingeschakeld',
+    'name' => 'Naam',
+    'enabled' => 'Ingeschakeld',
     // Empty state
     'empty_heading' => 'Nog geen automatiseringen',
     'empty_desc' => 'Stel een automatisering in om automatisch op nieuwe reviews te reageren, op basis van beoordeling en locatie.',

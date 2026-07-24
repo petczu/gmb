@@ -8,6 +8,9 @@ return [
     'empty_cta' => 'ربط موقع',
 
     'col_location' => 'الموقع',
+    'col_address' => 'العنوان',
+    'col_rating' => 'التقييم',
+    'col_status' => 'الحالة',
     'col_reviews' => 'التقييمات',
     'col_last_synced' => 'آخر مزامنة',
     'syncing' => 'جارٍ استيراد التقييمات…',

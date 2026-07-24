@@ -27,12 +27,14 @@ class AutomationForm
                     ->columns(2)
                     ->schema([
                         TextInput::make('name')
+                            ->label(__('resources/automations.name'))
                             ->required()
                             ->maxLength(120)
                             ->columnSpanFull(),
 
                         // Moved out of the cramped name row to its own full-width line.
                         Toggle::make('enabled')
+                            ->label(__('resources/automations.enabled'))
                             ->default(true)
                             ->columnSpanFull(),
 

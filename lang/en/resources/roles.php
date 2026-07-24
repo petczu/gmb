@@ -6,6 +6,8 @@ return [
     'empty_heading' => 'No roles yet',
     'empty_desc' => 'Create roles to control what each team member can see and do.',
     'empty_cta' => 'New role',
+    'col_name' => 'Name',
+    'name' => 'Name',
     'col_permissions' => 'Permissions',
     'col_members' => 'Members',
     'new_role' => 'New role',

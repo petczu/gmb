@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    'col_name' => 'Nazwa',
+    'name' => 'Nazwa',
+
     'empty_heading' => 'Nie masz jeszcze ról',
     'empty_desc' => 'Twórz role, aby kontrolować, co każdy członek zespołu może widzieć i robić.',
     'empty_cta' => 'Nowa rola',

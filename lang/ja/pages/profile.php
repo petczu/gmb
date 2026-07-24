@@ -5,6 +5,10 @@ declare(strict_types=1);
 return [
     'profile_section' => 'プロフィール',
     'photo' => '写真',
+    'name' => '名前',
+    'email' => 'メール',
+    'new_password' => '新しいパスワード',
+    'timezone' => 'タイムゾーン',
 
     'password_section' => 'パスワード',
     'password_section_desc' => '現在のパスワードを維持する場合は空欄のままにしてください。',

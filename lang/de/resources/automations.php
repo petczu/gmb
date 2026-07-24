@@ -79,4 +79,10 @@ return [
     'content_default_message' => 'Standardnachricht',
     'ai_agent' => 'KI-Agent',
     'default_message' => 'Standardnachricht',
+
+    // i18n label backfill
+    'col_name' => 'Name',
+    'col_enabled' => 'Aktiv',
+    'name' => 'Name',
+    'enabled' => 'Aktiv',
 ];

@@ -12,7 +12,6 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -35,11 +34,13 @@ class AiAgentsTable
             ])
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('resources/ai_agents.col_name'))
                     ->weight('bold')
                     ->description(fn (AiAgent $record): string => str($record->description)->limit(80))
                     ->searchable(),
 
                 TextColumn::make('tone')
+                    ->label(__('resources/ai_agents.col_tone'))
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => AiAgent::tones()[$state] ?? ucfirst($state)),
 

@@ -325,6 +325,7 @@ class Reports extends Page implements HasForms
             ->modalSubmitActionLabel(__('pages/reports.schedule_submit'))
             ->schema([
                 TextInput::make('name')
+                    ->label(__('resources/report_schedules.name'))
                     ->default(__('resources/report_schedules.default_name'))
                     ->required()->maxLength(120),
 

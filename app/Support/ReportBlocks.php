@@ -41,22 +41,12 @@ class ReportBlocks
      */
     public static function labels(): array
     {
-        return [
-            'glance' => 'At a glance (KPIs)',
-            'performance' => 'Profile performance (views, calls, clicks)',
-            'summary' => 'Executive summary (AI)',
-            'topics' => 'What customers talk about (AI)',
-            'staff' => 'Staff mentions, bonuses (AI)',
-            'cadence' => 'Collection cadence & spam-risk',
-            'themes' => 'Themes & sentiment (AI)',
-            'responses' => 'Response performance',
-            'distribution' => 'Rating distribution',
-            'volume' => 'Review volume over time',
-            'competitors' => 'Competitor benchmark',
-            'highlights' => 'Review highlights',
-            'recommendations' => 'Recommendations (AI)',
-            'methodology' => 'Methodology & notes',
-        ];
+        $labels = [];
+        foreach (self::ORDER as $key) {
+            $labels[$key] = __('report.block_'.$key);
+        }
+
+        return $labels;
     }
 
     /**
@@ -78,10 +68,10 @@ class ReportBlocks
     public static function presetLabels(): array
     {
         return [
-            'standard' => 'Standard',
-            'full' => 'Full',
-            'bonus' => 'Staff & bonuses',
-            'compliance' => 'Collection compliance',
+            'standard' => __('report.preset_standard'),
+            'full' => __('report.preset_full'),
+            'bonus' => __('report.preset_bonus'),
+            'compliance' => __('report.preset_compliance'),
         ];
     }
 

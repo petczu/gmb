@@ -79,4 +79,8 @@ return [
     'content_default_message' => 'Mensagem padrão',
     'ai_agent' => 'Agente de IA',
     'default_message' => 'Mensagem padrão',
+    'col_name' => 'Nome',
+    'col_enabled' => 'Ativada',
+    'name' => 'Nome',
+    'enabled' => 'Ativada',
 ];

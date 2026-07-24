@@ -8,6 +8,9 @@ return [
     'empty_cta' => '店舗を連携',
 
     'col_location' => '店舗',
+    'col_address' => '住所',
+    'col_rating' => '評価',
+    'col_status' => 'ステータス',
     'col_reviews' => 'レビュー',
     'col_last_synced' => '最終同期',
     'syncing' => 'レビューをインポート中…',

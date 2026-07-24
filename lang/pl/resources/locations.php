@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'col_address' => 'Adres',
+    'col_rating' => 'Ocena',
+    'col_status' => 'Status',
+
     'empty_heading' => 'Brak połączonych lokalizacji',
     'empty_desc' => 'Połącz lokalizację Profilu Firmy w Google, aby zacząć pobierać jej opinie.',
     'empty_cta' => 'Połącz lokalizację',

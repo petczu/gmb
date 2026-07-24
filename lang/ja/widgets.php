@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 return [
+    // Chart headings
+    'rating_trend_heading' => '評価と件数の推移',
+    'star_distribution_heading' => '星評価の分布',
+    'col_rating' => '評価',
+
     // ReviewStatsOverview
     'average_rating' => '平均評価',
     'average_rating_desc' => '期間内のレビュー全体',

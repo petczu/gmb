@@ -3,6 +3,28 @@
 declare(strict_types=1);
 
 return [
+    // Report builder block toggles (ReportBlocks::labels)
+    'block_glance' => 'At a glance (KPIs)',
+    'block_performance' => 'Profile performance (views, calls, clicks)',
+    'block_summary' => 'Executive summary (AI)',
+    'block_topics' => 'What customers talk about (AI)',
+    'block_staff' => 'Staff mentions, bonuses (AI)',
+    'block_cadence' => 'Collection cadence & spam-risk',
+    'block_themes' => 'Themes & sentiment (AI)',
+    'block_responses' => 'Response performance',
+    'block_distribution' => 'Rating distribution',
+    'block_volume' => 'Review volume over time',
+    'block_competitors' => 'Competitor benchmark',
+    'block_highlights' => 'Review highlights',
+    'block_recommendations' => 'Recommendations (AI)',
+    'block_methodology' => 'Methodology & notes',
+
+    // Report builder presets (ReportBlocks::presetLabels)
+    'preset_standard' => 'Standard',
+    'preset_full' => 'Full',
+    'preset_bonus' => 'Staff & bonuses',
+    'preset_compliance' => 'Collection compliance',
+
     'performance_report' => 'Performance report',
     'generated' => 'Generated :date',
     'reviews_received' => 'Reviews received',

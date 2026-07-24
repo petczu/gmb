@@ -72,4 +72,6 @@ return [
     'perm_view_competitors_desc' => 'Abrir o comparativo de concorrentes e adicionar concorrentes',
     'perm_manage_company' => 'Configurações da empresa',
     'perm_manage_company_desc' => 'Editar o perfil da empresa, identidade visual e categoria do negócio',
+    'col_name' => 'Nome',
+    'name' => 'Nome',
 ];

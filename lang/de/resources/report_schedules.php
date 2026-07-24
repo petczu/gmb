@@ -62,4 +62,10 @@ return [
     'recipients_none' => 'Keine Ausnahmen',
     'recipients_placeholder' => 'E-Mail eingeben + Enter',
     'recipients_helper' => 'Leer lassen, um an alle Workspace-Mitglieder zu senden.',
+
+    // i18n label backfill
+    'col_name' => 'Name',
+    'col_enabled' => 'Aktiv',
+    'name' => 'Name',
+    'enabled' => 'Aktiv',
 ];

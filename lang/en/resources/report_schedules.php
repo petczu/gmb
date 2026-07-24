@@ -8,6 +8,10 @@ return [
     'empty_cta' => 'New schedule',
 
     // Table
+    'col_name' => 'Name',
+    'col_enabled' => 'Enabled',
+    'name' => 'Name',
+    'enabled' => 'Enabled',
     'frequency_weekly' => 'Weekly · :day',
     'frequency_monthly' => 'Monthly · day :day',
     'col_period' => 'Period',

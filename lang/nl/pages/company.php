@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'website' => 'Website',
     // Deletion-scheduled section
     'deletion_section' => '⚠️ Verwijdering gepland',
     'deletion_section_desc' => 'Deze werkruimte staat gepland voor permanente verwijdering. Gebruik "Verwijdering annuleren" hierboven om deze te behouden.',

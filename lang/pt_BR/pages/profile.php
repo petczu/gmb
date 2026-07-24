@@ -24,4 +24,10 @@ return [
 
     // Notification
     'profile_saved' => 'Perfil salvo',
+
+    // Form fields
+    'name' => 'Nome',
+    'email' => 'E-mail',
+    'new_password' => 'Nova senha',
+    'timezone' => 'Fuso horário',
 ];

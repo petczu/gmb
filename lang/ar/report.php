@@ -3,6 +3,25 @@
 declare(strict_types=1);
 
 return [
+    'block_glance' => 'لمحة سريعة (مؤشرات الأداء)',
+    'block_performance' => 'أداء الملف التجاري (المشاهدات، المكالمات، النقرات)',
+    'block_summary' => 'الملخص التنفيذي (الذكاء الاصطناعي)',
+    'block_topics' => 'عمّ يتحدث العملاء (الذكاء الاصطناعي)',
+    'block_staff' => 'إشارات الموظفين والمكافآت (الذكاء الاصطناعي)',
+    'block_cadence' => 'وتيرة الجمع ومخاطر الرسائل المزعجة',
+    'block_themes' => 'الموضوعات والمشاعر (الذكاء الاصطناعي)',
+    'block_responses' => 'أداء الرد',
+    'block_distribution' => 'توزيع التقييمات',
+    'block_volume' => 'حجم التقييمات عبر الزمن',
+    'block_competitors' => 'مقارنة المنافسين',
+    'block_highlights' => 'أبرز التقييمات',
+    'block_recommendations' => 'التوصيات (الذكاء الاصطناعي)',
+    'block_methodology' => 'المنهجية والملاحظات',
+    'preset_standard' => 'قياسي',
+    'preset_full' => 'كامل',
+    'preset_bonus' => 'الموظفون والمكافآت',
+    'preset_compliance' => 'الامتثال في الجمع',
+
     'performance_report' => 'تقرير الأداء',
     'generated' => 'أُنشئ في :date',
     'reviews_received' => 'التقييمات المستلمة',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     // Columns
     'col_location' => '店舗',
+    'col_rating' => '評価',
     'col_author' => '投稿者',
     'col_review' => 'レビュー',
     'only_rating' => '評価のみ',

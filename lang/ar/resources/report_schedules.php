@@ -8,6 +8,10 @@ return [
     'empty_cta' => 'جدول جديد',
 
     // Table
+    'col_name' => 'الاسم',
+    'col_enabled' => 'مُفعّل',
+    'name' => 'الاسم',
+    'enabled' => 'مُفعّل',
     'frequency_weekly' => 'أسبوعيًا · :day',
     'frequency_monthly' => 'شهريًا · اليوم :day',
     'col_period' => 'الفترة',

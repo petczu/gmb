@@ -9,6 +9,10 @@ return [
     'empty_cta' => 'Yeni otomasyon',
 
     // Table columns
+    'col_name' => 'Ad',
+    'col_enabled' => 'Etkin',
+    'name' => 'Ad',
+    'enabled' => 'Etkin',
     'col_rating' => 'Puan',
     'rating_any' => 'herhangi',
     'col_reply' => 'Yanıt',

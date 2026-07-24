@@ -36,6 +36,7 @@ class RoleForm
         return $schema->columns(1)->components([
             Section::make(__('resources/roles.section'))->schema([
                 TextInput::make('name')
+                    ->label(__('resources/roles.name'))
                     ->required()
                     ->maxLength(60)
                     ->helperText(__('resources/roles.name_helper'))

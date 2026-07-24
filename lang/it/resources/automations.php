@@ -79,4 +79,9 @@ return [
     'content_default_message' => 'Messaggio predefinito',
     'ai_agent' => 'Agente IA',
     'default_message' => 'Messaggio predefinito',
+
+    'col_name' => 'Nome',
+    'col_enabled' => 'Attiva',
+    'name' => 'Nome',
+    'enabled' => 'Attiva',
 ];

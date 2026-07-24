@@ -8,6 +8,10 @@ return [
     'empty_cta' => '新しいスケジュール',
 
     // Table
+    'col_name' => '名前',
+    'col_enabled' => '有効',
+    'name' => '名前',
+    'enabled' => '有効',
     'frequency_weekly' => '毎週 · :day',
     'frequency_monthly' => '毎月 · :day日',
     'col_period' => '期間',

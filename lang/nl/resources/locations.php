@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    'col_address' => 'Adres',
+    'col_rating' => 'Beoordeling',
+    'col_status' => 'Status',
     'empty_heading' => 'Geen locaties verbonden',
     'empty_desc' => 'Verbind een Google Bedrijfsprofiel-locatie om de reviews binnen te halen.',
     'empty_cta' => 'Locatie verbinden',

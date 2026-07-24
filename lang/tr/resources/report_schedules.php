@@ -8,6 +8,10 @@ return [
     'empty_cta' => 'Yeni zamanlama',
 
     // Table
+    'col_name' => 'Ad',
+    'col_enabled' => 'Etkin',
+    'name' => 'Ad',
+    'enabled' => 'Etkin',
     'frequency_weekly' => 'Haftalık · :day',
     'frequency_monthly' => 'Aylık · :day. gün',
     'col_period' => 'Dönem',

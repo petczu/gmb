@@ -6,6 +6,8 @@ return [
     'col_name' => 'Imię i nazwisko',
     'col_email' => 'E-mail',
     'col_role' => 'Rola',
+    'email' => 'E-mail',
+    'role' => 'Rola',
 
     'edit' => 'Edytuj',
     'location_access' => 'Dostęp do lokalizacji',

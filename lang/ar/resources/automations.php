@@ -9,6 +9,10 @@ return [
     'empty_cta' => 'أتمتة جديدة',
 
     // Table columns
+    'col_name' => 'الاسم',
+    'col_enabled' => 'مُفعّل',
+    'name' => 'الاسم',
+    'enabled' => 'مُفعّل',
     'col_rating' => 'التقييم',
     'rating_any' => 'أي',
     'col_reply' => 'الرد',

@@ -21,6 +21,8 @@ return [
     'guest_language' => 'Language',
     'guest_language_helper' => 'Notifications and reports for this contact are sent in this language.',
     'name' => 'Name',
+    'email' => 'Email',
+    'role' => 'Role',
 
     // Notifications
     'member_updated' => 'Member updated',

@@ -3,6 +3,26 @@
 declare(strict_types=1);
 
 return [
+    // Report blocks
+    'block_glance' => 'W skrócie (wskaźniki KPI)',
+    'block_performance' => 'Skuteczność profilu (wyświetlenia, połączenia, kliknięcia)',
+    'block_summary' => 'Podsumowanie (AI)',
+    'block_topics' => 'O czym mówią klienci (AI)',
+    'block_staff' => 'Wzmianki o pracownikach, premie (AI)',
+    'block_cadence' => 'Rytm zbierania i ryzyko spamu',
+    'block_themes' => 'Tematy i nastawienie (AI)',
+    'block_responses' => 'Skuteczność odpowiedzi',
+    'block_distribution' => 'Rozkład ocen',
+    'block_volume' => 'Liczba opinii w czasie',
+    'block_competitors' => 'Porównanie z konkurencją',
+    'block_highlights' => 'Najważniejsze opinie',
+    'block_recommendations' => 'Rekomendacje (AI)',
+    'block_methodology' => 'Metodologia i uwagi',
+    'preset_standard' => 'Standardowy',
+    'preset_full' => 'Pełny',
+    'preset_bonus' => 'Pracownicy i premie',
+    'preset_compliance' => 'Zgodność zbierania',
+
     'performance_report' => 'Raport wyników',
     'generated' => 'Wygenerowano :date',
     'reviews_received' => 'Otrzymane opinie',

@@ -9,6 +9,10 @@ return [
     'empty_cta' => 'New automation',
 
     // Table columns
+    'col_name' => 'Name',
+    'col_enabled' => 'Enabled',
+    'name' => 'Name',
+    'enabled' => 'Enabled',
     'col_rating' => 'Rating',
     'rating_any' => 'any',
     'col_reply' => 'Reply',

@@ -62,4 +62,10 @@ return [
     'recipients_none' => 'Sin excepciones',
     'recipients_placeholder' => 'añade un correo + Intro',
     'recipients_helper' => 'Déjalo vacío para enviarlo a todos los miembros del espacio.',
+
+    // i18n label backfill
+    'col_name' => 'Nombre',
+    'col_enabled' => 'Activo',
+    'name' => 'Nombre',
+    'enabled' => 'Activo',
 ];

@@ -6,6 +6,8 @@ return [
     'empty_heading' => 'まだ役割がありません',
     'empty_desc' => '役割を作成して、各チームメンバーが閲覧・操作できる内容を管理しましょう。',
     'empty_cta' => '新しい役割',
+    'col_name' => '名前',
+    'name' => '名前',
     'col_permissions' => '権限',
     'col_members' => 'メンバー',
     'new_role' => '新しい役割',

@@ -86,14 +86,15 @@ class Profile extends Page implements HasForms
                             ->image()
                             ->disk('uploads')
                             ->directory('avatars'),
-                        TextInput::make('name')->required()->maxLength(120),
-                        TextInput::make('email')->email()->required()->maxLength(160),
+                        TextInput::make('name')->label(__('pages/profile.name'))->required()->maxLength(120),
+                        TextInput::make('email')->label(__('pages/profile.email'))->email()->required()->maxLength(160),
                     ])->columns(2),
 
                 Section::make(__('pages/profile.password_section'))
                     ->description(__('pages/profile.password_section_desc'))
                     ->schema([
                         TextInput::make('password')
+                            ->label(__('pages/profile.new_password'))
                             ->password()->revealable()->confirmed()->maxLength(255)
                             ->autocomplete('new-password')
                             ->dehydrated(fn (?string $state): bool => filled($state)),
@@ -110,6 +111,7 @@ class Profile extends Page implements HasForms
                             ->default('en')
                             ->selectablePlaceholder(false),
                         Select::make('timezone')
+                            ->label(__('pages/profile.timezone'))
                             ->options(array_combine(timezone_identifiers_list(), timezone_identifiers_list()))
                             ->searchable()
                             ->default(config('app.timezone')),

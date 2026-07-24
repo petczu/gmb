@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'col_name' => 'Nazwa',
+    'col_tone' => 'Ton',
+    'name' => 'Nazwa',
+
     // Empty state
     'empty_heading' => 'Nie masz jeszcze agentów AI',
     'empty_desc' => 'Utwórz agenta AI, aby redagować odpowiedzi i zasilać automatyzacje automatycznych odpowiedzi głosem Twojej marki.',

@@ -94,4 +94,7 @@ return [
     // Deep-link banner from the new-reviews digest email
     'from_email' => '{1} Affichage d’1 avis issu de votre notification par e-mail|[2,*] Affichage de :count avis issus de votre notification par e-mail',
     'from_email_clear' => 'Afficher tous les avis',
+
+    // i18n label backfill
+    'col_rating' => 'Note',
 ];

@@ -65,4 +65,9 @@ return [
     'shared_rules_placeholder' => "p. ej.\nEn las respuestas en español, usa «sala» y nunca «room».\nNo prometas nunca descuentos ni reembolsos.\nFirma las respuestas sin nombre.",
     'shared_rules_save' => 'Guardar reglas',
     'shared_rules_saved' => 'Reglas comunes guardadas',
+
+    // i18n label backfill
+    'col_name' => 'Nombre',
+    'col_tone' => 'Tono',
+    'name' => 'Nombre',
 ];

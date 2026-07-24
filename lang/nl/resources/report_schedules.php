@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 return [
+    'col_name' => 'Naam',
+    'col_enabled' => 'Ingeschakeld',
+    'name' => 'Naam',
+    'enabled' => 'Ingeschakeld',
     'empty_heading' => 'Geen geplande rapporten',
     'empty_desc' => 'Plan terugkerende PDF-rapporten om ze automatisch te laten genereren en per e-mail te versturen.',
     'empty_cta' => 'Nieuwe planning',

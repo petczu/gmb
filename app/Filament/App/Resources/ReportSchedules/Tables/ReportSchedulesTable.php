@@ -53,11 +53,12 @@ class ReportSchedulesTable
                     ->url(fn (): string => Reports::getUrl()),
             ])
             ->columns([
-                TextColumn::make('name')->searchable()->sortable(),
+                TextColumn::make('name')->label(__('resources/report_schedules.col_name'))->searchable()->sortable(),
 
-                IconColumn::make('enabled')->boolean(),
+                IconColumn::make('enabled')->label(__('resources/report_schedules.col_enabled'))->boolean(),
 
                 TextColumn::make('frequency')
+                    ->label(__('resources/report_schedules.frequency'))
                     ->badge()
                     ->formatStateUsing(fn (ReportSchedule $r): string => $r->frequency === 'weekly'
                         ? __('resources/report_schedules.frequency_weekly', ['day' => [

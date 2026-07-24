@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'website' => 'Witryna',
+
     // Deletion-scheduled section
     'deletion_section' => '⚠️ Zaplanowane usunięcie',
     'deletion_section_desc' => 'Ten obszar roboczy jest zaplanowany do trwałego usunięcia. Użyj przycisku „Anuluj usunięcie” powyżej, aby go zachować.',

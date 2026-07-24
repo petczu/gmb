@@ -9,6 +9,9 @@ return [
     'empty_cta' => 'New AI agent',
 
     // Table
+    'col_name' => 'Name',
+    'col_tone' => 'Tone',
+    'name' => 'Name',
     'col_native_lang' => 'Native lang',
     'col_default' => 'Default',
     'col_updated' => 'Updated',

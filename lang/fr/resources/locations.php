@@ -84,4 +84,9 @@ return [
     'sync_err_notfound' => 'Synchronisation en cours : le fournisseur n’a pas encore renvoyé cet établissement.',
     'sync_err_server' => 'Le fournisseur a rencontré une erreur temporaire. Une nouvelle tentative aura lieu à la prochaine synchronisation.',
     'sync_err_generic' => 'La dernière synchronisation a échoué. Une nouvelle tentative aura lieu à la prochaine.',
+
+    // i18n label backfill
+    'col_address' => 'Adresse',
+    'col_rating' => 'Note',
+    'col_status' => 'Statut',
 ];

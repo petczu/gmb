@@ -40,4 +40,6 @@ return [
     'status_pending' => 'Pendente',
     'role_hint_member' => 'Recebe um convite por e-mail e entra com a própria conta.',
     'role_hint_guest' => 'Um convidado não pode fazer login. Ele recebe apenas as notificações que você direcionar a ele (novas avaliações, relatórios).',
+    'email' => 'E-mail',
+    'role' => 'Função',
 ];

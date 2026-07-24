@@ -122,4 +122,26 @@ return [
     'competitors_insight_reviews_behind' => ':count concorrente(s) têm mais avaliações no total do que você.',
     'competitors_insight_growth_lead' => 'Você somou o maior número de novas avaliações neste período (+:count).',
     'competitors_insight_growth_behind' => ':name somou +:top novas avaliações contra os seus +:own neste período.',
+
+    // Report block labels
+    'block_glance' => 'Visão geral (KPIs)',
+    'block_performance' => 'Desempenho do perfil (visualizações, ligações, cliques)',
+    'block_summary' => 'Resumo executivo (IA)',
+    'block_topics' => 'O que os clientes comentam (IA)',
+    'block_staff' => 'Menções à equipe, bônus (IA)',
+    'block_cadence' => 'Ritmo de coleta e risco de spam',
+    'block_themes' => 'Temas e sentimento (IA)',
+    'block_responses' => 'Desempenho das respostas',
+    'block_distribution' => 'Distribuição das notas',
+    'block_volume' => 'Volume de avaliações ao longo do tempo',
+    'block_competitors' => 'Comparativo de concorrentes',
+    'block_highlights' => 'Destaques das avaliações',
+    'block_recommendations' => 'Recomendações (IA)',
+    'block_methodology' => 'Metodologia e notas',
+
+    // Report presets
+    'preset_standard' => 'Padrão',
+    'preset_full' => 'Completo',
+    'preset_bonus' => 'Equipe e bônus',
+    'preset_compliance' => 'Conformidade da coleta',
 ];

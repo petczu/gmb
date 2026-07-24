@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    'col_name' => 'Naam',
+    'col_tone' => 'Toon',
+    'name' => 'Naam',
     // Empty state
     'empty_heading' => 'Nog geen AI-agents',
     'empty_desc' => 'Maak een AI-agent aan om reacties op te stellen en je automatische antwoorden aan te sturen in de stem van je merk.',

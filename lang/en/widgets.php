@@ -37,11 +37,16 @@ return [
     'perf_maps_mobile' => 'Google Maps, mobile',
     'perf_no_data' => 'No performance data yet. Google usually provides it a few days after connecting.',
 
+    // Chart headings
+    'rating_trend_heading' => 'Rating & volume trend',
+    'star_distribution_heading' => 'Star distribution',
+
     // LatestReviews
     'latest_reviews' => 'Latest reviews',
     'col_location' => 'Location',
     'col_author' => 'Author',
     'col_review' => 'Review',
+    'col_rating' => 'Rating',
     'only_rating' => 'Only rating',
     'col_date' => 'Date',
     'col_reply' => 'Reply',

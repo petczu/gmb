@@ -5,6 +5,10 @@ declare(strict_types=1);
 return [
     'profile_section' => 'Profile',
     'photo' => 'Photo',
+    'name' => 'Name',
+    'email' => 'Email',
+    'new_password' => 'New password',
+    'timezone' => 'Timezone',
 
     'password_section' => 'Password',
     'password_section_desc' => 'Leave blank to keep your current password.',

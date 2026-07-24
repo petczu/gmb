@@ -8,6 +8,9 @@ return [
     'empty_cta' => 'Konum bağla',
 
     'col_location' => 'Konum',
+    'col_address' => 'Adres',
+    'col_rating' => 'Puan',
+    'col_status' => 'Durum',
     'col_reviews' => 'Yorumlar',
     'col_last_synced' => 'Son senkronizasyon',
     'syncing' => 'Yorumlar içe aktarılıyor…',

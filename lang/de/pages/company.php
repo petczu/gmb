@@ -59,4 +59,7 @@ return [
     'deletion_scheduled' => 'Workspace zur Löschung vorgemerkt',
     'deletion_scheduled_body' => 'Du kannst dies innerhalb von 30 Tagen auf dieser Seite abbrechen.',
     'settings_saved' => 'Unternehmenseinstellungen gespeichert',
+
+    // i18n label backfill
+    'website' => 'Website',
 ];

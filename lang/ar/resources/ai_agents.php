@@ -9,6 +9,9 @@ return [
     'empty_cta' => 'وكيل ذكاء اصطناعي جديد',
 
     // Table
+    'col_name' => 'الاسم',
+    'col_tone' => 'النبرة',
+    'name' => 'الاسم',
     'col_native_lang' => 'اللغة الأصلية',
     'col_default' => 'افتراضي',
     'col_updated' => 'حُدّث',

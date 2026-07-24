@@ -5,6 +5,10 @@ declare(strict_types=1);
 return [
     'profile_section' => 'الملف الشخصي',
     'photo' => 'الصورة',
+    'name' => 'الاسم',
+    'email' => 'البريد الإلكتروني',
+    'new_password' => 'كلمة مرور جديدة',
+    'timezone' => 'المنطقة الزمنية',
 
     'password_section' => 'كلمة المرور',
     'password_section_desc' => 'اتركها فارغة للإبقاء على كلمة مرورك الحالية.',

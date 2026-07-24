@@ -40,4 +40,8 @@ return [
     'status_pending' => 'Pendiente',
     'role_hint_member' => 'Recibe una invitación por correo e inicia sesión con su propia cuenta.',
     'role_hint_guest' => 'Un invitado no puede iniciar sesión. Solo recibe las notificaciones que le dirijas (reseñas nuevas, informes).',
+
+    // i18n label backfill
+    'email' => 'Correo electrónico',
+    'role' => 'Rol',
 ];

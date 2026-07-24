@@ -8,6 +8,9 @@ return [
     'empty_cta' => 'Connect location',
 
     'col_location' => 'Location',
+    'col_address' => 'Address',
+    'col_rating' => 'Rating',
+    'col_status' => 'Status',
     'col_reviews' => 'Reviews',
     'col_last_synced' => 'Last synced',
     'syncing' => 'Importing reviews…',

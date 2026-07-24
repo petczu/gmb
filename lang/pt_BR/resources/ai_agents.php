@@ -65,4 +65,7 @@ return [
     'shared_rules_placeholder' => "ex.:\nEm respostas em alemão, diga \"Raum\" ou \"Escape Room\", nunca \"Room\" como substantivo alemão.\nNunca prometa descontos ou reembolsos.\nAssine as respostas sem um nome.",
     'shared_rules_save' => 'Salvar regras',
     'shared_rules_saved' => 'Regras compartilhadas salvas',
+    'col_name' => 'Nome',
+    'col_tone' => 'Tom',
+    'name' => 'Nome',
 ];
