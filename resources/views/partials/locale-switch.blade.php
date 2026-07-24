@@ -58,7 +58,7 @@
                 @foreach ($options as $code => $name)
                     <a href="{{ route('locale.switch', $code) }}"
                        class="rw-lang-opt {{ $code === $current ? 'is-current' : '' }}"
-                       dir="{{ \App\Support\Locales::isRtl($code) ? 'rtl' : 'ltr' }}">
+                       dir="ltr">
                         <span class="rw-flag">{{ $flag($code) }}</span>
                         <span>{{ $name }}</span>
                     </a>
