@@ -1,0 +1,125 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'performance_report' => 'Relatório de desempenho',
+    'generated' => 'Gerado em :date',
+    'reviews_received' => 'Avaliações recebidas',
+    'average_rating' => 'Nota média',
+    'response_rate' => 'Taxa de resposta',
+    'replies_sent' => 'Respostas enviadas',
+    'vs_prev' => 'vs anterior',
+
+    'perf_title' => 'Desempenho do perfil no Google',
+    'perf_views' => 'Visualizações do perfil',
+    'perf_views_sub' => 'Pesquisa + Maps',
+    'perf_calls' => 'Ligações',
+    'perf_calls_sub' => 'Toques no telefone',
+    'perf_bookings' => 'Reservas',
+    'perf_bookings_sub' => 'Botão de reserva',
+    'perf_directions' => 'Como chegar',
+    'perf_directions_sub' => 'Pedidos de rota',
+    'perf_website_clicks' => 'Cliques no site',
+    'perf_website_clicks_sub' => 'A partir do perfil',
+    'perf_breakdown' => 'Detalhamento das visualizações',
+    'perf_search_desktop' => 'Pesquisa do Google, computador',
+    'perf_search_mobile' => 'Pesquisa do Google, celular',
+    'perf_maps_desktop' => 'Google Maps, computador',
+    'perf_maps_mobile' => 'Google Maps, celular',
+    'perf_searches' => 'Principais pesquisas (últimos 3 meses)',
+    'perf_note' => 'Fonte: Perfil da Empresa no Google. O Google entrega esses dados com alguns dias de atraso, então os últimos dias do período podem estar incompletos.',
+
+    'executive_summary' => 'Resumo executivo',
+    'recommendations' => 'Recomendações',
+    'star_distribution' => 'Distribuição de estrelas',
+    'reviews_per_day' => 'Avaliações por dia',
+    'reviews_per_week' => 'Avaliações por semana',
+    'staff_mentions' => 'Menções à equipe',
+    'name' => 'Nome',
+    'mentions' => 'Menções',
+    'sentiment' => 'Sentimento',
+    'positive' => 'Positivo',
+    'mixed' => 'Misto',
+    'negative' => 'Negativo',
+    'highlights_positive' => 'Destaques, positivos',
+    'highlights_attention' => 'Destaques, precisam de atenção',
+    'no_positive' => 'Nenhuma avaliação positiva com texto neste período.',
+    'no_critical' => 'Nenhuma avaliação crítica com texto neste período. 🎉',
+    'anonymous' => 'Anônimo',
+    'footer_positive' => ':pct% positivas',
+    'footer_critical' => ':pct% críticas',
+    'footer_compared' => 'em comparação com :period',
+    'footer_busiest' => 'dia mais movimentado :day (:count avaliações)',
+
+    // Visão geral
+    'five_star_share' => 'Percentual de 5 estrelas',
+    'out_of_5' => 'de 5,00 estrelas',
+    'overall_rating' => 'nota geral do perfil',
+    'covered_locations' => 'Locais neste relatório:',
+    'of' => 'de',
+
+    // Menções à equipe
+    'staff_intro' => 'As avaliações foram analisadas em busca de membros da equipe citados pelo nome. A tabela conta as avaliações que creditam cada pessoa, útil para distribuir bonificações.',
+    'share_credits' => 'Percentual do total',
+    'notes' => 'Observações',
+    'total_credits' => 'Total',
+
+    // Ritmo de coleta
+    'cadence_title' => 'Ritmo de coleta: as avaliações estão bem distribuídas?',
+    'cadence_intro' => 'As avaliações chegaram em :active de :total dias, com média de :avg por dia ativo. Avaliações agrupadas na mesma sessão parecem artificiais para o Google e correm o risco de serem filtradas.',
+    'legend' => 'Legenda',
+    'legend_low' => 'verde = 1-2',
+    'legend_mid' => 'âmbar = 3-4',
+    'legend_high' => 'vermelho = 5+ (agrupamento)',
+    'day' => 'Dia',
+    'time_window' => 'Faixa de horário',
+    'volume' => 'Volume',
+    'flag' => 'Sinalização',
+    'flag_high' => 'Alta',
+    'flag_medium' => 'Média',
+    'reviews_lc' => 'avaliações',
+    'why_matters' => 'Por que isso importa',
+    'cadence_why' => 'Os sistemas antispam do Google procuram avaliações que aparecem em lotes muito próximos a partir do mesmo dispositivo ou local, e parte do lote pode ser silenciosamente retirada da nota pública. O objetivo é espaçar a coleta para que todas sobrevivam.',
+    'cadence_clean' => 'Nenhuma rajada apertada da mesma sessão foi detectada, a coleta parece distribuída de forma natural. 🎉',
+
+    // Sobre o que os clientes falam (principais tópicos)
+    'topics_title' => 'Sobre o que os clientes falam',
+
+    // Temas e sentimento
+    'themes_title' => 'Temas e sentimento',
+    'praised' => 'O que os clientes elogiaram',
+    'complaints' => 'Do que os clientes reclamaram',
+
+    // Desempenho das respostas
+    'responses_title' => 'Desempenho das respostas',
+    'reply_rate' => 'Taxa de resposta',
+    'unanswered' => 'Sem resposta',
+    'avg_response' => 'Tempo médio de resposta',
+    'to_reply' => 'para responder',
+    'within_24h' => 'Em até 24h',
+    'of_replies' => 'das respostas',
+
+    // Metodologia
+    'methodology' => 'Metodologia e observações',
+    'method_scope' => 'Escopo: todas as avaliações do Google de :business com data de criação em :period (:count avaliações).',
+    'method_ratings' => 'Notas: 5★ × :five, 4★ × :four, 3★ × :three, 2★ × :two, 1★ × :one.',
+    'method_cadence' => 'O ritmo é baseado na data e hora de criação da avaliação, que é o sinal avaliado pelo Google.',
+    'method_source' => 'Fonte: Perfil da Empresa no Google.',
+
+    'competitors_title' => 'Comparativo de concorrentes',
+    'competitors_col_business' => 'Empresa',
+    'competitors_col_rating' => 'Nota',
+    'competitors_col_reviews' => 'Avaliações',
+    'competitors_col_new' => 'Novas no período',
+    'competitors_you' => 'você',
+    'competitors_note' => 'Dados de concorrentes obtidos do Google. "Novas no período" é baseado em capturas diárias e aparece quando há histórico suficiente coletado.',
+    'competitors_chart_title' => 'Novas avaliações no período',
+    'competitors_insights_title' => 'O que isso significa',
+    'competitors_insight_rating_lead' => 'Sua nota de :rating★ iguala ou supera todos os concorrentes monitorados.',
+    'competitors_insight_rating_behind' => ':count de :total concorrentes têm nota melhor que os seus :rating★.',
+    'competitors_insight_reviews_lead' => 'Você tem mais avaliações no total do que qualquer concorrente individual.',
+    'competitors_insight_reviews_behind' => ':count concorrente(s) têm mais avaliações no total do que você.',
+    'competitors_insight_growth_lead' => 'Você somou o maior número de novas avaliações neste período (+:count).',
+    'competitors_insight_growth_behind' => ':name somou +:top novas avaliações contra os seus +:own neste período.',
+];
