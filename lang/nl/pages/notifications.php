@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'channels' => 'Kanalen',
+    'channels_desc' => 'Hoe meldingen worden bezorgd. Er komen meer kanalen aan.',
+    'channel_email' => 'E-mail · actief',
+    'channel_sms' => 'Sms · binnenkort',
+    'channel_whatsapp' => 'WhatsApp · binnenkort',
+
+    'recipients' => 'Ontvangers',
+    'recipients_help' => 'Kies groepen (op rol of iedereen) en/of individuele leden. Laat leeg om standaard de eigenaar van de werkruimte te gebruiken.',
+    'default_owner' => 'Eigenaar van de werkruimte',
+    'included' => 'Inbegrepen',
+    'excluded' => 'Uitgesloten',
+    'excluded_none' => 'Niemand uitgesloten',
+    'excluded_help' => 'Verwijderd uit de inbegrepen set, bijv. neem een hele rol op maar laat één persoon weg.',
+    'guest' => 'gast',
+    'saved' => 'Ontvangers van meldingen opgeslagen',
+
+    'groups' => 'Groepen',
+    'people' => 'Personen',
+    'everyone' => 'Iedereen',
+    'group_owner' => 'Eigenaren',
+    'group_admin' => 'Beheerders',
+    'group_member' => 'Leden',
+    'group_guest' => 'Gasten',
+    'group_role' => ':role',
+
+    'cat_review_growth' => 'Reviewgroei',
+    'cat_review_growth_desc' => 'Doelvoortgang, wekelijkse coaching en tips, de viering bij het bereiken van het doel, en afwijkingswaarschuwingen (gestagneerd, negatieve reeks, piek, daling van de beoordeling).',
+    'cat_reputation' => 'Reputatie',
+    'cat_reputation_desc' => 'Overzichten van nieuwe reviews en reviews die aandacht nodig hebben.',
+    'cat_operations' => 'Activiteiten',
+    'cat_operations_desc' => 'Account losgekoppeld, synchronisatie hersteld, reactie mislukt, goedkeuringen in behandeling.',
+    'cat_billing' => 'Facturering',
+    'cat_billing_desc' => 'Betalingen, herinneringen voor de proefperiode, abonnementswijzigingen en AI-gebruikslimieten.',
+
+    'chat_title' => 'Slack en Telegram',
+    'chat_desc' => 'Stuur korte waarschuwingen naar een Slack-kanaal of Telegram-chat naast e-mail.',
+    'slack_webhook' => 'URL voor Slack incoming webhook',
+    'slack_help' => 'Slack → Apps → Incoming Webhooks → Toevoegen aan kanaal, plak daarna de URL hier.',
+    'telegram_token' => 'Telegram-bottoken',
+    'telegram_token_help' => 'Maak een bot met @BotFather en plak het token ervan.',
+    'telegram_chat' => 'Telegram-chat-ID',
+    'telegram_chat_help' => 'Voeg de bot toe aan je groep of chat en gebruik de chat-ID ervan (bijv. via @userinfobot).',
+    'chat_language' => 'Berichttaal',
+    'chat_categories' => 'Stuur deze categorieën',
+    'chat_test' => 'Testbericht versturen',
+    'chat_test_sent' => 'Testbericht verzonden, controleer je kanaal.',
+    'email_always_on' => 'Altijd aan, ontvangers worden per categorie hieronder geconfigureerd.',
+    'channel_on' => 'Aan',
+    'channel_enable' => 'Kanaal inschakelen',
+];
