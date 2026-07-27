@@ -46,11 +46,15 @@ class ZernioProvider implements ReviewProvider
     }
 
     /**
-     * Run a Zernio request, waiting out 429 rate limits. Zernio's limits are
-     * per API key with a per-second window on analytics endpoints; on 429 we
-     * wait until X-RateLimit-Reset (capped, fallback: exponential backoff) and
-     * retry a few times before giving up. The sync runs in a queued job, so
-     * blocking here simply spreads the calls out.
+     * Run a Zernio request, waiting out transient failures. Two cases:
+     * - 429 rate limits (per API key, per-second window on analytics
+     *   endpoints): wait until X-RateLimit-Reset (capped, fallback:
+     *   exponential backoff).
+     * - 5xx: Zernio proxies Google, and its upstream calls regularly time out
+     *   ("connection timed out" as a 500); a short backoff and retry usually
+     *   succeeds, and beats burning one of the queued job's own attempts.
+     * Retries are bounded; the sync runs in a queued job, so blocking here
+     * simply spreads the calls out.
      *
      * @template T
      *
@@ -65,14 +69,22 @@ class ZernioProvider implements ReviewProvider
             try {
                 return $request();
             } catch (ApiException $e) {
-                if ($e->getCode() !== 429 || $attempts >= 4) {
+                $code = $e->getCode();
+                $retryable = $code === 429 || ($code >= 500 && $code < 600);
+
+                if (! $retryable || $attempts >= 4) {
                     throw $e;
                 }
 
                 $attempts++;
-                $headers = array_change_key_case($e->getResponseHeaders() ?? [], CASE_LOWER);
-                $reset = (int) (($headers['x-ratelimit-reset'][0] ?? $headers['x-ratelimit-reset'] ?? 0));
-                $wait = $reset > 0 ? max(1, min(30, $reset - time())) : min(30, 2 ** $attempts);
+
+                if ($code === 429) {
+                    $headers = array_change_key_case($e->getResponseHeaders() ?? [], CASE_LOWER);
+                    $reset = (int) (($headers['x-ratelimit-reset'][0] ?? $headers['x-ratelimit-reset'] ?? 0));
+                    $wait = $reset > 0 ? max(1, min(30, $reset - time())) : min(30, 2 ** $attempts);
+                } else {
+                    $wait = min(30, 3 * $attempts); // 3s, 6s, 9s, 12s
+                }
 
                 sleep($wait);
             }
