@@ -22,6 +22,7 @@ use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
@@ -162,6 +163,10 @@ Route::middleware(['web', SetLocale::class])->group(function (): void {
     Route::get('locale/{locale}', function (string $locale) {
         if (in_array($locale, Locales::codes(), true)) {
             session(['locale' => $locale]);
+
+            // Long-lived plaintext cookie so error pages, which render outside
+            // the session on unmatched URLs, still reflect the chosen language.
+            Cookie::queue('locale', $locale, 525_600);
 
             // Persist to the signed-in user so SetLocale (which prefers the
             // stored locale) reflects the choice everywhere, including the beta

@@ -100,6 +100,13 @@ class Locales
             if ($request?->hasSession() && self::isSupported($sessionLocale = $request->session()->get('locale'))) {
                 return (string) $sessionLocale;
             }
+
+            // Plaintext cookie: the only signal available on an unmatched-route
+            // 404, where neither auth nor session middleware ran. Set by
+            // SetLocale and the language switcher.
+            if (is_string($cookieLocale = $request?->cookie('locale')) && self::isSupported($cookieLocale)) {
+                return $cookieLocale;
+            }
         } catch (Throwable) {
             // No auth/session context available: fall through to the app locale.
         }

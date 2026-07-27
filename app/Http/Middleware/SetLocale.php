@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use App\Support\Locales;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -27,6 +28,11 @@ class SetLocale
 
         if (in_array($locale, Locales::codes(), true)) {
             app()->setLocale($locale);
+
+            // Mirror the choice into a long-lived plaintext cookie so error
+            // pages (which render outside this middleware, and outside the
+            // session entirely on unmatched URLs) can still pick it up.
+            Cookie::queue('locale', $locale, 525_600);
         }
 
         return $next($request);

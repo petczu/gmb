@@ -37,6 +37,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'zernio/*',
         ]);
 
+        // The visitor's UI language must be readable on error pages (404/500),
+        // which render through the exception handler and, on an unmatched URL,
+        // never run StartSession/EncryptCookies. Keep the `locale` cookie in
+        // plaintext so it can be read without those middleware.
+        $middleware->encryptCookies(except: [
+            'locale',
+        ]);
+
         // No default `login` route exists (Filament owns auth); send guests to
         // the app panel login instead of crashing with RouteNotFoundException.
         $middleware->redirectGuestsTo(fn () => route('filament.app.auth.login'));
