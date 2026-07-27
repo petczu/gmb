@@ -24,8 +24,11 @@ class ReplyFailureTest extends TestCase
         $this->assertTrue(ReplyFailure::isRetryable(__('resources/auto_reply.error_rate_limited')));
         $this->assertTrue(ReplyFailure::isRetryable(null));
         $this->assertTrue(ReplyFailure::isRetryable(''));
+        // "not found" is usually the transient wrong-selected-location case, so
+        // it is retryable (bounded by the retry window).
+        $this->assertTrue(ReplyFailure::isRetryable(__('resources/auto_reply.error_not_found')));
 
-        $this->assertFalse(ReplyFailure::isRetryable(__('resources/auto_reply.error_not_found')));
+        // Only a hard authorization problem is structural.
         $this->assertFalse(ReplyFailure::isRetryable(__('resources/auto_reply.error_unauthorized')));
     }
 }

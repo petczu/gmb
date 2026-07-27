@@ -35,10 +35,13 @@ class ReplyFailure
     }
 
     /**
-     * Is a stored failure worth retrying automatically? Transient reasons
-     * (generic "try again later" / rate limiting) are; a missing review/location
-     * or an authorization problem is structural, so retrying just fails again.
-     * An unknown/empty reason is treated as retryable.
+     * Is a stored failure worth retrying automatically? Only a hard
+     * authorization problem is treated as structural. "not found" is retryable:
+     * Google/Zernio return it when the account's selected location hasn't
+     * switched to the review's location yet (transient), which is far more
+     * common than a genuinely removed review. Truly-gone reviews simply keep
+     * failing until they age out of the retry window (auto-reply:retry-failed
+     * --days), so retrying them is naturally bounded. Unknown/empty is retryable.
      */
     public static function isRetryable(?string $storedError): bool
     {
@@ -47,7 +50,7 @@ class ReplyFailure
             return true;
         }
 
-        foreach (['error_not_found', 'error_unauthorized'] as $key) {
+        foreach (['error_unauthorized'] as $key) {
             foreach (Locales::codes() as $locale) {
                 if ($error === trim((string) __('resources/auto_reply.'.$key, [], $locale))) {
                     return false;
