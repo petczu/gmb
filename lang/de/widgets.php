@@ -59,6 +59,7 @@ return [
     'competitors_empty_title' => 'Noch keine Mitbewerber hinterlegt',
     'competitors_empty_body' => 'Wähle ein paar Mitbewerber aus der Umgebung und sieh direkt am Dashboard, wie sich Bewertung und Wachstum vergleichen.',
     'competitors_empty_cta' => 'Mitbewerber hinzufügen',
+    'competitors_spark_hint' => 'Bewertungswachstum des Wettbewerbers im gewählten Zeitraum',
 
     // Mitbewerber-Wachstumsdiagramm
     'competitor_chart_title' => 'Bewertungszuwachs im Vergleich',

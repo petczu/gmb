@@ -59,6 +59,7 @@ return [
     'competitors_empty_title' => 'Ancora nessun concorrente monitorato',
     'competitors_empty_body' => 'Scegli qualche concorrente nelle vicinanze e confronta la tua valutazione e la crescita delle recensioni, direttamente nella dashboard.',
     'competitors_empty_cta' => 'Aggiungi concorrenti',
+    'competitors_spark_hint' => 'Crescita delle recensioni del concorrente nel periodo selezionato',
 
     // Competitor growth chart
     'competitor_chart_title' => 'Crescita delle recensioni dei concorrenti',

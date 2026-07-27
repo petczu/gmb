@@ -63,6 +63,7 @@ return [
     'competitors_empty_title' => 'لا يوجد منافسون متابَعون بعد',
     'competitors_empty_body' => 'اختر بعض المنافسين القريبين وشاهد كيف يكون تقييمك ونمو مراجعاتك مقارنةً بهم، هنا مباشرةً على لوحة التحكم.',
     'competitors_empty_cta' => 'إضافة منافسين',
+    'competitors_spark_hint' => 'نمو مراجعات المنافس خلال الفترة المحددة',
 
     // Competitor growth chart
     'competitor_chart_title' => 'نمو تقييمات المنافسين',

@@ -1,11 +1,15 @@
 <x-filament-widgets::widget>
     <style>
-        .cmp-row { display: flex; align-items: center; gap: 1rem; padding: .65rem 0; font-size: .85rem; }
+        /* Fixed column grid so ratings, verdict and "new reviews" line up down
+           every row (left-aligned), instead of floating after variable-width names. */
+        .cmp-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(190px, auto) minmax(0, 1.4fr) 130px; align-items: center; gap: 1.25rem; padding: .65rem 0; font-size: .85rem; }
         .cmp-row + .cmp-row { border-top: 1px solid rgb(243 244 246); }
         .dark .cmp-row + .cmp-row { border-color: rgba(255,255,255,.08); }
-        .cmp-name { flex: 1 1 32%; min-width: 0; font-weight: 600; display: flex; flex-direction: column; gap: .1rem; }
+        .cmp-name { min-width: 0; font-weight: 600; display: flex; flex-direction: column; gap: .1rem; }
         .cmp-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .cmp-addr { font-weight: 400; font-size: .72rem; color: rgb(107 114 128); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Column 2: ratings + verdict chip, left-aligned. */
+        .cmp-compare { display: flex; align-items: center; gap: .6rem; min-width: 0; }
         .cmp-ratings { flex: 0 0 auto; display: flex; align-items: baseline; gap: .45rem; white-space: nowrap; }
         .cmp-you { font-weight: 700; }
         .cmp-vs { color: rgb(156 163 175); font-size: .75rem; }
@@ -16,10 +20,11 @@
         .dark .cmp-chip-down { background: rgba(239,68,68,.15); color: #f87171; }
         .cmp-chip-flat { background: rgb(0 0 0 / .06); color: rgb(107 114 128); }
         .dark .cmp-chip-flat { background: rgb(255 255 255 / .1); color: #a1a1aa; }
-        .cmp-new { flex: 1 1 auto; text-align: right; color: rgb(107 114 128); font-size: .78rem; white-space: nowrap; }
+        /* Column 3: new-reviews summary, left-aligned. */
+        .cmp-new { text-align: left; color: rgb(107 114 128); font-size: .78rem; white-space: nowrap; }
         .dark .cmp-new { color: #a1a1aa; }
         .cmp-new strong { color: inherit; }
-        .cmp-spark { flex: 0 0 auto; }
+        .cmp-spark { justify-self: end; cursor: help; }
         .cmp-hint { font-size: .78rem; color: rgb(107 114 128); margin-top: .6rem; }
         .dark .cmp-hint { color: #71717a; }
         .cmp-empty { text-align: center; padding: 1.8rem 1rem; }
@@ -30,7 +35,10 @@
         .cmp-empty-title { font-weight: 600; margin-bottom: .3rem; }
         .cmp-empty-body { font-size: .85rem; color: rgb(107 114 128); max-width: 26rem; margin: 0 auto .9rem; }
         .dark .cmp-empty-body { color: #a1a1aa; }
-        @media (max-width: 700px) { .cmp-spark { display: none; } .cmp-new { display: none; } }
+        @media (max-width: 700px) {
+            .cmp-row { grid-template-columns: minmax(0, 1fr) auto; }
+            .cmp-spark, .cmp-new { display: none; }
+        }
     </style>
 
     <div class="wi-load-wrap">
@@ -61,21 +69,23 @@
                         @endif
                     </span>
 
-                    <span class="cmp-ratings">
-                        <span class="cmp-you">{{ $row['ownRating'] !== null ? number_format($row['ownRating'], 1).'★' : '—' }}</span>
-                        <span class="cmp-vs">{{ __('widgets.competitors_vs') }}</span>
-                        <span>{{ $row['theirRating'] !== null ? number_format($row['theirRating'], 1).'★' : '—' }}</span>
-                    </span>
-
-                    @if ($row['delta'] !== null)
-                        @php $chip = $row['delta'] > 0 ? 'up' : ($row['delta'] < 0 ? 'down' : 'flat'); @endphp
-                        <span class="cmp-chip cmp-chip-{{ $chip }}">
-                            @if ($chip === 'up') {{ __('pages/competitors.vs_ahead', ['delta' => number_format($row['delta'], 1)]) }}
-                            @elseif ($chip === 'down') {{ __('pages/competitors.vs_behind', ['delta' => number_format(abs($row['delta']), 1)]) }}
-                            @else {{ __('pages/competitors.vs_tied') }}
-                            @endif
+                    <span class="cmp-compare">
+                        <span class="cmp-ratings">
+                            <span class="cmp-you">{{ $row['ownRating'] !== null ? number_format($row['ownRating'], 1).'★' : '—' }}</span>
+                            <span class="cmp-vs">{{ __('widgets.competitors_vs') }}</span>
+                            <span>{{ $row['theirRating'] !== null ? number_format($row['theirRating'], 1).'★' : '—' }}</span>
                         </span>
-                    @endif
+
+                        @if ($row['delta'] !== null)
+                            @php $chip = $row['delta'] > 0 ? 'up' : ($row['delta'] < 0 ? 'down' : 'flat'); @endphp
+                            <span class="cmp-chip cmp-chip-{{ $chip }}">
+                                @if ($chip === 'up') {{ __('pages/competitors.vs_ahead', ['delta' => number_format($row['delta'], 1)]) }}
+                                @elseif ($chip === 'down') {{ __('pages/competitors.vs_behind', ['delta' => number_format(abs($row['delta']), 1)]) }}
+                                @else {{ __('pages/competitors.vs_tied') }}
+                                @endif
+                            </span>
+                        @endif
+                    </span>
 
                     <span class="cmp-new">
                         {{ __('widgets.competitors_new_reviews') }}:
@@ -83,7 +93,7 @@
                         · {{ __('widgets.competitors_them') }} {{ $row['theirNew'] !== null ? '+'.number_format($row['theirNew']) : '—' }}
                     </span>
 
-                    <span class="cmp-spark">{{ $row['spark'] ?? '' }}</span>
+                    <span class="cmp-spark" title="{{ __('widgets.competitors_spark_hint') }}">{{ $row['spark'] ?? '' }}</span>
                 </div>
             @endforeach
         @endif

@@ -59,6 +59,7 @@ return [
     'competitors_empty_title' => 'Nenhum concorrente monitorado ainda',
     'competitors_empty_body' => 'Escolha alguns concorrentes próximos e veja como sua classificação e o crescimento de avaliações se comparam, aqui mesmo no painel.',
     'competitors_empty_cta' => 'Adicionar concorrentes',
+    'competitors_spark_hint' => 'Crescimento de avaliações do concorrente no período selecionado',
 
     // Competitor growth chart
     'competitor_chart_title' => 'Crescimento de avaliações dos concorrentes',
