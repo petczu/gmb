@@ -9,6 +9,7 @@ use App\Models\Post;
 use App\Services\Zernio\ZernioRestClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -76,9 +77,20 @@ class ExternalPostImporter
                 }
                 $first = false;
 
+                // Selecting a location + reading its feed must not interleave
+                // with a reply's own select-then-write on the same account, or
+                // one clobbers the other's selection. Share the reply write-lock
+                // (zernio:write:{account}); held PER LOCATION (the 16s pause is
+                // outside) so replies never wait behind the whole account.
                 try {
-                    $this->zernio->selectLocation($accountId, (string) $location->external_id);
-                    $this->zernio->syncExternalPosts($accountId);
+                    $result = Cache::lock("zernio:write:{$accountId}", seconds: 120)->block(30, function () use ($accountId, $location, $cidMap): array {
+                        $this->zernio->selectLocation($accountId, (string) $location->external_id);
+                        $this->zernio->syncExternalPosts($accountId);
+
+                        // After selecting this location, the account feed carries
+                        // its posts; attribute by CID (fallback to this location).
+                        return $this->importAccount($location, $accountId, $cidMap);
+                    });
                 } catch (Throwable $e) {
                     Log::warning('External post snapshot: select/sync failed', [
                         'account' => $accountId,
@@ -89,9 +101,6 @@ class ExternalPostImporter
                     continue;
                 }
 
-                // After selecting this location, the account feed carries its
-                // posts; attribute by CID (fallback to this location) and upsert.
-                $result = $this->importAccount($location, $accountId, $cidMap);
                 $imported += $result['stored'];
                 $seen += $result['seen'];
                 $visited++;
