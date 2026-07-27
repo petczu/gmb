@@ -182,6 +182,32 @@ class ZernioProvider implements ReviewProvider
                 (new UpdateGmbLocationRequest)->setSelectedLocationId($locationExternalId),
             ));
 
+            // Zernio applies the selection switch asynchronously, so a write
+            // fired immediately can still hit the PREVIOUS selection and publish
+            // to the wrong location. Confirm the account's selected location is
+            // actually the target before writing; abort (job retries) if it
+            // never converges, rather than post the reply to the wrong business.
+            $confirmed = false;
+            for ($attempt = 0; $attempt < 5; $attempt++) {
+                $current = $this->withRateLimitRetry(
+                    fn () => $this->connect->getGmbLocations($accountId)
+                )->getSelectedLocationId();
+
+                if ((string) $current === (string) $locationExternalId) {
+                    $confirmed = true;
+                    break;
+                }
+
+                usleep(400_000); // 0.4s between checks
+            }
+
+            if (! $confirmed) {
+                throw new \RuntimeException(
+                    "Zernio selected location did not switch to {$locationExternalId} on account {$accountId}; "
+                    .'aborting write to avoid posting to the wrong location.'
+                );
+            }
+
             $write();
         });
     }
