@@ -49,4 +49,19 @@ return [
     'terms_step_label' => '最後に一点、当社の利用規約についてです',
     'terms_scroll_hint' => '続行するには利用規約の最後までスクロールしてください。',
     'agree_continue' => '同意して続行',
+
+    // Decorative product mockup cards in the marketing hero
+    'card_review_text' => '「最高の体験でした！モニカは今までで一番のゲームマスターでした。」',
+    'card_ai_published' => 'AIの返信を公開しました',
+    'card_reviews_30d' => 'レビュー · 30日',
+    'card_vs' => '対 :name',
+    'card_lead' => ':delta ★ リード',
+    'card_monthly_report' => '月次レポート',
+    'card_scheduled_monthly' => '毎月自動送信',
+    'card_scan_to_review' => 'スキャンしてレビュー',
+    'card_qr_page' => 'QRレビューページ',
+    'card_ai_autopilot' => 'AIオートパイロット',
+    'card_on' => 'オン',
+    'card_ai_reply_text' => '「アンナさん、ありがとう！モニカがあなたの訪問を特別なものにできて嬉しいです。」',
+    'card_ai_replies_week' => '今週 :count 件のAI返信を送信',
 ];

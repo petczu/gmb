@@ -8,7 +8,12 @@
      centered card returns. --}}
 <style>
     @media (min-width: 1024px) {
-        .fi-simple-main-ctn { margin-inline-start: 50vw; width: 50vw; }
+        /* Hero is pinned physically to the left (left:0) in every direction, so
+           the form column must always sit in the right half. Use a physical
+           margin, not margin-inline-start: the logical property flips to the
+           right under RTL (Arabic) and would shove the form under the hero,
+           leaving the right half blank. */
+        .fi-simple-main-ctn { margin-left: 50vw; margin-right: 0; width: 50vw; }
         .auth-hero { display: flex !important; }
         .auth-corner-logo { display: none !important; }
     }
@@ -53,17 +58,17 @@
                             <div style="color:#f5b301; font-size:.78rem; letter-spacing:.1em;">★★★★★</div>
                         </div>
                     </div>
-                    <p style="color:#d6d2ec; font-size:.82rem; line-height:1.5; margin:.6rem 0 .7rem;">“Amazing experience! Monica was the best game master we ever had.”</p>
+                    <p style="color:#d6d2ec; font-size:.82rem; line-height:1.5; margin:.6rem 0 .7rem;">{{ __('auth.card_review_text') }}</p>
                     <div style="display:flex; align-items:center; gap:.45rem; border-top:1px solid rgba(255,255,255,.12); padding-top:.65rem;">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#a08cff" style="width:.95rem; height:.95rem;"><path fill-rule="evenodd" d="M9 4.5a.75.75 0 0 1 .721.544l.813 2.846a3.75 3.75 0 0 0 2.576 2.576l2.846.813a.75.75 0 0 1 0 1.442l-2.846.813a3.75 3.75 0 0 0-2.576 2.576l-.813 2.846a.75.75 0 0 1-1.442 0l-.813-2.846a3.75 3.75 0 0 0-2.576-2.576l-2.846-.813a.75.75 0 0 1 0-1.442l2.846-.813A3.75 3.75 0 0 0 7.466 7.89l.813-2.846A.75.75 0 0 1 9 4.5Z" clip-rule="evenodd"/></svg>
-                        <span style="color:#b9b3d9; font-size:.76rem;">AI reply published</span>
+                        <span style="color:#b9b3d9; font-size:.76rem;">{{ __('auth.card_ai_published') }}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" style="width:.8rem; height:.8rem; margin-left:auto;"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
                     </div>
                 </div>
 
                 {{-- Review growth card --}}
                 <div style="position:absolute; right:1.5rem; top:0; width:11.5rem; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); border-radius:1rem; padding:.85rem 1rem; backdrop-filter:blur(8px); transform:rotate(2deg); box-shadow:0 18px 44px rgba(0,0,0,.35);">
-                    <div style="color:#8f88b8; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;">Reviews · 30d</div>
+                    <div style="color:#8f88b8; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;">{{ __('auth.card_reviews_30d') }}</div>
                     <div style="color:#fff; font-size:1.35rem; font-weight:800; margin:.1rem 0 .4rem;">+38</div>
                     <div style="display:flex; align-items:flex-end; gap:3px; height:2rem;">
                         @foreach ([35, 50, 40, 65, 55, 80, 100] as $h)
@@ -74,9 +79,9 @@
 
                 {{-- Competitor comparison card --}}
                 <div style="position:absolute; right:0; bottom:0; width:14.5rem; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); border-radius:1rem; padding:.85rem 1rem; backdrop-filter:blur(8px); transform:rotate(-1deg); box-shadow:0 18px 44px rgba(0,0,0,.35);">
-                    <div style="color:#8f88b8; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;">vs Puzzle Peak</div>
+                    <div style="color:#8f88b8; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;">{{ __('auth.card_vs', ['name' => 'Puzzle Peak']) }}</div>
                     <div style="display:flex; align-items:center; gap:.5rem; margin-top:.35rem;">
-                        <span style="background:rgba(52,211,153,.15); border:1px solid rgba(52,211,153,.4); color:#34d399; font-size:.76rem; font-weight:700; border-radius:999px; padding:.2rem .6rem;">You lead by 0.4 ★</span>
+                        <span style="background:rgba(52,211,153,.15); border:1px solid rgba(52,211,153,.4); color:#34d399; font-size:.76rem; font-weight:700; border-radius:999px; padding:.2rem .6rem;">{{ __('auth.card_lead', ['delta' => '0.4']) }}</span>
                     </div>
                 </div>
             </div>
@@ -108,13 +113,13 @@
             <div class="auth-hero-mockup-reg" style="position:relative; margin-top:2.6rem; height:13.5rem;">
                 {{-- Monthly report card --}}
                 <div style="position:absolute; left:0; top:.9rem; width:17rem; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); border-radius:1rem; padding:1rem 1.1rem; backdrop-filter:blur(8px); transform:rotate(-2deg); box-shadow:0 18px 44px rgba(0,0,0,.35);">
-                    <div style="color:#8f88b8; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;">Monthly report</div>
+                    <div style="color:#8f88b8; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;">{{ __('auth.card_monthly_report') }}</div>
                     <div style="display:flex; align-items:baseline; gap:.5rem; margin:.15rem 0 .55rem;">
                         <span style="color:#fff; font-size:1.5rem; font-weight:800;">4.8 ★</span>
                         <span style="color:#34d399; font-size:.78rem; font-weight:700;">▲ +0.2</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:.45rem; border-top:1px solid rgba(255,255,255,.12); padding-top:.6rem;">
-                        <span style="color:#b9b3d9; font-size:.76rem;">Scheduled monthly</span>
+                        <span style="color:#b9b3d9; font-size:.76rem;">{{ __('auth.card_scheduled_monthly') }}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" style="width:.8rem; height:.8rem; margin-left:auto;"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
                     </div>
                 </div>
@@ -127,8 +132,8 @@
                         @endforeach
                     </div>
                     <div>
-                        <div style="color:#fff; font-size:.82rem; font-weight:700;">Scan to review</div>
-                        <div style="color:#8f88b8; font-size:.72rem;">QR review page</div>
+                        <div style="color:#fff; font-size:.82rem; font-weight:700;">{{ __('auth.card_scan_to_review') }}</div>
+                        <div style="color:#8f88b8; font-size:.72rem;">{{ __('auth.card_qr_page') }}</div>
                     </div>
                 </div>
 
@@ -136,15 +141,15 @@
                 <div style="position:absolute; right:0; bottom:0; width:17rem; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); border-radius:1rem; padding:.9rem 1rem; backdrop-filter:blur(8px); transform:rotate(-1deg); box-shadow:0 18px 44px rgba(0,0,0,.35);">
                     <div style="display:flex; align-items:center; gap:.45rem;">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#a08cff" style="width:.95rem; height:.95rem;"><path fill-rule="evenodd" d="M9 4.5a.75.75 0 0 1 .721.544l.813 2.846a3.75 3.75 0 0 0 2.576 2.576l2.846.813a.75.75 0 0 1 0 1.442l-2.846.813a3.75 3.75 0 0 0-2.576 2.576l-.813 2.846a.75.75 0 0 1-1.442 0l-.813-2.846a3.75 3.75 0 0 0-2.576-2.576l-2.846-.813a.75.75 0 0 1 0-1.442l2.846-.813A3.75 3.75 0 0 0 7.466 7.89l.813-2.846A.75.75 0 0 1 9 4.5Z" clip-rule="evenodd"/></svg>
-                        <span style="color:#fff; font-size:.82rem; font-weight:700;">AI Autopilot</span>
+                        <span style="color:#fff; font-size:.82rem; font-weight:700;">{{ __('auth.card_ai_autopilot') }}</span>
                         <span style="margin-left:auto; display:inline-flex; align-items:center; gap:.3rem; color:#34d399; font-size:.72rem; font-weight:700;">
-                            <span style="width:.5rem; height:.5rem; border-radius:999px; background:#34d399; box-shadow:0 0 8px rgba(52,211,153,.8);"></span> on
+                            <span style="width:.5rem; height:.5rem; border-radius:999px; background:#34d399; box-shadow:0 0 8px rgba(52,211,153,.8);"></span> {{ __('auth.card_on') }}
                         </span>
                     </div>
                     <div style="background:rgba(160,140,255,.12); border:1px solid rgba(160,140,255,.25); border-radius:.65rem; padding:.5rem .65rem; margin:.55rem 0 .45rem; color:#d6d2ec; font-size:.74rem; line-height:1.45; font-style:italic;">
-                        “Thanks Anna! So glad Monica made your visit special.”
+                        {{ __('auth.card_ai_reply_text') }}
                     </div>
-                    <div style="color:#8f88b8; font-size:.72rem;">12 AI replies sent this week</div>
+                    <div style="color:#8f88b8; font-size:.72rem;">{{ __('auth.card_ai_replies_week', ['count' => 12]) }}</div>
                 </div>
             </div>
         @endif

@@ -49,4 +49,19 @@ return [
     'terms_step_label' => 'One last thing: our Terms of Service',
     'terms_scroll_hint' => 'Scroll to the end of the Terms to continue.',
     'agree_continue' => 'Agree and continue',
+
+    // Decorative product mockup cards in the marketing hero
+    'card_review_text' => '“Amazing experience! Monica was the best game master we ever had.”',
+    'card_ai_published' => 'AI reply published',
+    'card_reviews_30d' => 'Reviews · 30d',
+    'card_vs' => 'vs :name',
+    'card_lead' => 'You lead by :delta ★',
+    'card_monthly_report' => 'Monthly report',
+    'card_scheduled_monthly' => 'Scheduled monthly',
+    'card_scan_to_review' => 'Scan to review',
+    'card_qr_page' => 'QR review page',
+    'card_ai_autopilot' => 'AI Autopilot',
+    'card_on' => 'on',
+    'card_ai_reply_text' => '“Thanks Anna! So glad Monica made your visit special.”',
+    'card_ai_replies_week' => ':count AI replies sent this week',
 ];

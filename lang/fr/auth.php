@@ -49,4 +49,19 @@ return [
     'terms_step_label' => 'Une dernière chose : nos conditions d’utilisation',
     'terms_scroll_hint' => 'Faites défiler jusqu’à la fin des conditions pour continuer.',
     'agree_continue' => 'Accepter et continuer',
+
+    // Decorative product mockup cards in the marketing hero
+    'card_review_text' => '« Expérience géniale ! Monica a été la meilleure game master qu’on ait eue. »',
+    'card_ai_published' => 'Réponse IA publiée',
+    'card_reviews_30d' => 'Avis · 30 j',
+    'card_vs' => 'vs :name',
+    'card_lead' => 'Vous devancez de :delta ★',
+    'card_monthly_report' => 'Rapport mensuel',
+    'card_scheduled_monthly' => 'Programmé chaque mois',
+    'card_scan_to_review' => 'Scannez pour laisser un avis',
+    'card_qr_page' => 'Page d’avis QR',
+    'card_ai_autopilot' => 'Pilote automatique IA',
+    'card_on' => 'activé',
+    'card_ai_reply_text' => '« Merci Anna ! Ravis que Monica ait rendu votre visite spéciale. »',
+    'card_ai_replies_week' => ':count réponses IA envoyées cette semaine',
 ];

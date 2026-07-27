@@ -49,4 +49,19 @@ return [
     'terms_step_label' => 'أمر أخير: شروط الخدمة الخاصة بنا',
     'terms_scroll_hint' => 'مرّر إلى نهاية الشروط للمتابعة.',
     'agree_continue' => 'الموافقة والمتابعة',
+
+    // Decorative product mockup cards in the marketing hero
+    'card_review_text' => '«تجربة رائعة! كانت مونيكا أفضل مديرة لعبة حظينا بها على الإطلاق.»',
+    'card_ai_published' => 'تم نشر رد الذكاء الاصطناعي',
+    'card_reviews_30d' => 'المراجعات · 30 يومًا',
+    'card_vs' => 'مقابل :name',
+    'card_lead' => 'تتقدم بـ :delta ★',
+    'card_monthly_report' => 'التقرير الشهري',
+    'card_scheduled_monthly' => 'مجدول شهريًا',
+    'card_scan_to_review' => 'امسح للتقييم',
+    'card_qr_page' => 'صفحة تقييم QR',
+    'card_ai_autopilot' => 'الطيار الآلي بالذكاء الاصطناعي',
+    'card_on' => 'مُفعّل',
+    'card_ai_reply_text' => '«شكرًا آنا! يسعدنا أن مونيكا جعلت زيارتك مميزة.»',
+    'card_ai_replies_week' => ':count رد بالذكاء الاصطناعي أُرسلت هذا الأسبوع',
 ];

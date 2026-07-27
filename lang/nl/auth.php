@@ -49,4 +49,19 @@ return [
     'terms_step_label' => 'Nog één ding: onze servicevoorwaarden',
     'terms_scroll_hint' => 'Scroll naar het einde van de voorwaarden om door te gaan.',
     'agree_continue' => 'Akkoord en doorgaan',
+
+    // Decorative product mockup cards in the marketing hero
+    'card_review_text' => '“Geweldige ervaring! Monica was de beste game master die we ooit hadden.”',
+    'card_ai_published' => 'AI-antwoord geplaatst',
+    'card_reviews_30d' => 'Reviews · 30 d',
+    'card_vs' => 'vs :name',
+    'card_lead' => 'Je staat :delta ★ voor',
+    'card_monthly_report' => 'Maandrapport',
+    'card_scheduled_monthly' => 'Maandelijks gepland',
+    'card_scan_to_review' => 'Scan om te reviewen',
+    'card_qr_page' => 'QR-reviewpagina',
+    'card_ai_autopilot' => 'AI-autopilot',
+    'card_on' => 'aan',
+    'card_ai_reply_text' => '“Bedankt Anna! Fijn dat Monica je bezoek bijzonder maakte.”',
+    'card_ai_replies_week' => ':count AI-antwoorden deze week verstuurd',
 ];

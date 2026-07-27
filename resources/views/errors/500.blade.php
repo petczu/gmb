@@ -1,3 +1,4 @@
+@php(\App\Support\Locales::applyForRequest())
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}" dir="{{ \App\Support\Locales::direction(app()->getLocale()) }}">
 <head>

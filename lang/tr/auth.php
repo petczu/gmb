@@ -49,4 +49,19 @@ return [
     'terms_step_label' => 'Son bir şey: Hizmet Şartlarımız',
     'terms_scroll_hint' => 'Devam etmek için Şartların sonuna kadar kaydırın.',
     'agree_continue' => 'Kabul et ve devam et',
+
+    // Decorative product mockup cards in the marketing hero
+    'card_review_text' => '“Harika bir deneyim! Monica gördüğümüz en iyi oyun ustasıydı.”',
+    'card_ai_published' => 'Yapay zeka yanıtı yayınlandı',
+    'card_reviews_30d' => 'Yorumlar · 30 g',
+    'card_vs' => 'vs :name',
+    'card_lead' => ':delta ★ öndesin',
+    'card_monthly_report' => 'Aylık rapor',
+    'card_scheduled_monthly' => 'Her ay planlı',
+    'card_scan_to_review' => 'Değerlendirmek için tarayın',
+    'card_qr_page' => 'QR yorum sayfası',
+    'card_ai_autopilot' => 'Yapay zeka otomatik pilot',
+    'card_on' => 'açık',
+    'card_ai_reply_text' => '“Teşekkürler Anna! Monica’nın ziyaretinizi özel kılmasına sevindik.”',
+    'card_ai_replies_week' => 'Bu hafta :count yapay zeka yanıtı gönderildi',
 ];

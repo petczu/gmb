@@ -49,4 +49,19 @@ return [
     'terms_step_label' => 'Jeszcze jedno: nasz Regulamin',
     'terms_scroll_hint' => 'Przewiń do końca Regulaminu, aby kontynuować.',
     'agree_continue' => 'Akceptuję i kontynuuję',
+
+    // Decorative product mockup cards in the marketing hero
+    'card_review_text' => '„Świetne doświadczenie! Monica była najlepszym mistrzem gry, jakiego mieliśmy.”',
+    'card_ai_published' => 'Odpowiedź AI opublikowana',
+    'card_reviews_30d' => 'Opinie · 30 dni',
+    'card_vs' => 'vs :name',
+    'card_lead' => 'Prowadzisz o :delta ★',
+    'card_monthly_report' => 'Raport miesięczny',
+    'card_scheduled_monthly' => 'Zaplanowany co miesiąc',
+    'card_scan_to_review' => 'Zeskanuj, aby ocenić',
+    'card_qr_page' => 'Strona opinii QR',
+    'card_ai_autopilot' => 'Autopilot AI',
+    'card_on' => 'wł.',
+    'card_ai_reply_text' => '„Dziękujemy, Anna! Cieszymy się, że Monica umiliła Twoją wizytę.”',
+    'card_ai_replies_week' => 'Wysłano :count odpowiedzi AI w tym tygodniu',
 ];
