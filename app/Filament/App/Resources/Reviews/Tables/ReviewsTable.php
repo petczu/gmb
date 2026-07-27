@@ -311,27 +311,6 @@ class ReviewsTable
 
                             ...ReplyComposer::translationComponents('reply_text'),
 
-                            // Client-side guard: keep Submit disabled until the reply
-                            // text differs from the original (handles typing AND AI fills).
-                            Placeholder::make('submit_guard')
-                                ->hiddenLabel()
-                                ->content(new HtmlString(<<<'HTML'
-                                <span x-data x-init="
-                                    const ta = document.querySelector('[data-emoji=reply]');
-                                    if (ta && ta.dataset.orig === undefined) { ta.dataset.orig = (ta.value || '').trim(); }
-                                    const id = setInterval(() => {
-                                        const ta = document.querySelector('[data-emoji=reply]');
-                                        const btn = document.querySelector('[data-reply-submit]');
-                                        if (!ta || !document.body.contains(ta)) { clearInterval(id); return; }
-                                        if (!btn) return;
-                                        const changed = (ta.value || '').trim() !== (ta.dataset.orig || '');
-                                        btn.disabled = !changed;
-                                        btn.style.opacity = changed ? '' : '0.55';
-                                        btn.style.cursor = changed ? '' : 'not-allowed';
-                                    }, 250);
-                                "></span>
-                                HTML)),
-
                             // Custom centered confirm overlays for Submit and Delete
                             // (native Filament modals would close the slide-over).
                             Placeholder::make('reply_confirms')
