@@ -61,7 +61,13 @@ class FakeReviewProvider implements ReviewProvider
             if ($locationExternalId !== null && $r->locationExternalId !== $locationExternalId) {
                 return false;
             }
-            if ($since !== null && $r->createdAtExternal !== null && $r->createdAtExternal->lessThan($since)) {
+            // Match the live provider's update-time semantics: a review counts
+            // as fresh if it was created OR replied to since the cutoff.
+            $updatedAt = $r->repliedAt !== null && ($r->createdAtExternal === null || $r->repliedAt->greaterThan($r->createdAtExternal))
+                ? $r->repliedAt
+                : $r->createdAtExternal;
+
+            if ($since !== null && $updatedAt !== null && $updatedAt->lessThan($since)) {
                 return false;
             }
 

@@ -61,7 +61,9 @@ class ReviewSync
             $stats['locations'] = $locations->count();
 
             foreach ($locations as $location) {
-                $result = $this->syncLocation($workspace, $location, tenancyManaged: false);
+                // Manual "sync now" is the authoritative full refresh (catches
+                // reply deletions the incremental fetch can miss).
+                $result = $this->syncLocation($workspace, $location, tenancyManaged: false, fullRefresh: true);
 
                 $stats['reviews'] += $result['reviews'];
                 $stats['errors'] += $result['error'] ? 1 : 0;
@@ -104,9 +106,16 @@ class ReviewSync
      * restores tenancy itself (the queued per-location job path); when false the
      * caller has already entered the tenant (the syncWorkspace loop).
      *
+     * Fetches incrementally by default: only reviews updated since the last
+     * successful sync (minus an overlap window), so the hourly per-location job
+     * pulls one page instead of the full history. $fullRefresh forces the full
+     * fetch — the manual "sync now" path uses it as the authoritative refresh
+     * (it also picks up reply DELETIONS on old reviews, which an incremental
+     * fetch can miss).
+     *
      * @return array{reviews:int, error:bool, new_count:int, samples:array<int, array<string, mixed>>, new_review_ids:array<int, int>, first_synced:?array{name:string, count:int, rating:?float}}
      */
-    public function syncLocation(Workspace $workspace, Location $location, bool $tenancyManaged = true): array
+    public function syncLocation(Workspace $workspace, Location $location, bool $tenancyManaged = true, bool $fullRefresh = false): array
     {
         $previous = null;
         if ($tenancyManaged) {
@@ -128,8 +137,16 @@ class ReviewSync
             $accountId = $location->zernio_account_id ?: 'fake-account';
             $firstSyncForLocation = $location->last_synced_at === null;
 
+            // One-day overlap: last_synced_at marks the previous run's END, and
+            // provider timestamps come from Google, so a generous cushion
+            // absorbs clock skew and mid-run updates. Overlapped reviews are
+            // simply re-upserted.
+            $since = $fullRefresh || $firstSyncForLocation
+                ? null
+                : $location->last_synced_at->copy()->subDay();
+
             try {
-                $reviews = $provider->listReviews($accountId, $location->external_id);
+                $reviews = $provider->listReviews($accountId, $location->external_id, $since);
             } catch (Throwable $e) {
                 Log::warning('ReviewSync: location reviews failed', [
                     'location' => $location->external_id,

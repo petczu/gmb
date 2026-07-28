@@ -10,6 +10,10 @@ use App\Services\Reviews\ReviewSync;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\MaxAttemptsExceededException;
+use Illuminate\Queue\TimeoutExceededException;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * Syncs ONE location's reviews. The workspace-level jobs fan these out (one per
@@ -98,6 +102,39 @@ class SyncLocationReviewsJob implements ShouldBeUnique, ShouldQueue
         // Notifications run with the central context restored.
         if ($location !== null && $result !== null) {
             $sync->notifyLocationResult($workspace, $location, $result);
+        }
+    }
+
+    /**
+     * Final failure (all tries exhausted, timeout kill, …). handle() records
+     * provider errors itself, but a timeout death leaves no trace on the model
+     * — flag the location so the UI shows the sync is failing, and translate
+     * the queue-internal exceptions into something a human can read.
+     */
+    public function failed(?Throwable $exception): void
+    {
+        $workspace = Workspace::find($this->workspaceId);
+
+        if ($workspace === null) {
+            return;
+        }
+
+        $message = match (true) {
+            $exception instanceof MaxAttemptsExceededException,
+            $exception instanceof TimeoutExceededException => 'Review sync timed out repeatedly; it will retry on the next scheduled sync.',
+            $exception !== null => $exception->getMessage(),
+            default => 'Review sync failed.',
+        };
+
+        $previous = tenant();
+        tenancy()->initialize($workspace);
+
+        try {
+            Location::query()
+                ->whereKey($this->locationId)
+                ->update(['last_sync_error' => Str::limit($message, 500)]);
+        } finally {
+            $previous instanceof Workspace ? tenancy()->initialize($previous) : tenancy()->end();
         }
     }
 }

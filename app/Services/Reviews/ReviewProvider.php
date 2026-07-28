@@ -22,8 +22,10 @@ interface ReviewProvider
     public function listLocations(string $accountId): array;
 
     /**
-     * Reviews for an account, optionally filtered to one location and to those
-     * created/updated since a given time.
+     * Reviews for an account, optionally filtered to one location. When $since
+     * is given, only reviews created OR updated (edited, replied to) since that
+     * time are returned, and the provider may stop paginating once it reaches
+     * older entries — so pass null whenever a full refresh is required.
      *
      * @return ReviewData[]
      */

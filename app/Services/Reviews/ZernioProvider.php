@@ -46,6 +46,16 @@ class ZernioProvider implements ReviewProvider
     }
 
     /**
+     * Hard wall-clock ceiling (seconds) for ONE request including all its
+     * in-process retry waits. Without it, a 429/5xx storm makes the retries
+     * silently eat the queued job's $timeout: the worker kills the job with no
+     * exception, the attempt is burned unreported, and after $tries such kills
+     * the job dies as MaxAttemptsExceededException. Rethrowing instead hands
+     * the wait to the job's own $backoff, which is visible and far longer.
+     */
+    private const RETRY_BUDGET_SECONDS = 90;
+
+    /**
      * Run a Zernio request, waiting out transient failures. Two cases:
      * - 429 rate limits (per API key, per-second window on analytics
      *   endpoints): wait until X-RateLimit-Reset (capped, fallback:
@@ -53,17 +63,19 @@ class ZernioProvider implements ReviewProvider
      * - 5xx: Zernio proxies Google, and its upstream calls regularly time out
      *   ("connection timed out" as a 500); a short backoff and retry usually
      *   succeeds, and beats burning one of the queued job's own attempts.
-     * Retries are bounded; the sync runs in a queued job, so blocking here
-     * simply spreads the calls out.
+     * Retries are bounded in count AND wall-clock time ($budgetSeconds): once
+     * the next wait would pass the budget, the error is rethrown so the queued
+     * job fails visibly and retries via its own backoff.
      *
      * @template T
      *
      * @param  callable(): T  $request
      * @return T
      */
-    private function withRateLimitRetry(callable $request): mixed
+    private function withRateLimitRetry(callable $request, ?float $budgetSeconds = null): mixed
     {
         $attempts = 0;
+        $deadline = microtime(true) + ($budgetSeconds ?? self::RETRY_BUDGET_SECONDS);
 
         while (true) {
             try {
@@ -84,6 +96,10 @@ class ZernioProvider implements ReviewProvider
                     $wait = $reset > 0 ? max(1, min(30, $reset - time())) : min(30, 2 ** $attempts);
                 } else {
                     $wait = min(30, 3 * $attempts); // 3s, 6s, 9s, 12s
+                }
+
+                if (microtime(true) + $wait > $deadline) {
+                    throw $e;
                 }
 
                 sleep($wait);
@@ -115,13 +131,20 @@ class ZernioProvider implements ReviewProvider
                 fn () => $this->reviews->getGoogleBusinessReviews($accountId, $locationExternalId, 50, $pageToken),
             );
             $locId = (string) ($response->getLocationId() ?? $locationExternalId ?? '');
+            $pageHasFresh = false;
 
             foreach ($response->getReviews() ?? [] as $r) {
                 $createdAt = $r->getCreateTime() ? Carbon::instance($r->getCreateTime()) : null;
 
-                if ($since !== null && $createdAt !== null && $createdAt->lessThan($since)) {
+                // Cut off by UPDATE time, not create time: an old review whose
+                // reply or text just changed carries a fresh updateTime and
+                // must be re-synced.
+                $updatedAt = $r->getUpdateTime() ? Carbon::instance($r->getUpdateTime()) : $createdAt;
+
+                if ($since !== null && $updatedAt !== null && $updatedAt->lessThan($since)) {
                     continue;
                 }
+                $pageHasFresh = true;
 
                 $reply = $r->getReviewReply();
                 $photos = array_values(array_filter(array_map(
@@ -145,6 +168,13 @@ class ZernioProvider implements ReviewProvider
             }
 
             $pageToken = $response->getNextPageToken();
+
+            // Google (which Zernio proxies) returns reviews newest-updated
+            // first, so once a whole page falls before $since every later page
+            // does too — stop paginating instead of walking the full history.
+            if ($since !== null && ! $pageHasFresh) {
+                break;
+            }
         } while (! empty($pageToken));
 
         return $out;
