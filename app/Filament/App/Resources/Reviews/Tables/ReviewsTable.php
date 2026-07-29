@@ -20,6 +20,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Enums\Width;
+use Filament\Support\Facades\FilamentTimezone;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -134,10 +135,13 @@ class ReviewsTable
                     })
                     // Hover a replied status → when the reply went out; a failed
                     // one → the error; a scheduled one → when it will post.
+                    // Times pass through FilamentTimezone: a raw ->format()
+                    // would print UTC while the date column shows the user's
+                    // timezone, making replies look older than their reviews.
                     ->tooltip(function (Review $record): ?string {
                         if ($record->reply_text) {
                             return $record->replied_at !== null
-                                ? __('resources/reviews.replied_at', ['datetime' => $record->replied_at->format('D, M j, Y · H:i')])
+                                ? __('resources/reviews.replied_at', ['datetime' => $record->replied_at->timezone(FilamentTimezone::get())->format('D, M j, Y · H:i')])
                                 : null;
                         }
                         $item = $record->latestQueueItem;
@@ -145,7 +149,7 @@ class ReviewsTable
                             return $item->error;
                         }
                         if ($item?->status === 'scheduled' && $item->post_at !== null) {
-                            return __('resources/reviews.scheduled_for', ['datetime' => $item->post_at->format('D, M j, Y · H:i')]);
+                            return __('resources/reviews.scheduled_for', ['datetime' => $item->post_at->timezone(FilamentTimezone::get())->format('D, M j, Y · H:i')]);
                         }
 
                         return null;
