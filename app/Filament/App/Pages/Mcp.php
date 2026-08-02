@@ -66,6 +66,25 @@ class Mcp extends Page implements HasForms
         return app(LocationBilling::class)->allows($this->workspace(), Plans::MCP);
     }
 
+    /**
+     * True when the signed-in user could connect more than one Pro workspace,
+     * so the consent screen will offer a choice worth explaining here.
+     */
+    public function hasMultipleProWorkspaces(): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        $billing = app(LocationBilling::class);
+
+        return $user->workspaces()->get()
+            ->filter(fn (Workspace $workspace): bool => $billing->allows($workspace, Plans::MCP))
+            ->count() > 1;
+    }
+
     /** The MCP endpoint the user pastes into their AI client. */
     public function endpoint(): string
     {

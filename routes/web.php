@@ -3,6 +3,7 @@
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DocsController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\McpAuthorizationController;
 use App\Http\Controllers\PostmarkWebhookController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewPageController;
@@ -43,6 +44,13 @@ Route::post('postmark/webhook/{secret}', [PostmarkWebhookController::class, 'han
 // body is HMAC-SHA256 verified in the controller. No CSRF (see bootstrap/app.php).
 Route::post('zernio/webhook', [ZernioWebhookController::class, 'handle'])
     ->name('zernio.webhook');
+
+// MCP OAuth consent: our approve endpoint replaces Passport's so the user's
+// workspace choice on the consent screen is bound to the connection. The deny
+// button still posts to Passport. Mirrors passport's ['web','auth'] middleware.
+Route::post('oauth/authorize/confirm', [McpAuthorizationController::class, 'approve'])
+    ->middleware(['web', 'auth'])
+    ->name('mcp.oauth.approve');
 
 // Performance report preview (iframe) + PDF download. Tenant-scoped.
 Route::middleware(['web', 'auth', SetCurrentWorkspace::class])

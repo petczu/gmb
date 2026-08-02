@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Billing\Plans;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Listeners\GrantCreditPack;
 use App\Listeners\SendBillingEmails;
@@ -9,11 +10,13 @@ use App\Livewire\ScopedDatabaseNotifications;
 use App\Models\CashierSubscription;
 use App\Models\CashierSubscriptionItem;
 use App\Models\EmailSuppression;
+use App\Models\McpWorkspaceSelection;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Ai\ClaudeReplyGenerator;
 use App\Services\Ai\FakeReplyGenerator;
 use App\Services\Ai\ReplyGenerator;
+use App\Services\Billing\LocationBilling;
 use App\Services\Reviews\FakeReviewProvider;
 use App\Services\Reviews\ReviewProvider;
 use App\Services\Reviews\ReviewProviderFactory;
@@ -85,8 +88,29 @@ class AppServiceProvider extends ServiceProvider
             ->setBooleanFormatForQueryString(Configuration::BOOLEAN_FORMAT_STRING);
 
         // MCP OAuth (Passport) consent screen shown to the AI client connecting
-        // over /mcp/{workspace}. Uses the published mcp.authorize view.
-        Passport::authorizationView(fn ($parameters) => view('mcp.authorize', $parameters));
+        // over /mcp. Besides approving access, it lets a user who belongs to
+        // several Pro workspaces pick which one this connection is scoped to;
+        // the choice is bound in McpAuthorizationController and read back by
+        // ResolveMcpWorkspace.
+        Passport::authorizationView(function (array $parameters) {
+            $user = $parameters['user'];
+            $billing = app(LocationBilling::class);
+
+            $workspaces = $user->workspaces()->get()
+                ->filter(fn (Workspace $workspace): bool => $billing->allows($workspace, Plans::MCP))
+                ->values();
+
+            $bound = McpWorkspaceSelection::query()
+                ->where('user_id', $user->getKey())
+                ->where('oauth_client_id', $parameters['client']->getKey())
+                ->value('workspace_id');
+
+            return view('mcp.authorize', [
+                ...$parameters,
+                'workspaces' => $workspaces,
+                'selectedWorkspaceId' => $bound ?? $workspaces->first()?->getKey(),
+            ]);
+        });
 
         // Scope the notifications bell to the active workspace. Overrides
         // Filament's 'database-notifications' alias with our workspace-aware

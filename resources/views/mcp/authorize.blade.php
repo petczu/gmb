@@ -131,6 +131,35 @@
 
         .dot { height: 0.375rem; width: 0.375rem; border-radius: 9999px; background: var(--primary); }
 
+        .workspaces { margin-bottom: 1.25rem; }
+
+        .workspaces .label { font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; }
+
+        .workspace-option {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.625rem 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .workspace-option:last-child { margin-bottom: 0; }
+
+        .workspace-option:hover { background: var(--panel); }
+
+        .workspace-option:has(input:checked) {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+        }
+
+        .workspace-option input { accent-color: var(--primary); flex: none; }
+
+        .workspace-option .name { font-size: 0.875rem; font-weight: 500; }
+
         .actions { display: flex; gap: 0.75rem; }
 
         .actions form { flex: 1; }
@@ -229,6 +258,23 @@
         </div>
     @endif
 
+    @php($workspaces = $workspaces ?? collect())
+    @if($workspaces->count() > 1)
+        {{-- The user belongs to several Pro workspaces: bind this connection to
+             one. Inputs use form="authorizeForm" so they submit with Approve. --}}
+        <div class="workspaces">
+            <p class="label">Workspace:</p>
+            @foreach($workspaces as $workspace)
+                <label class="workspace-option">
+                    <input type="radio" form="authorizeForm" name="workspace_id"
+                           value="{{ $workspace->getKey() }}"
+                           @checked(($selectedWorkspaceId ?? null) === $workspace->getKey())>
+                    <span class="name">{{ $workspace->name }}</span>
+                </label>
+            @endforeach
+        </div>
+    @endif
+
     <div class="actions">
         <form method="POST" action="{{ route('passport.authorizations.deny') }}">
             @csrf
@@ -244,11 +290,14 @@
             </button>
         </form>
 
-        <form method="POST" action="{{ route('passport.authorizations.approve') }}" id="authorizeForm">
+        <form method="POST" action="{{ route('mcp.oauth.approve') }}" id="authorizeForm">
             @csrf
             <input type="hidden" name="state" value="">
             <input type="hidden" name="client_id" value="{{ $client->id }}">
             <input type="hidden" name="auth_token" value="{{ $authToken }}">
+            @if($workspaces->count() === 1)
+                <input type="hidden" name="workspace_id" value="{{ $workspaces->first()->getKey() }}">
+            @endif
             <button type="submit" class="btn-authorize" id="authorizeButton">
                 <span id="authorizeText">Authorize</span>
 

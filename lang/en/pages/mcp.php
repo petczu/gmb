@@ -10,6 +10,7 @@ return [
     'endpoint' => 'Endpoint',
     'docs_link' => 'MCP documentation',
     'connect_help' => 'Paste this URL into your AI client (e.g. the claude.ai custom connector). On first request you will be asked to sign in and authorize access — no token to copy.',
+    'workspace_note' => 'You belong to several Pro workspaces: when authorizing, pick the one this connection should use. To switch it later, reconnect the connector and choose another.',
 
     'write_section' => 'Write access',
     'write_section_desc' => 'By default MCP is read-only. Turning this on lets a connected assistant publish replies to Google on your behalf.',

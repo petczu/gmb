@@ -26,8 +26,16 @@ No token to copy, and no workspace id in the URL. Authentication is OAuth 2.1:
 paste the URL into your client (e.g. claude.ai → Settings → Connectors →
 **Add custom connector**, leave Client ID/Secret empty — the client registers
 itself), and on first use you will be redirected to sign in and approve access.
-Access is tied to your user account; the server works within your Pro workspace
-automatically.
+Access is tied to your user account.
+
+### Choosing a workspace
+
+If you belong to more than one Pro workspace, the approval screen lets you pick
+which workspace this connection should use; the choice is remembered for that
+connector. With a single Pro workspace there is nothing to choose, it is used
+automatically. To point an existing connector at a different workspace,
+reconnect it (remove and re-add the connector, or sign out and back in) and pick
+the other workspace when approving.
 
 ## Tools
 
@@ -49,8 +57,8 @@ posting public replies on your behalf.
 
 ## Notes
 
-- One endpoint for everyone; the server resolves your Pro workspace from your
-  signed-in account.
+- One endpoint for everyone; the server resolves the workspace from your
+  signed-in account (the one you picked when approving, or your only Pro one).
 - Revoking is instant: sign out the connector in your client, or remove the
   user's workspace membership.
 - Requests are rate-limited (60/minute).

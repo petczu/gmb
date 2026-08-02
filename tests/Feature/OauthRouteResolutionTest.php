@@ -20,6 +20,7 @@ class OauthRouteResolutionTest extends TestCase
             ['GET', '/oauth/authorize', 'passport.authorizations.authorize'],
             ['POST', '/oauth/authorize', 'passport.authorizations.approve'],
             ['POST', '/oauth/token', 'passport.token'],
+            ['POST', '/oauth/authorize/confirm', 'mcp.oauth.approve'],
             ['GET', '/oauth/google', 'socialite.filament.app.oauth.redirect'],
             ['GET', '/oauth/linkedin-openid', 'socialite.filament.app.oauth.redirect'],
             ['GET', '/oauth/microsoft', 'socialite.filament.app.oauth.redirect'],
