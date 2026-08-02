@@ -1,33 +1,8 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ \App\Support\Locales::direction(app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ \App\Support\Locales::direction(app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    {{-- Inline script to detect system dark mode preference and apply it immediately --}}
-    <script>
-        (function() {
-            const appearance = '{{ $appearance ?? "system" }}';
-
-            if (appearance === 'system') {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                if (prefersDark) {
-                    document.documentElement.classList.add('dark');
-                }
-            }
-        })();
-    </script>
-
-    <style>
-        html {
-            background-color: oklch(1 0 0);
-        }
-
-        html.dark {
-            background-color: oklch(0.145 0 0);
-        }
-    </style>
 
     <title>Authorize Application - {{ config('app.name', 'MCP Server') }}</title>
 
@@ -36,99 +11,230 @@
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="Authorize MCP" />
-    <link rel="manifest" href="/site.webmanifest" />
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
-    @vite(['resources/css/app.css'])
+    {{-- Self-contained styles: this page renders in a bare OAuth popup, so it
+         must not depend on the app's compiled CSS (whose semantic tokens don't
+         exist here) or on a Vite dev server. --}}
+    <style>
+        :root {
+            --bg: #f4f5f7;
+            --card: #ffffff;
+            --border: #e4e4e7;
+            --text: #18181b;
+            --muted: #6b7280;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-soft: rgba(37, 99, 235, 0.12);
+            --cancel-hover: #f4f4f5;
+            --panel: #f9fafb;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #101014;
+                --card: #1b1b21;
+                --border: #33333c;
+                --text: #f4f4f5;
+                --muted: #a1a1aa;
+                --primary: #3b82f6;
+                --primary-hover: #2563eb;
+                --primary-soft: rgba(59, 130, 246, 0.18);
+                --cancel-hover: #26262e;
+                --panel: #23232b;
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; }
+
+        body {
+            font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 28rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            padding: 1.5rem;
+        }
+
+        .icon-wrap { display: flex; justify-content: center; margin-bottom: 1rem; }
+
+        .icon-wrap svg { height: 3rem; width: 3rem; color: var(--primary); }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 0.875rem;
+            color: var(--muted);
+            text-align: center;
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .panel .label { font-size: 0.875rem; color: var(--muted); margin-bottom: 0.375rem; }
+
+        .panel .value { font-weight: 500; word-break: break-all; }
+
+        .permissions { margin-bottom: 1.25rem; }
+
+        .permissions .label { font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; }
+
+        .permissions ul { list-style: none; padding: 0; }
+
+        .permissions li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .dot-wrap {
+            background: var(--primary-soft);
+            border-radius: 9999px;
+            padding: 0.25rem;
+            margin-top: 0.2rem;
+            display: inline-flex;
+        }
+
+        .dot { height: 0.375rem; width: 0.375rem; border-radius: 9999px; background: var(--primary); }
+
+        .actions { display: flex; gap: 0.75rem; }
+
+        .actions form { flex: 1; }
+
+        button {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            height: 2.5rem;
+            padding: 0 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        button:disabled { opacity: 0.5; pointer-events: none; }
+
+        button svg { height: 1rem; width: 1rem; }
+
+        .btn-cancel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-cancel:hover { background: var(--cancel-hover); }
+
+        .btn-authorize {
+            background: var(--primary);
+            border: 1px solid transparent;
+            color: #ffffff;
+        }
+
+        .btn-authorize:hover { background: var(--primary-hover); }
+
+        .spinner { animation: spin 1s linear infinite; }
+
+        .hidden { display: none; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 </head>
-<body class="font-sans antialiased bg-background text-foreground">
-<div class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md">
-        <!-- Card Container -->
-        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
-            <!-- Header -->
-            <div class="flex flex-col space-y-1.5 p-6">
-                <div class="flex items-center justify-center mb-4">
-                    <!-- Shield Icon -->
-                    <svg class="h-12 w-12 text-primary" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                    </svg>
-                </div>
+<body>
+<div class="card">
+    <div class="icon-wrap">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+        </svg>
+    </div>
 
-                <h3 class="text-2xl font-semibold leading-none tracking-tight text-center">
-                    Authorize {{ $client->name }}
-                </h3>
+    <h1>Authorize {{ $client->name }}</h1>
 
-                <p class="text-sm text-muted-foreground text-center">
-                    This application will be able to:<br/>Use available MCP functionality.
-                </p>
-            </div>
+    <p class="subtitle">This application will be able to:<br/>Use available MCP functionality.</p>
 
-            <!-- Content -->
-            <div class="p-6 pt-0 space-y-4">
-                <!-- User Info -->
-                <div class="rounded-lg border p-4 bg-muted/50">
-                    <p class="text-sm text-muted-foreground mb-2">Logged in as:</p>
-                    <p class="font-medium">{{ $user->email }}</p>
-                </div>
+    <div class="panel">
+        <p class="label">Logged in as:</p>
+        <p class="value">{{ $user->email }}</p>
+    </div>
 
-                <!-- Scopes / Permissions -->
-                @if(count($scopes) > 0)
-                    <div class="space-y-2">
-                        <p class="text-sm font-medium">Permissions:</p>
-
-                        <ul class="space-y-2">
-                            @foreach($scopes as $scope)
-                                <li class="flex items-start gap-2">
-                                    <div class="rounded-full bg-primary/10 p-1 mt-0.5">
-                                        <div class="h-1.5 w-1.5 rounded-full bg-primary"></div>
-                                    </div>
-                                    <span class="text-sm text-muted-foreground">
-                                        {{ $scope->description }}
-                                    </span>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-            </div>
-
-            <!-- Footer With Buttons -->
-            <div class="flex items-center p-6 pt-0 gap-3">
-                <!-- Deny Form -->
-                <form method="POST" action="{{ route('passport.authorizations.deny') }}" class="flex-1">
-                    @csrf
-                    @method('DELETE')
-                    <input type="hidden" name="state" value="">
-                    <input type="hidden" name="client_id" value="{{ $client->id }}">
-                    <input type="hidden" name="auth_token" value="{{ $authToken }}">
-                    <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full">
-                        <svg class="mr-2 h-4 w-4" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        Cancel
-                    </button>
-                </form>
-
-                <!-- Approve Form -->
-                <form method="POST" action="{{ route('passport.authorizations.approve') }}" class="flex-1" id="authorizeForm">
-                    @csrf
-                    <input type="hidden" name="state" value="">
-                    <input type="hidden" name="client_id" value="{{ $client->id }}">
-                    <input type="hidden" name="auth_token" value="{{ $authToken }}">
-                    <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full" id="authorizeButton">
-                        <span id="authorizeText">Authorize</span>
-
-                        <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-4 w-4 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </button>
-                </form>
-            </div>
+    @if(count($scopes) > 0)
+        <div class="permissions">
+            <p class="label">Permissions:</p>
+            <ul>
+                @foreach($scopes as $scope)
+                    <li>
+                        <span class="dot-wrap"><span class="dot"></span></span>
+                        <span>{{ $scope->description }}</span>
+                    </li>
+                @endforeach
+            </ul>
         </div>
+    @endif
+
+    <div class="actions">
+        <form method="POST" action="{{ route('passport.authorizations.deny') }}">
+            @csrf
+            @method('DELETE')
+            <input type="hidden" name="state" value="">
+            <input type="hidden" name="client_id" value="{{ $client->id }}">
+            <input type="hidden" name="auth_token" value="{{ $authToken }}">
+            <button type="submit" class="btn-cancel">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Cancel
+            </button>
+        </form>
+
+        <form method="POST" action="{{ route('passport.authorizations.approve') }}" id="authorizeForm">
+            @csrf
+            <input type="hidden" name="state" value="">
+            <input type="hidden" name="client_id" value="{{ $client->id }}">
+            <input type="hidden" name="auth_token" value="{{ $authToken }}">
+            <button type="submit" class="btn-authorize" id="authorizeButton">
+                <span id="authorizeText">Authorize</span>
+
+                <svg id="loadingSpinner" class="spinner hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle style="opacity: 0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path style="opacity: 0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </form>
     </div>
 </div>
 
