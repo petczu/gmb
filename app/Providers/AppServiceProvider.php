@@ -27,6 +27,7 @@ use Filament\View\PanelsRenderHook;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
@@ -44,6 +45,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // The Socialite login route (/oauth/{provider}) registers before
+        // Passport's /oauth/authorize and would swallow it, breaking the MCP
+        // OAuth flow (ProviderNotConfigured "authorize"). Constrain {provider}
+        // to the social providers so Passport routes match again. Must run in
+        // register(): patterns only apply to routes registered afterwards, and
+        // package routes load before this provider's boot().
+        Route::pattern('provider', 'google|linkedin-openid|microsoft');
+
         $this->app->singleton(ReviewProviderFactory::class);
 
         // Default (token-less) resolution for generic injection. Per-workspace
