@@ -140,16 +140,20 @@ class CompetitorGrowthChart extends ChartWidget
             $ownLines[] = ['label' => (string) $locationName, 'ids' => [(int) $locationId]];
         }
 
+        // All own lines from ONE reviews query (per-line growthSeries calls
+        // were an N+1 under the dashboard's poll refresh).
+        $ownSeries = $trends->ownSeriesForLines(
+            array_map(fn (array $line): array => $line['ids'], $ownLines),
+            $period->start,
+            $period->end,
+            $mode,
+        );
+
         $singleOwn = count($ownLines) === 1;
         $datasets = [];
         $y = 0;
-        foreach ($ownLines as $line) {
-            $datasets[] = $this->ownDataset(
-                $line['label'],
-                $trends->growthSeries([], $line['ids'], $period->start, $period->end, $mode)['own'],
-                $y++,
-                $singleOwn,
-            );
+        foreach ($ownLines as $index => $line) {
+            $datasets[] = $this->ownDataset($line['label'], $ownSeries[$index] ?? [], $y++, $singleOwn);
         }
 
         // Competitor side: a named battle is a group — its member places sum

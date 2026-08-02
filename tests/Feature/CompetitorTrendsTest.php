@@ -133,6 +133,60 @@ class CompetitorTrendsTest extends TestCase
         $this->assertSame(1300, PlaceSnapshot::sole()->reviews_count);
     }
 
+    public function test_own_series_for_lines_matches_per_line_growth_series(): void
+    {
+        DB::table('reviews')->insert([
+            ['location_id' => 1, 'rating' => 5, 'created_at_external' => '2026-06-10 10:00:00'], // before window
+            ['location_id' => 1, 'rating' => 4, 'created_at_external' => '2026-07-01 10:00:00'],
+            ['location_id' => 2, 'rating' => 5, 'created_at_external' => '2026-07-02 10:00:00'],
+            ['location_id' => 3, 'rating' => 5, 'created_at_external' => '2026-07-03 10:00:00'],
+        ]);
+
+        $start = CarbonImmutable::parse('2026-06-28');
+        $end = CarbonImmutable::parse('2026-07-05');
+        $trends = app(CompetitorTrends::class);
+
+        foreach (['growth', 'total'] as $mode) {
+            $batched = $trends->ownSeriesForLines([[1, 2], [3]], $start, $end, $mode);
+
+            $this->assertSame($trends->growthSeries([], [1, 2], $start, $end, $mode)['own'], $batched[0], $mode);
+            $this->assertSame($trends->growthSeries([], [3], $start, $end, $mode)['own'], $batched[1], $mode);
+        }
+    }
+
+    public function test_own_series_for_lines_batches_all_lines_into_one_reviews_query(): void
+    {
+        DB::table('reviews')->insert([
+            ['location_id' => 1, 'rating' => 5, 'created_at_external' => '2026-07-01 10:00:00'],
+            ['location_id' => 2, 'rating' => 4, 'created_at_external' => '2026-07-02 10:00:00'],
+            ['location_id' => 3, 'rating' => 5, 'created_at_external' => '2026-07-03 10:00:00'],
+        ]);
+
+        $start = CarbonImmutable::parse('2026-06-28');
+        $end = CarbonImmutable::parse('2026-07-05');
+
+        DB::enableQueryLog();
+        app(CompetitorTrends::class)->ownSeriesForLines([[1], [2], [3]], $start, $end, 'growth');
+
+        $this->assertCount(1, DB::getQueryLog());
+    }
+
+    public function test_growth_series_skips_place_queries_for_an_empty_place_list(): void
+    {
+        // The own-only call must not touch the central place tables at all
+        // (it used to fire three "WHERE 0 = 1" queries per invocation).
+        DB::connection('mysql')->enableQueryLog();
+
+        app(CompetitorTrends::class)->growthSeries(
+            [],
+            [1],
+            CarbonImmutable::parse('2026-06-28'),
+            CarbonImmutable::parse('2026-07-05'),
+        );
+
+        $this->assertSame([], DB::connection('mysql')->getQueryLog());
+    }
+
     public function test_own_new_reviews_counts_the_window_exactly(): void
     {
         DB::table('reviews')->insert([

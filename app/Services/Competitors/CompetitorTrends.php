@@ -231,23 +231,9 @@ class CompetitorTrends
     {
         $total = $mode === 'total';
         $end = $end->min(CarbonImmutable::today()->endOfDay());
-        $days = [];
-        for ($d = $start->startOfDay(); $d->lte($end); $d = $d->addDay()) {
-            $days[] = $d;
-        }
+        $days = $this->chartDays($start, $end);
         if ($days === []) {
             return ['labels' => [], 'own' => [], 'places' => []];
-        }
-
-        // Thin long windows so the chart stays readable (~90 points max).
-        $step = (int) max(1, ceil(count($days) / 90));
-        if ($step > 1) {
-            $lastIndex = count($days) - 1;
-            $days = array_values(array_filter(
-                $days,
-                fn ($d, $i): bool => $i % $step === 0 || $i === $lastIndex,
-                ARRAY_FILTER_USE_BOTH,
-            ));
         }
 
         $labels = array_map(fn (CarbonImmutable $d): string => $d->format('M j'), $days);
@@ -290,7 +276,7 @@ class CompetitorTrends
         // only exist since we started collecting. Snapshots are the fallback
         // for places that have no backfilled reviews yet.
         // Cover the whole last chart day ($end may be its midnight).
-        $reviewStamps = PlaceReview::query()
+        $reviewStamps = $placeIds === [] ? collect() : PlaceReview::query()
             ->whereIn('place_id', $placeIds)
             ->whereNotNull('reviewed_at')
             ->where('reviewed_at', '<=', $end->endOfDay())
@@ -301,7 +287,7 @@ class CompetitorTrends
         // True current totals (absolute) from the latest snapshot per place —
         // used to lift the captured-review cumulative up to the real level in
         // Total mode (the backfill only holds the newest ~4490 reviews).
-        $latestTotals = PlaceSnapshot::query()
+        $latestTotals = $placeIds === [] ? [] : PlaceSnapshot::query()
             ->whereIn('place_id', $placeIds)
             ->where('day', '<=', $end)
             ->orderBy('day')
@@ -310,7 +296,7 @@ class CompetitorTrends
             ->map(fn (Collection $rows): int => (int) $rows->last()->reviews_count)
             ->all();
 
-        $snapshots = PlaceSnapshot::query()
+        $snapshots = $placeIds === [] ? collect() : PlaceSnapshot::query()
             ->whereIn('place_id', $placeIds)
             ->where('day', '<=', $end)
             ->orderBy('day')
@@ -358,6 +344,102 @@ class CompetitorTrends
         $places = array_map(fn (array $series): array => $this->hideLeadingZeros($series), $places);
 
         return ['labels' => $labels, 'own' => $own, 'places' => $places];
+    }
+
+    /**
+     * Own-side chart lines for SEVERAL groups of locations at once, from a
+     * single reviews query (calling growthSeries once per line fired one
+     * reviews query plus three empty-set place queries per line — the
+     * dashboard's competitor-chart N+1). Semantics per line match
+     * growthSeries()'s own series exactly.
+     *
+     * @param  array<int, list<int>>  $lines  index => member location ids
+     * @return array<int, list<int|null>> index => series, same order as $lines
+     */
+    public function ownSeriesForLines(array $lines, CarbonImmutable $start, CarbonImmutable $end, string $mode = 'growth'): array
+    {
+        $total = $mode === 'total';
+        $end = $end->min(CarbonImmutable::today()->endOfDay());
+        $days = $this->chartDays($start, $end);
+
+        $lines = array_map(fn (array $ids): array => array_values(array_filter(array_map('intval', $ids))), $lines);
+        $allIds = array_values(array_unique(array_merge([], ...$lines)));
+
+        if ($days === [] || $allIds === []) {
+            return array_map(fn (): array => [], $lines);
+        }
+
+        /** @var array<int, array<string, int>> $perDay location id => [day => new reviews] */
+        $perDay = [];
+        foreach (Review::query()
+            ->whereIn('location_id', $allIds)
+            ->whereBetween('created_at_external', [$start, $end])
+            ->get(['location_id', 'created_at_external']) as $review) {
+            $day = optional($review->created_at_external)->format('Y-m-d') ?? '';
+            $perDay[(int) $review->location_id][$day] = ($perDay[(int) $review->location_id][$day] ?? 0) + 1;
+        }
+
+        // Total mode: per-location counts already on the books before the
+        // window, so each line starts at its real level.
+        $baselines = $total ? Review::query()
+            ->whereIn('location_id', $allIds)
+            ->where('created_at_external', '<', $start)
+            ->groupBy('location_id')
+            ->selectRaw('`location_id`, count(*) as `aggregate`')
+            ->pluck('aggregate', 'location_id')
+            ->all() : [];
+
+        $series = [];
+        foreach ($lines as $index => $ids) {
+            $running = 0;
+            foreach ($ids as $id) {
+                $running += (int) ($baselines[$id] ?? 0);
+            }
+
+            $line = [];
+            $cursor = $start->startOfDay();
+            foreach ($days as $day) {
+                // Sum every real day up to this (possibly thinned) point.
+                while ($cursor->lte($day)) {
+                    $key = $cursor->format('Y-m-d');
+                    foreach ($ids as $id) {
+                        $running += (int) ($perDay[$id][$key] ?? 0);
+                    }
+                    $cursor = $cursor->addDay();
+                }
+                $line[] = $running;
+            }
+
+            $series[$index] = $this->hideLeadingZeros($line);
+        }
+
+        return $series;
+    }
+
+    /**
+     * The window's charted days, thinned so long windows stay readable
+     * (~90 points max); the last real day always survives the thinning.
+     *
+     * @return list<CarbonImmutable>
+     */
+    private function chartDays(CarbonImmutable $start, CarbonImmutable $end): array
+    {
+        $days = [];
+        for ($d = $start->startOfDay(); $d->lte($end); $d = $d->addDay()) {
+            $days[] = $d;
+        }
+
+        $step = (int) max(1, ceil(count($days) / 90));
+        if ($step > 1) {
+            $lastIndex = count($days) - 1;
+            $days = array_values(array_filter(
+                $days,
+                fn ($d, $i): bool => $i % $step === 0 || $i === $lastIndex,
+                ARRAY_FILTER_USE_BOTH,
+            ));
+        }
+
+        return $days;
     }
 
     /**
