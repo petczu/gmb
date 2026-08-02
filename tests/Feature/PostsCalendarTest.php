@@ -114,6 +114,8 @@ class PostsCalendarTest extends TestCase
             $table->json('source_ids');
             $table->dateTime('scheduled_at')->nullable();
             $table->string('status', 20);
+            $table->string('origin', 20)->default('app');
+            $table->string('platform_post_id')->nullable();
             $table->json('external_ids')->nullable();
             $table->text('error')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
@@ -296,6 +298,36 @@ class PostsCalendarTest extends TestCase
         $post = Post::query()->sole();
         $this->assertSame('draft', $post->status);
         Http::assertNothingSent();
+    }
+
+    public function test_any_post_can_be_duplicated_as_a_fresh_draft(): void
+    {
+        $location = $this->location();
+
+        $published = Post::create([
+            'type' => 'update',
+            'caption' => 'Original caption',
+            'image_url' => 'https://img.test/photo.jpg',
+            'location_ids' => [$location->id],
+            'source_ids' => [$location->external_id],
+            'status' => 'published',
+            'origin' => 'google',
+        ]);
+
+        Livewire::test(Posts::class)->call('duplicateAsDraft', $published->id);
+
+        $draft = Post::query()->whereKeyNot($published->id)->sole();
+        $this->assertSame('draft', $draft->status);
+        $this->assertSame('app', $draft->origin);
+        $this->assertSame('Original caption', $draft->caption);
+        $this->assertSame([$location->id], $draft->location_ids);
+        // The copy hasn't been sent anywhere yet (source_ids is NOT NULL,
+        // so omitting it crashed the insert — REPUNIO-9).
+        $this->assertSame([], $draft->source_ids);
+
+        // Duplicating a missing post is a no-op.
+        Livewire::test(Posts::class)->call('duplicateAsDraft', 99999);
+        $this->assertSame(2, Post::query()->count());
     }
 
     public function test_a_draft_can_be_published_later(): void
