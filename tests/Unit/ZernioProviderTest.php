@@ -127,6 +127,23 @@ class ZernioProviderTest extends TestCase
         $this->assertSame(2, $calls);
     }
 
+    public function test_connection_timeout_is_retried_within_the_budget(): void
+    {
+        $calls = 0;
+
+        // Guzzle ConnectException reaches us as ApiException code 0.
+        $result = $this->invokeRetry($this->provider(), function () use (&$calls): string {
+            if ($calls++ === 0) {
+                throw new ApiException('cURL error 28: Operation timed out after 30002 milliseconds', 0);
+            }
+
+            return 'ok';
+        });
+
+        $this->assertSame('ok', $result);
+        $this->assertSame(2, $calls);
+    }
+
     public function test_list_reviews_stops_paginating_once_a_page_is_older_than_since(): void
     {
         $api = Mockery::mock(GMBReviewsApi::class);

@@ -82,7 +82,11 @@ class ZernioProvider implements ReviewProvider
                 return $request();
             } catch (ApiException $e) {
                 $code = $e->getCode();
-                $retryable = $code === 429 || ($code >= 500 && $code < 600);
+                // Connection timeouts / transport errors surface as code 0
+                // (Guzzle ConnectException) — retry those too, not just HTTP
+                // 429/5xx. Zernio times out under load and a couple of retries
+                // usually clear it (Sentry REPUNIO-G).
+                $retryable = $code === 429 || ($code >= 500 && $code < 600) || self::isTransportError($e);
 
                 if (! $retryable || $attempts >= 4) {
                     throw $e;
@@ -105,6 +109,24 @@ class ZernioProvider implements ReviewProvider
                 sleep($wait);
             }
         }
+    }
+
+    /**
+     * Whether an ApiException is a network transport failure (timeout, DNS,
+     * connection drop) rather than an HTTP response. These carry code 0 from
+     * the SDK, so they are matched by message.
+     */
+    private static function isTransportError(ApiException $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        foreach (['timed out', 'timeout', 'curl error 28', 'could not resolve host', 'connection refused', 'connection reset', 'failed to connect'] as $needle) {
+            if (str_contains($message, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function listLocations(string $accountId): array

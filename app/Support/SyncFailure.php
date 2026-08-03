@@ -27,12 +27,20 @@ class SyncFailure
         };
     }
 
-    /** Expected/transient errors we don't page Sentry about (e.g. a freshly
-     *  connected location Zernio is still backfilling). */
+    /** Expected/transient errors we don't page Sentry about: a freshly
+     *  connected location Zernio is still backfilling (404), or an upstream
+     *  network hiccup (timeout / dropped connection — Sentry REPUNIO-G). The
+     *  reason is still surfaced to the user via last_sync_error. */
     public static function isTransient(Throwable|string $error): bool
     {
         $raw = strtolower($error instanceof Throwable ? $error->getMessage() : $error);
 
-        return str_contains($raw, '404') || str_contains($raw, 'not found');
+        foreach (['404', 'not found', 'timed out', 'timeout', 'curl error 28', 'could not resolve host', 'connection refused', 'connection reset', 'failed to connect'] as $needle) {
+            if (str_contains($raw, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
