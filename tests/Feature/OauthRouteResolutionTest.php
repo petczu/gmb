@@ -37,4 +37,12 @@ class OauthRouteResolutionTest extends TestCase
             );
         }
     }
+
+    public function test_social_callback_without_state_redirects_to_login_instead_of_500(): void
+    {
+        // Crawlers hit /oauth/callback/google with no encrypted `state`, which
+        // FilamentSocialite cannot decode (Sentry REPUNIO-5). It must not 500.
+        $this->get('/oauth/callback/google')
+            ->assertRedirect(route('filament.app.auth.login'));
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ServeReviewPageDomain;
+use DutchCodingCompany\FilamentSocialite\Exceptions\InvalidCallbackPayload;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -59,5 +60,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // package can attach the WWW-Authenticate header that bootstraps OAuth.
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->is('mcp') || $request->is('mcp/*'),
+        );
+
+        // Crawlers and stale/tampered links hit the social-login callback
+        // (/oauth/callback/{provider}) without a valid encrypted `state`, so
+        // FilamentSocialite can't decode the panel and throws. That is not a
+        // bug: send them to the login page and keep it out of Sentry
+        // (REPUNIO-5).
+        $exceptions->dontReport(InvalidCallbackPayload::class);
+        $exceptions->render(
+            fn (InvalidCallbackPayload $e) => redirect()->route('filament.app.auth.login'),
         );
     })->create();
