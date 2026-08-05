@@ -216,7 +216,7 @@ return [
     'share_generate' => 'Generar',
     'share_from' => 'Disponible desde',
     'share_until' => 'Disponible hasta',
-    'share_revoke' => 'Revocar enlace',
+    'share_revoke' => 'Revocar',
     'share_revoked' => 'Enlace revocado',
     'share_saved' => 'Configuración guardada',
     'duplicate_to_heading' => 'Duplicar publicación',

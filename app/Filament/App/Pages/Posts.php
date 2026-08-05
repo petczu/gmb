@@ -24,7 +24,6 @@ use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
@@ -1342,13 +1341,14 @@ class Posts extends Page implements HasTable
             ->modalDescription(__('pages/posts.share_desc'))
             ->modalWidth(Width::Medium)
             ->modalSubmitActionLabel(__('pages/posts.share_save'))
+            ->modalCancelActionLabel(__('pages/posts.close'))
             // Get-or-create as the modal opens so the link shows right away.
             ->fillForm(function (): array {
                 $share = $this->ensurePostShare();
 
                 return [
-                    'access_from' => $share?->access_from?->toDateString(),
-                    'access_until' => $share?->access_until?->toDateString(),
+                    'access_from' => $share?->access_from?->format('Y-m-d H:i'),
+                    'access_until' => $share?->access_until?->format('Y-m-d H:i'),
                 ];
             })
             ->schema(fn (): array => [
@@ -1385,8 +1385,8 @@ class Posts extends Page implements HasTable
                     ),
 
                 Grid::make(2)->schema([
-                    DatePicker::make('access_from')->label(__('pages/posts.share_from')),
-                    DatePicker::make('access_until')->label(__('pages/posts.share_until'))->afterOrEqual('access_from'),
+                    DateTimePicker::make('access_from')->label(__('pages/posts.share_from'))->seconds(false),
+                    DateTimePicker::make('access_until')->label(__('pages/posts.share_until'))->seconds(false)->afterOrEqual('access_from'),
                 ]),
             ])
             ->extraModalFooterActions(fn (): array => [

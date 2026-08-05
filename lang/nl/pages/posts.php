@@ -216,7 +216,7 @@ return [
     'share_generate' => 'Genereren',
     'share_from' => 'Beschikbaar vanaf',
     'share_until' => 'Beschikbaar tot',
-    'share_revoke' => 'Link intrekken',
+    'share_revoke' => 'Intrekken',
     'share_revoked' => 'Deellink ingetrokken',
     'share_saved' => 'Instellingen opgeslagen',
     'duplicate_to_heading' => 'Post dupliceren',

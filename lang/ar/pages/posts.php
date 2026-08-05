@@ -216,7 +216,7 @@ return [
     'share_generate' => 'إنشاء',
     'share_from' => 'متاح من',
     'share_until' => 'متاح حتى',
-    'share_revoke' => 'إلغاء الرابط',
+    'share_revoke' => 'إلغاء',
     'share_revoked' => 'تم إلغاء رابط المشاركة',
     'share_saved' => 'تم حفظ إعدادات المشاركة',
     'duplicate_to_heading' => 'تكرار المنشور',

@@ -28,22 +28,22 @@ class PostShare extends Model
     ];
 
     protected $casts = [
-        'access_from' => 'date',
-        'access_until' => 'date',
+        'access_from' => 'datetime',
+        'access_until' => 'datetime',
     ];
 
     protected $hidden = ['password', 'html'];
 
-    /** Whether today falls inside the (optional) access window. */
+    /** Whether right now falls inside the (optional) access window. */
     public function withinWindow(): bool
     {
-        $today = CarbonImmutable::now()->startOfDay();
+        $now = CarbonImmutable::now();
 
-        if ($this->access_from && $today->lt($this->access_from->startOfDay())) {
+        if ($this->access_from && $now->lt($this->access_from)) {
             return false;
         }
 
-        if ($this->access_until && $today->gt($this->access_until->startOfDay())) {
+        if ($this->access_until && $now->gt($this->access_until)) {
             return false;
         }
 

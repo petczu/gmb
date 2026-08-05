@@ -216,7 +216,7 @@ return [
     'share_generate' => '生成',
     'share_from' => '公開開始日',
     'share_until' => '公開終了日',
-    'share_revoke' => 'リンクを無効化',
+    'share_revoke' => '無効化',
     'share_revoked' => '共有リンクを無効化しました',
     'share_saved' => '共有設定を保存しました',
     'duplicate_to_heading' => '投稿を複製',

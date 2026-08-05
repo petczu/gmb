@@ -216,7 +216,7 @@ return [
     'share_generate' => 'Oluştur',
     'share_from' => 'Şu tarihten itibaren',
     'share_until' => 'Şu tarihe kadar',
-    'share_revoke' => 'Bağlantıyı iptal et',
+    'share_revoke' => 'İptal et',
     'share_revoked' => 'Paylaşım bağlantısı iptal edildi',
     'share_saved' => 'Ayarlar kaydedildi',
     'duplicate_to_heading' => 'Gönderiyi çoğalt',
