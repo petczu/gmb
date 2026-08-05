@@ -60,7 +60,9 @@ class PostShareController extends Controller
 
         return response()->view('posts.shared', [
             'share' => $share,
-            'branding' => ReportBranding::for($this->findWorkspace($share->workspace_id)),
+            // Post share pages always carry the Repunio brand; workspace
+            // white-labelling applies to performance reports only.
+            'branding' => ReportBranding::for(null),
             'comments' => $comments,
             // Comments stay hidden when the workspace can't be reached.
             'canComment' => $comments !== null,
