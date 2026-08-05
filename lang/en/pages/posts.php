@@ -40,6 +40,7 @@ return [
     'label_name' => 'Label name',
     'label_color' => 'Color',
     'labels_none' => 'No labels yet',
+    'labels_assign' => 'Labels',
     'labels_manage' => 'Labels',
     'labels_manage_hint' => 'Create and manage labels with the "Labels" button above.',
     'labels_add' => 'Add label',

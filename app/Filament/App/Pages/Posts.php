@@ -109,9 +109,35 @@ class Posts extends Page implements HasTable
                         ->color('gray'),
                 ])
                 ->action(fn (array $data, array $arguments) => $this->publish($data, draft: (bool) ($arguments['draft'] ?? false))),
-
-            $this->manageLabelsAction(),
         ];
+    }
+
+    /** Assign labels to the currently-viewed post (a top-level dialog, so it's
+     *  not a form field inside the composer). Mounted from the post dialogs. */
+    public function assignLabelsAction(): Action
+    {
+        return Action::make('assignLabels')
+            ->modalHeading(__('pages/posts.labels_assign'))
+            ->modalSubmitActionLabel(__('common.save'))
+            ->modalWidth(Width::Medium)
+            ->fillForm(fn (): array => ['label_ids' => Post::find($this->viewingPostId)?->label_ids ?? []])
+            ->schema([
+                Select::make('label_ids')
+                    ->hiddenLabel()
+                    ->multiple()
+                    ->options(fn (): array => PostLabel::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->placeholder(__('pages/posts.labels_none'))
+                    ->helperText(__('pages/posts.labels_manage_hint')),
+            ])
+            ->action(function (array $data): void {
+                $post = Post::find($this->viewingPostId);
+                if ($post === null) {
+                    return;
+                }
+
+                $post->forceFill(['label_ids' => array_values(array_map('intval', $data['label_ids'] ?? []))])->save();
+                Notification::make()->title(__('pages/posts.labels_saved'))->success()->send();
+            });
     }
 
     /** Top-level label manager: create, rename, recolor and delete the
@@ -712,6 +738,11 @@ class Posts extends Page implements HasTable
                         ->icon(Heroicon::OutlinedPencilSquare)
                         ->action(fn () => $this->revertToDraftAndEdit())
                     : null,
+                Action::make('assignLabels')
+                    ->label(__('pages/posts.labels_assign'))
+                    ->icon(Heroicon::OutlinedTag)
+                    ->color('gray')
+                    ->action(fn () => $this->replaceMountedAction('assignLabels')),
                 Action::make('duplicateDraft')
                     ->label(__('pages/posts.duplicate_draft'))
                     ->icon(Heroicon::OutlinedDocumentDuplicate)
@@ -844,6 +875,11 @@ class Posts extends Page implements HasTable
                 $action->makeModalSubmitAction('saveDraft', arguments: ['draft' => true])
                     ->label(__('pages/posts.save_draft'))
                     ->color('gray'),
+                Action::make('assignLabels')
+                    ->label(__('pages/posts.labels_assign'))
+                    ->icon(Heroicon::OutlinedTag)
+                    ->color('gray')
+                    ->action(fn () => $this->replaceMountedAction('assignLabels')),
                 Action::make('deleteDraft')
                     ->label(__('pages/posts.draft_delete'))
                     ->icon(Heroicon::OutlinedTrash)
@@ -870,7 +906,6 @@ class Posts extends Page implements HasTable
             'locations' => $post->location_ids ?? [],
             'caption' => $post->caption,
             'media' => $this->imagePathFromUrl($post->video_url ?: $post->image_url),
-            'label_ids' => $post->label_ids ?? [],
             'title' => $post->title,
             'starts_at' => $post->starts_at?->format('Y-m-d H:i'),
             'ends_at' => $post->ends_at?->format('Y-m-d H:i'),
@@ -1165,15 +1200,6 @@ class Posts extends Page implements HasTable
                 ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
                 ->default(fn (): array => Location::query()->pluck('id')->all())
                 ->required(),
-
-            // Colored labels for internal organization (never sent to Google).
-            // Managed via the "Labels" button in the page header.
-            Select::make('label_ids')
-                ->label(__('pages/posts.field_labels'))
-                ->multiple()
-                ->options(fn (): array => PostLabel::query()->orderBy('name')->pluck('name', 'id')->all())
-                ->placeholder(__('pages/posts.labels_none'))
-                ->helperText(__('pages/posts.labels_manage_hint')),
 
             // Offer/Event carry a headline: keep it above the body text, with a
             // counter + hard 58-char cap (Google truncates longer titles).
@@ -1507,7 +1533,8 @@ class Posts extends Page implements HasTable
             'terms_url' => $data['terms_url'] ?? null,
             'location_ids' => $locations->pluck('id')->all(),
             'source_ids' => $locations->pluck('external_id')->all(),
-            'label_ids' => array_values(array_map('intval', $data['label_ids'] ?? [])),
+            // label_ids is managed separately (per-post "Labels" action), so it
+            // is intentionally NOT set here — updates preserve existing labels.
             'scheduled_at' => $data['scheduled_at'] ?? null,
             'status' => $draft ? 'draft' : 'in_progress',
         ];

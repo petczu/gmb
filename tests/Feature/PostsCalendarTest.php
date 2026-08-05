@@ -361,23 +361,25 @@ class PostsCalendarTest extends TestCase
         $this->assertSame(2, PostLabel::count());
     }
 
-    public function test_a_draft_saves_its_assigned_labels(): void
+    public function test_labels_are_assigned_to_a_post_via_the_assign_action(): void
     {
         $location = $this->location();
         $review = PostLabel::create(['name' => 'For review', 'color' => 'yellow']);
         $approved = PostLabel::create(['name' => 'Approved', 'color' => 'green']);
 
-        $component = Livewire::test(Posts::class);
-        $component->callAction('create', [
+        $post = Post::create([
             'type' => 'update',
-            'locations' => [$location->id],
-            'label_ids' => [$review->id, $approved->id],
-            'caption' => 'Tagged post',
-        ], ['draft' => true]);
+            'caption' => 'Post',
+            'location_ids' => [$location->id],
+            'source_ids' => [],
+            'status' => 'draft',
+        ]);
 
-        $post = Post::query()->sole();
-        $this->assertSame('draft', $post->status);
-        $this->assertSame([$review->id, $approved->id], $post->label_ids);
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $post->id);
+        $component->callAction('assignLabels', ['label_ids' => [$review->id, $approved->id]]);
+
+        $this->assertSame([$review->id, $approved->id], $post->refresh()->label_ids);
     }
 
     public function test_a_scheduled_post_can_be_reverted_to_a_draft_for_editing(): void

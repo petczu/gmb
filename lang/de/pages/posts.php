@@ -40,6 +40,7 @@ return [
     'label_name' => 'Label-Name',
     'label_color' => 'Farbe',
     'labels_none' => 'Noch keine Labels',
+    'labels_assign' => 'Labels',
     'labels_manage' => 'Labels',
     'labels_manage_hint' => 'Labels über die Schaltfläche „Labels“ oben anlegen und verwalten.',
     'labels_add' => 'Label hinzufügen',
