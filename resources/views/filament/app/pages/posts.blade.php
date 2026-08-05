@@ -304,8 +304,8 @@
                             @endunless
 
                             <div class="pc-add">
-                                <button type="button" wire:click="addPostOn('{{ $day['date']->format('Y-m-d') }}')">✎ {{ __('pages/posts.add_post') }}</button>
-                                <button type="button" wire:click="addNote('{{ $day['date']->format('Y-m-d') }}')">🗒 {{ __('pages/posts.add_note') }}</button>
+                                <button type="button" wire:click="addPostOn('{{ $day['date']->format('Y-m-d') }}')" style="display:inline-flex; align-items:center; gap:.3rem;">@svg('heroicon-o-pencil-square', ['style' => 'width:.85rem; height:.85rem;']) {{ __('pages/posts.add_post') }}</button>
+                                <button type="button" wire:click="addNote('{{ $day['date']->format('Y-m-d') }}')" style="display:inline-flex; align-items:center; gap:.3rem;">@svg('heroicon-o-document-text', ['style' => 'width:.85rem; height:.85rem;']) {{ __('pages/posts.add_note') }}</button>
                             </div>
 
                             @foreach ($day['events'] as $event)
@@ -398,7 +398,10 @@
                                     @endif
                                     @php $loc = $this->locationLabel($post); @endphp
                                     @if ($loc)
-                                        <span class="loc" style="display:block; margin-top:.15rem; font-size:.7rem; color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📍 {{ $loc }}</span>
+                                        <span class="loc" style="display:flex; align-items:center; gap:.2rem; margin-top:.15rem; font-size:.7rem; color:#6b7280; white-space:nowrap; overflow:hidden;">
+                                            @svg('heroicon-o-map-pin', ['style' => 'width:.75rem; height:.75rem; flex:none;'])
+                                            <span style="overflow:hidden; text-overflow:ellipsis;">{{ $loc }}</span>
+                                        </span>
                                     @endif
                                 </button>
                             @endforeach
