@@ -133,32 +133,41 @@ class AppServiceProvider extends ServiceProvider
             $table->paginated(fn (HasTable $livewire): bool => $livewire->getFilteredTableQuery()->count() > 10);
         });
 
-        // Consistent date/time fields site-wide: the JS picker (never the raw
-        // browser input, which carries its own right-side indicator) with a
-        // single leading calendar/clock icon that opens it (see render hook
-        // below). A per-field ->prefixIcon()/->native() still overrides. No
-        // field sets native(true), so forcing the JS widget changes nothing but
-        // the two inconsistent native ones.
+        // Consistent date/time fields site-wide, each with one leading
+        // calendar/clock icon that opens the picker (see render hook below).
+        // Date fields use the JS calendar widget; TIME fields stay native —
+        // the browser time input types far better than the JS dropdown (a
+        // "15 : 3" spinner that fights manual entry). The native right-side
+        // indicator is hidden by CSS so the leading icon is the only one.
+        // A per-field ->prefixIcon()/->native() still overrides.
         DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->native(false)->prefixIcon(Heroicon::OutlinedCalendar));
         DatePicker::configureUsing(fn (DatePicker $picker) => $picker->native(false)->prefixIcon(Heroicon::OutlinedCalendar));
-        TimePicker::configureUsing(fn (TimePicker $picker) => $picker->native(false)->prefixIcon(Heroicon::OutlinedClock));
+        TimePicker::configureUsing(fn (TimePicker $picker) => $picker->prefixIcon(Heroicon::OutlinedClock));
 
         // The picker's prefix icon sits on the outer field wrapper, outside the
-        // component's own clickable trigger, so clicking it did nothing. Forward
-        // such clicks to the trigger (delegated, so it also covers modals) and
-        // show a pointer cursor. Global so every date/time field behaves alike.
+        // clickable trigger, so clicking it did nothing. Forward icon clicks to
+        // the JS picker's trigger — or, for native date/time inputs, call
+        // showPicker(). Delegated, so it also covers fields inside modals.
         FilamentView::registerRenderHook(
             PanelsRenderHook::BODY_END,
             fn (): HtmlString => new HtmlString(<<<'HTML'
                 <style>
                     .fi-fo-date-time-picker .fi-input-wrp-prefix,
                     .fi-fo-date-time-picker .fi-input-wrp-prefix svg { cursor: pointer; }
+                    /* One icon only: the leading one opens the native picker. */
+                    .fi-fo-date-time-picker input::-webkit-calendar-picker-indicator { display: none; }
                 </style>
                 <script>
                     document.addEventListener('click', function (event) {
                         const picker = event.target.closest('.fi-fo-date-time-picker');
                         if (! picker) { return; }
                         if (event.target.closest('.fi-fo-date-time-picker-trigger, input')) { return; }
+                        const native = picker.querySelector('input[type="time"], input[type="date"], input[type="datetime-local"]');
+                        if (native) {
+                            native.focus();
+                            try { native.showPicker(); } catch (e) { /* needs a user gesture or unsupported */ }
+                            return;
+                        }
                         const trigger = picker.querySelector('.fi-fo-date-time-picker-trigger, .fi-fo-date-time-picker-display-text-input');
                         if (trigger) { trigger.focus(); trigger.click(); }
                     });
