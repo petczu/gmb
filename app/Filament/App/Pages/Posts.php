@@ -2331,7 +2331,7 @@ class Posts extends Page implements HasTable
                 /* Floating Share / Duplicate panels (anchored at the kebab).
                    They render INSIDE the dialog's h2 heading, so reset its
                    typography or everything inherits large semibold text. */
-                .fp-panel-float { width: 23.5rem; right: 0; left: auto; top: 1.9rem; text-align: left; font-size: .8rem; font-weight: 400; line-height: 1.45; letter-spacing: normal; color: inherit; }
+                .fp-panel-float { width: 23.5rem; right: 0; left: auto; top: 2.5rem; text-align: left; font-size: .8rem; font-weight: 400; line-height: 1.45; letter-spacing: normal; color: inherit; }
                 .fp-panel-float .fp-pop-title { font-size: .86rem; font-weight: 700; margin-bottom: .35rem; }
                 .fp-panel-float .fp-muted { font-size: .74rem; line-height: 1.4; }
                 .fp-kebab { display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border: 1px solid #e5e7eb; border-radius: .5rem; background: none; color: #6b7280; cursor: pointer; }
