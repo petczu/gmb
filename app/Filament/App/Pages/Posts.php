@@ -2012,7 +2012,6 @@ class Posts extends Page implements HasTable
             .'<div class="fp-float-label">'.e(__('pages/posts.share_link')).'</div>'
             .'<div class="fp-share-link">'
             .'<input type="text" readonly x-ref="lnk" class="fp-float-input" value="'.e($url).'" @focus="$el.select()">'
-            .'<a href="'.e($url).'" target="_blank" rel="noopener" title="'.e(__('pages/posts.view')).'">'.$this->icon('o-arrow-top-right-on-square').'</a>'
             // Icon-only copy; selects the visible input so the fallback
             // execCommand path works on plain-http hosts too.
             .'<button type="button" title="'.e(__('pages/posts.share_copy')).'" @click="$refs.lnk.select(); $refs.lnk.setSelectionRange(0, 99999);'
@@ -2329,7 +2328,7 @@ class Posts extends Page implements HasTable
                 /* Floating Share / Duplicate panels (anchored at the kebab).
                    They render INSIDE the dialog's h2 heading, so reset its
                    typography or everything inherits large semibold text. */
-                .fp-panel-float { width: 23.5rem; right: 0; left: auto; top: 2.5rem; text-align: left; font-size: .8rem; font-weight: 400; line-height: 1.45; letter-spacing: normal; color: inherit; }
+                .fp-panel-float { width: 26rem; right: 0; left: auto; top: 2.5rem; text-align: left; font-size: .8rem; font-weight: 400; line-height: 1.45; letter-spacing: normal; color: inherit; }
                 .fp-panel-float { padding: .95rem 1.05rem 1.05rem; }
                 .fp-panel-float .fp-pop-title { font-size: .95rem; font-weight: 700; margin-bottom: .4rem; }
                 .fp-panel-float .fp-muted { font-size: .8rem; line-height: 1.45; }
@@ -2344,7 +2343,7 @@ class Posts extends Page implements HasTable
                 .fp-float-input:focus { outline: none; border-color: #2d19ec; box-shadow: 0 0 0 1px #2d19ec; }
                 .dark .fp-float-input { background: rgb(255 255 255 / .05); }
                 .dark .fp-float-input { border-color: rgb(255 255 255 / .14); }
-                .fp-float-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+                .fp-float-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .6rem; margin-top: .55rem; }
                 /* Native select: custom chevron, evenly inset from the edge. */
                 select.fp-float-input { appearance: none; -webkit-appearance: none; padding-inline-end: 2.3rem; background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .7rem center; background-size: .85rem; }
                 .fp-share-link { display: flex; align-items: center; gap: .4rem; }
@@ -2354,15 +2353,12 @@ class Posts extends Page implements HasTable
                 .fp-share-link button svg { width: .95rem; height: .95rem; }
                 .fp-share-link input { flex: 1; min-width: 0; font-size: .78rem; color: #2d19ec; }
                 .dark .fp-share-link input { color: #a5b4fc; }
-                .fp-share-link a { flex: none; display: inline-grid; place-items: center; color: #9ca3af; padding: .3rem; }
-                .fp-share-link a:hover { color: #2d19ec; }
-                .fp-share-link a svg { width: .95rem; height: .95rem; }
                 .fp-float-grid input, .fp-float-grid .fp-date { min-width: 0; }
-                .fp-date { display: flex; align-items: center; gap: .45rem; border: 1px solid #d1d5db; border-radius: .5rem; padding: .5rem .65rem; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .04); cursor: pointer; }
+                .fp-date { display: flex; align-items: center; gap: .55rem; border: 1px solid #d1d5db; border-radius: .5rem; padding: .6rem .75rem; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .04); cursor: pointer; }
                 .fp-date:focus-within { border-color: #2d19ec; box-shadow: 0 0 0 1px #2d19ec; }
                 .dark .fp-date { background: rgb(255 255 255 / .05); border-color: rgb(255 255 255 / .14); }
                 .fp-date > svg { width: 1rem; height: 1rem; color: #9ca3af; flex: none; }
-                .fp-date input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: .82rem; font-family: inherit; color: inherit; padding: 0; }
+                .fp-date input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: .875rem; font-family: inherit; color: inherit; padding: 0; }
                 .fp-date input::-webkit-calendar-picker-indicator { display: none; }
                 .fp-share-link button span { display: inline-grid; place-items: center; }
                 .fp-pw { position: relative; display: block; }
