@@ -35,6 +35,7 @@ class ReportPostsBlockTest extends TestCase
             $table->json('source_ids');
             $table->dateTime('scheduled_at')->nullable();
             $table->string('status', 20)->default('draft');
+            $table->string('uid', 32)->nullable();
             $table->timestamps();
         });
     }

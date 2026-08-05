@@ -72,7 +72,9 @@ class Posts extends Page implements HasTable
 
     protected static ?int $navigationSort = 4;
 
-    protected static ?string $slug = 'posts';
+    // Optional {postUid} segment: /posts/dfgjshgj4r4j54… deep-links straight
+    // into that post's dialog (see mount()).
+    protected static ?string $slug = 'posts/{postUid?}';
 
     protected string $view = 'filament.app.pages.posts';
 
@@ -249,9 +251,7 @@ class Posts extends Page implements HasTable
             .'</button>'
             .'<span class="fp-react-pop" x-show="react" x-cloak @click.outside="react = false">'.$picker.'</span>'
             .'</span>'
-            .'<button type="button" class="fp-c-btn" wire:click="startReply('.$c->id.')" title="'.e(__('pages/posts.comment_reply')).'">'
-            .$this->icon('o-arrow-uturn-left')
-            .'</button>'
+            .($isReply ? '' : '<button type="button" class="fp-c-btn" wire:click="startReply('.$c->id.')" title="'.e(__('pages/posts.comment_reply')).'">'.$this->icon('o-arrow-uturn-left').'</button>')
             .($isMine
                 ? '<span style="position:relative;">'
                 .'<button type="button" class="fp-c-btn" @click="menu = ! menu; react = false">'
@@ -437,7 +437,7 @@ class Posts extends Page implements HasTable
     /** Prefill for the create modal's schedule field ("+ Post" on a day cell). */
     public ?string $prefillDate = null;
 
-    public function mount(): void
+    public function mount(?string $postUid = null): void
     {
         $this->mode = in_array(session('posts_view_mode'), ['calendar', 'table'], true)
             ? session('posts_view_mode')
@@ -454,11 +454,9 @@ class Posts extends Page implements HasTable
             fn ($tag): bool => is_string($tag) && $tag !== self::UNTAGGED,
         ));
 
-        // Deep link: /posts?post=ID opens the post dialog straight away.
-        if ($this->viewingPostId !== null && Post::find($this->viewingPostId) !== null) {
-            $this->showPost($this->viewingPostId);
-        } else {
-            $this->viewingPostId = null;
+        // Deep link: /posts/{uid} opens the post dialog straight away.
+        if ($postUid !== null && ($post = Post::query()->where('uid', $postUid)->first()) !== null) {
+            $this->showPost($post->id);
         }
     }
 
@@ -468,6 +466,9 @@ class Posts extends Page implements HasTable
         parent::unmountAction($canCancelParentActions);
 
         if ($this->getMountedActions() === []) {
+            if ($this->viewingPostId !== null) {
+                $this->js("history.replaceState({}, '', ".json_encode(url('/posts')).')');
+            }
             $this->viewingPostId = null;
             $this->sharePanelOpen = false;
             $this->duplicatePanelOpen = false;
@@ -1002,9 +1003,8 @@ class Posts extends Page implements HasTable
             });
     }
 
-    /** The post whose details modal is open (calendar card click). Mirrored
-     *  into the URL (?post=ID) so the dialog can be deep-linked to teammates. */
-    #[Url(as: 'post', except: null)]
+    /** The post whose details modal is open (calendar card click). The URL
+     *  mirrors it as /posts/{uid} so the dialog can be deep-linked. */
     public ?int $viewingPostId = null;
 
     /** Comment composer state for the feedback panel in the view dialog. */
@@ -1020,6 +1020,11 @@ class Posts extends Page implements HasTable
     {
         $this->viewingPostId = $postId;
         $this->resetCommentComposer();
+
+        // Shareable address: /posts/{uid} while the dialog is open.
+        if (filled($uid = Post::find($postId)?->uid)) {
+            $this->js("history.replaceState({}, '', ".json_encode(url('/posts/'.$uid)).')');
+        }
 
         // Drafts open in the editable composer; everything else is history and
         // gets the read-only details dialog.
@@ -2034,9 +2039,15 @@ class Posts extends Page implements HasTable
             .'</span>'
             .'<div class="fp-float-grid">'
             .'<span><span class="fp-float-label">'.e(__('pages/posts.share_from')).'</span>'
-            .'<span class="fp-date" @click="const i = $el.querySelector(\'input\'); i.focus(); try { i.showPicker() } catch (e) {}">'.$this->icon('o-calendar').'<input type="datetime-local" wire:model="shareFrom"></span></span>'
+            .'<span class="fp-date" @click="const i = $el.querySelector(\'input\'); i.focus(); try { i.showPicker() } catch (e) {}">'.$this->icon('o-calendar')
+            .'<span class="fp-date-text">'.e($this->shareFrom ? CarbonImmutable::parse($this->shareFrom)->translatedFormat('M j, Y H:i') : '').'</span>'
+            .'<input type="datetime-local" wire:model.live="shareFrom">'
+            .'</span></span>'
             .'<span><span class="fp-float-label">'.e(__('pages/posts.share_until')).'</span>'
-            .'<span class="fp-date" @click="const i = $el.querySelector(\'input\'); i.focus(); try { i.showPicker() } catch (e) {}">'.$this->icon('o-calendar').'<input type="datetime-local" wire:model="shareUntil"></span></span>'
+            .'<span class="fp-date" @click="const i = $el.querySelector(\'input\'); i.focus(); try { i.showPicker() } catch (e) {}">'.$this->icon('o-calendar')
+            .'<span class="fp-date-text">'.e($this->shareUntil ? CarbonImmutable::parse($this->shareUntil)->translatedFormat('M j, Y H:i') : '').'</span>'
+            .'<input type="datetime-local" wire:model.live="shareUntil">'
+            .'</span></span>'
             .'</div>'
             .'<div class="fp-float-bar">'
             .'<button type="button" class="fp-send" wire:click="saveSharePanel">'.e(__('pages/posts.share_save')).'</button>'
@@ -2354,11 +2365,17 @@ class Posts extends Page implements HasTable
                 .fp-share-link input { flex: 1; min-width: 0; font-size: .78rem; color: #2d19ec; }
                 .dark .fp-share-link input { color: #a5b4fc; }
                 .fp-float-grid input, .fp-float-grid .fp-date { min-width: 0; }
-                .fp-date { display: flex; align-items: center; gap: .55rem; border: 1px solid #d1d5db; border-radius: .5rem; padding: .6rem .75rem; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .04); cursor: pointer; }
+                .fp-date { display: flex; align-items: stretch; border: 1px solid #d1d5db; border-radius: .5rem; padding: 0; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .04); cursor: pointer; overflow: hidden; }
                 .fp-date:focus-within { border-color: #2d19ec; box-shadow: 0 0 0 1px #2d19ec; }
                 .dark .fp-date { background: rgb(255 255 255 / .05); border-color: rgb(255 255 255 / .14); }
-                .fp-date > svg { width: 1rem; height: 1rem; color: #9ca3af; flex: none; }
-                .fp-date input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: .875rem; font-family: inherit; color: inherit; padding: 0; }
+                /* Icon segment split off by a divider, like the composer's Publish-on. */
+                .fp-date > svg { box-sizing: content-box; width: 1rem; height: 1rem; color: #9ca3af; flex: none; padding: .6rem .65rem; border-inline-end: 1px solid #e5e7eb; align-self: center; }
+                .dark .fp-date > svg { border-color: rgb(255 255 255 / .12); }
+                /* The native input is an invisible overlay: it provides the picker and
+                   the value, while the visible text uses the app-wide format. */
+                .fp-date { position: relative; }
+                .fp-date-text { flex: 1; min-width: 0; padding: .6rem .7rem; font-size: .875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 2.15rem; }
+                .fp-date input { position: absolute; inset: 0; opacity: 0; cursor: pointer; border: none; }
                 .fp-date input::-webkit-calendar-picker-indicator { display: none; }
                 .fp-share-link button span { display: inline-grid; place-items: center; }
                 .fp-pw { position: relative; display: block; }

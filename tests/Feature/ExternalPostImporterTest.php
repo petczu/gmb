@@ -53,6 +53,7 @@ class ExternalPostImporterTest extends TestCase
             $table->string('platform_post_id')->nullable();
             $table->json('external_ids')->nullable();
             $table->string('created_by_name')->nullable();
+            $table->string('uid', 32)->nullable();
             $table->timestamps();
         });
     }

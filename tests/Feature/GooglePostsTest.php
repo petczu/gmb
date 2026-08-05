@@ -59,6 +59,7 @@ class GooglePostsTest extends TestCase
             $table->text('error')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->string('created_by_name')->nullable();
+            $table->string('uid', 32)->nullable();
             $table->timestamps();
         });
     }

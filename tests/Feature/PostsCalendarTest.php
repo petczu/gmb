@@ -142,6 +142,7 @@ class PostsCalendarTest extends TestCase
             $table->string('status', 20);
             $table->string('origin', 20)->default('app');
             $table->string('platform_post_id')->nullable();
+            $table->string('uid', 32)->nullable();
             $table->json('external_ids')->nullable();
             $table->text('error')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
@@ -592,6 +593,27 @@ class PostsCalendarTest extends TestCase
 
         $mounted = array_map(fn ($a) => $a->getName(), $component->instance()->getMountedActions());
         $this->assertSame(['viewPost'], $mounted);
+    }
+
+    public function test_a_post_uid_deep_link_opens_the_dialog(): void
+    {
+        $location = $this->location();
+        $draft = Post::create([
+            'type' => 'update', 'caption' => 'Linked', 'location_ids' => [$location->id],
+            'source_ids' => [], 'status' => 'draft', 'scheduled_at' => now(),
+        ]);
+
+        // Every post gets a random URL handle on create.
+        $this->assertNotNull($draft->uid);
+        $this->assertSame(16, strlen($draft->uid));
+
+        $component = Livewire::test(Posts::class, ['postUid' => $draft->uid]);
+        $this->assertSame($draft->id, $component->get('viewingPostId'));
+        $component->assertActionMounted('editDraft');
+
+        // An unknown uid just renders the calendar.
+        $none = Livewire::test(Posts::class, ['postUid' => 'nope-nope']);
+        $this->assertNull($none->get('viewingPostId'));
     }
 
     public function test_the_list_edit_action_opens_the_draft_composer(): void

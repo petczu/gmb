@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * TENANT model — a Google Business Profile post published (or scheduled)
@@ -33,8 +34,16 @@ class Post extends Model
         'photo_category', 'starts_at', 'ends_at', 'voucher_code', 'redeem_url',
         'terms_url', 'location_ids', 'source_ids', 'scheduled_at', 'status',
         'external_ids', 'error', 'created_by', 'created_by_name',
-        'origin', 'platform_post_id', 'label_ids',
+        'origin', 'platform_post_id', 'label_ids', 'uid',
     ];
+
+    protected static function booted(): void
+    {
+        // Random URL handle for /posts/{uid} deep links.
+        static::creating(function (self $post): void {
+            $post->uid ??= Str::random(16);
+        });
+    }
 
     protected $casts = [
         'location_ids' => 'array',
