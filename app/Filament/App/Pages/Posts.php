@@ -317,25 +317,25 @@ class Posts extends Page implements HasTable
     /** The composer form next to a live Google-style preview of the post. */
     protected function composerSchema(bool $withFeedback = false): array
     {
+        // With feedback: form | live preview | feedback panel, three columns
+        // like the Planable reference. Without (new post): form | preview.
         return [
-            Grid::make(['default' => 1, 'lg' => 2])
-                ->schema([
+            Grid::make(['default' => 1, 'lg' => $withFeedback ? 3 : 2])
+                ->schema(array_values(array_filter([
                     Group::make($this->formSchema()),
-                    Group::make(array_values(array_filter([
+                    Group::make([
                         Placeholder::make('post_preview')
                             ->hiddenLabel()
                             ->content(fn (Get $get): HtmlString => new HtmlString($this->previewHtml($get))),
-                        // Drafts carry the feedback panel (labels, comments,
-                        // activity) under the live preview, like the view dialog.
-                        $withFeedback
-                            ? Placeholder::make('post_feedback')
+                    ])->extraAttributes(['class' => 'lg:sticky lg:top-4']),
+                    $withFeedback
+                        ? Group::make([
+                            Placeholder::make('post_feedback')
                                 ->hiddenLabel()
-                                ->content(fn (): HtmlString => new HtmlString(
-                                    '<div style="margin-top:1.2rem;">'.$this->feedbackPanelHtml((int) $this->viewingPostId, bordered: false).'</div>'
-                                ))
-                            : null,
-                    ])))->extraAttributes(['class' => 'lg:sticky lg:top-4']),
-                ]),
+                                ->content(fn (): HtmlString => new HtmlString($this->feedbackPanelHtml((int) $this->viewingPostId))),
+                        ])->extraAttributes(['class' => 'lg:sticky lg:top-4'])
+                        : null,
+                ]))),
         ];
     }
 
@@ -1034,10 +1034,10 @@ class Posts extends Page implements HasTable
         return Action::make('editDraft')
             ->modalHeading(__('pages/posts.draft_heading'))
             ->modalSubmitActionLabel(__('pages/posts.submit'))
-            ->modalWidth(Width::SixExtraLarge)
-            // The draft composer carries the feedback panel (labels, comments,
-            // activity) under the live preview — same collaboration surface as
-            // the view dialog, no separate footer dialogs.
+            // Wider than the create dialog: three columns (form | preview |
+            // feedback panel), the same collaboration surface as the view
+            // dialog — no separate footer dialogs.
+            ->modalWidth(Width::SevenExtraLarge)
             ->schema($this->composerSchema(withFeedback: true))
             ->fillForm(fn (): array => $this->draftFormState())
             ->extraModalFooterActions(fn (Action $action): array => [
