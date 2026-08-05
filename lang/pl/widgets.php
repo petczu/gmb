@@ -64,6 +64,7 @@ return [
     'competitors_empty_body' => 'Wybierz kilku pobliskich rywali i zobacz, jak Twoja ocena i przyrost opinii wypadają na ich tle, tutaj na panelu.',
     'competitors_empty_cta' => 'Dodaj konkurentów',
     'competitors_spark_hint' => 'Wzrost liczby opinii konkurenta w wybranym okresie',
+    'competitors_spark_label' => 'Konkurencja',
 
     // Competitor growth chart
     'competitor_chart_title' => 'Przyrost opinii konkurencji',

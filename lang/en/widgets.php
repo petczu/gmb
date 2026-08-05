@@ -68,6 +68,7 @@ return [
     'competitors_empty_body' => 'Pick a few nearby rivals and see how your rating and review growth stack up, right here on the dashboard.',
     'competitors_empty_cta' => 'Add competitors',
     'competitors_spark_hint' => 'Their review growth over the selected period',
+    'competitors_spark_label' => 'Competitors',
 
     // Competitor growth chart
     'competitor_chart_title' => 'Competitor review growth',

@@ -60,6 +60,7 @@ return [
     'competitors_empty_body' => 'Choisissez quelques concurrents à proximité et comparez votre note et votre croissance d’avis, directement sur le tableau de bord.',
     'competitors_empty_cta' => 'Ajouter des concurrents',
     'competitors_spark_hint' => 'Évolution des avis du concurrent sur la période sélectionnée',
+    'competitors_spark_label' => 'Concurrents',
 
     // Competitor growth chart
     'competitor_chart_title' => 'Croissance des avis concurrents',

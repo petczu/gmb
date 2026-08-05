@@ -60,6 +60,7 @@ return [
     'competitors_empty_body' => 'Elige unos cuantos rivales cercanos y compara tu valoración y tu crecimiento de reseñas aquí mismo, en el panel.',
     'competitors_empty_cta' => 'Añadir competidores',
     'competitors_spark_hint' => 'Crecimiento de reseñas del competidor en el periodo seleccionado',
+    'competitors_spark_label' => 'Competencia',
 
     // Competitor growth chart
     'competitor_chart_title' => 'Crecimiento de reseñas de competidores',

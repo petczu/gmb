@@ -63,6 +63,7 @@ return [
     'competitors_empty_body' => 'Kies een paar concurrenten in de buurt en zie hoe je beoordeling en reviewgroei zich verhouden, direct hier op het dashboard.',
     'competitors_empty_cta' => 'Concurrenten toevoegen',
     'competitors_spark_hint' => 'Reviewgroei van de concurrent in de geselecteerde periode',
+    'competitors_spark_label' => 'Concurrenten',
 
     // Competitor growth chart
     'competitor_chart_title' => 'Reviewgroei concurrenten',

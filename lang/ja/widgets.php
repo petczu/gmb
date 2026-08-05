@@ -65,6 +65,7 @@ return [
     'competitors_empty_body' => '近隣のライバルをいくつか選び、評価やレビューの伸びをこのダッシュボードで比較しましょう。',
     'competitors_empty_cta' => '競合を追加',
     'competitors_spark_hint' => '選択期間における競合のレビュー増加',
+    'competitors_spark_label' => '競合',
 
     // Competitor growth chart
     'competitor_chart_title' => '競合のレビュー増加',

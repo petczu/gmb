@@ -64,6 +64,7 @@ return [
     'competitors_empty_body' => 'Yakınınızdaki birkaç rakibi seçin ve puanınızın ve yorum artışınızın nasıl kıyaslandığını tam burada, kontrol panelinde görün.',
     'competitors_empty_cta' => 'Rakip ekle',
     'competitors_spark_hint' => 'Seçili dönemde rakibin yorum artışı',
+    'competitors_spark_label' => 'Rakipler',
 
     // Competitor growth chart
     'competitor_chart_title' => 'Rakip yorum artışı',

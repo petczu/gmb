@@ -24,7 +24,11 @@
         .cmp-new { text-align: left; color: rgb(107 114 128); font-size: .78rem; white-space: nowrap; }
         .dark .cmp-new { color: #a1a1aa; }
         .cmp-new strong { color: inherit; }
-        .cmp-spark { justify-self: end; cursor: help; }
+        /* Label under the line so it's clear the trend belongs to the competitor,
+           not "you" (the brand-blue stroke could otherwise read as your own). */
+        .cmp-spark { justify-self: end; cursor: help; display: flex; flex-direction: column; align-items: flex-end; gap: .15rem; }
+        .cmp-spark-label { font-size: .66rem; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: rgb(156 163 175); line-height: 1; }
+        .dark .cmp-spark-label { color: #71717a; }
         .cmp-hint { font-size: .78rem; color: rgb(107 114 128); margin-top: .6rem; }
         .dark .cmp-hint { color: #71717a; }
         .cmp-empty { text-align: center; padding: 1.8rem 1rem; }
@@ -93,7 +97,10 @@
                         · {{ __('widgets.competitors_them') }} {{ $row['theirNew'] !== null ? '+'.number_format($row['theirNew']) : '—' }}
                     </span>
 
-                    <span class="cmp-spark" title="{{ __('widgets.competitors_spark_hint') }}">{{ $row['spark'] ?? '' }}</span>
+                    <span class="cmp-spark" title="{{ __('widgets.competitors_spark_hint') }}">
+                        {{ $row['spark'] ?? '' }}
+                        <span class="cmp-spark-label">{{ __('widgets.competitors_spark_label') }}</span>
+                    </span>
                 </div>
             @endforeach
         @endif
