@@ -155,7 +155,7 @@ class EmailTemplateCatalog
     {
         return match ($key) {
             'invite' => __('emails.invite.subject', ['workspace' => ':workspace'], $locale),
-            'post_mention' => __('emails.post_mention.subject', ['name' => ':name'], $locale),
+            'post_mention' => __('emails.post_mention.subject', ['author' => ':author'], $locale),
             'trial_ending' => __('emails.trial_ending.subject', ['days' => ':days'], $locale),
             'approvals_pending' => __('emails.approvals_pending.subject', ['count' => ':count', 'replies' => ':replies'], $locale),
             'new_reviews' => __('emails.new_reviews.subject', ['count' => ':count'], $locale),
@@ -205,7 +205,7 @@ class EmailTemplateCatalog
             ], __('emails.invite.cta', [], $locale)),
 
             'post_mention' => self::shell($locale, self::greeting($locale), [
-                __('emails.post_mention.intro', ['name' => ':name'], $locale),
+                __('emails.post_mention.intro', ['author' => ':author'], $locale),
                 '<em>:excerpt</em>',
             ], __('emails.post_mention.cta', [], $locale)),
 

@@ -62,6 +62,7 @@ class PostCommentNotifier
 
         try {
             Mail::to($user->email)->send(new PostMentionMail(
+                recipientName: (string) $user->name,
                 mentionerName: $author,
                 excerpt: $excerpt,
                 postsUrl: $url,

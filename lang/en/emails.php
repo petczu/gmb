@@ -8,8 +8,8 @@ return [
     'team' => 'The Repunio team',
 
     'post_mention' => [
-        'subject' => ':name mentioned you on a post',
-        'intro' => ':name mentioned you in a comment on a Google post:',
+        'subject' => ':author mentioned you on a post',
+        'intro' => ':author mentioned you in a comment on a Google post:',
         'cta' => 'Open the post',
     ],
 

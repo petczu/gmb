@@ -10,6 +10,7 @@ namespace App\Mail;
 class PostMentionMail extends TemplatedMailable
 {
     public function __construct(
+        public string $recipientName,
         public string $mentionerName,
         public string $excerpt,
         public string $postsUrl,
@@ -26,7 +27,9 @@ class PostMentionMail extends TemplatedMailable
     protected function templateData(): array
     {
         return [
-            'name' => $this->mentionerName,
+            // :name greets the recipient; :author is who mentioned them.
+            'name' => $this->recipientName,
+            'author' => $this->mentionerName,
             'excerpt' => $this->excerpt,
             'url' => $this->postsUrl,
         ];

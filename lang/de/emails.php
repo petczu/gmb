@@ -8,8 +8,8 @@ return [
     'team' => 'Dein Repunio-Team',
 
     'post_mention' => [
-        'subject' => ':name hat dich in einem Beitrag erwähnt',
-        'intro' => ':name hat dich in einem Kommentar zu einem Google-Beitrag erwähnt:',
+        'subject' => ':author hat dich in einem Beitrag erwähnt',
+        'intro' => ':author hat dich in einem Kommentar zu einem Google-Beitrag erwähnt:',
         'cta' => 'Beitrag öffnen',
     ],
 
