@@ -1277,25 +1277,6 @@ class Posts extends Page implements HasTable
 
     // ── Share & duplicate (the "…" menu) ────────────────────────────────────
 
-    /** The kebab menu shown in the post dialogs' footers and list rows. */
-    private function postMoreMenu(): ActionGroup
-    {
-        // mountAction (NOT replaceMountedAction): the child dialog stacks on
-        // top of the post dialog, which stays open and comes back on close.
-        return ActionGroup::make([
-            Action::make('shareMenu')
-                ->label(__('pages/posts.share'))
-                ->icon(Heroicon::OutlinedShare)
-                ->action(fn () => $this->mountAction('sharePost')),
-            Action::make('duplicateMenu')
-                ->label(__('pages/posts.duplicate_to'))
-                ->icon(Heroicon::OutlinedDocumentDuplicate)
-                ->action(fn () => $this->mountAction('duplicateTo')),
-        ])
-            ->icon(Heroicon::OutlinedEllipsisVertical)
-            ->color('gray');
-    }
-
     private function postShare(): ?PostShare
     {
         return PostShare::query()
@@ -1536,7 +1517,6 @@ class Posts extends Page implements HasTable
                         ->icon(Heroicon::OutlinedPencilSquare)
                         ->action(fn () => $this->revertToDraftAndEdit())
                     : null,
-                $this->postMoreMenu(),
                 Action::make('duplicateDraft')
                     ->label(__('pages/posts.duplicate_draft'))
                     ->icon(Heroicon::OutlinedDocumentDuplicate)
@@ -1672,7 +1652,6 @@ class Posts extends Page implements HasTable
                 $action->makeModalSubmitAction('saveDraft', arguments: ['draft' => true])
                     ->label(__('pages/posts.save_draft'))
                     ->color('gray'),
-                $this->postMoreMenu(),
                 Action::make('deleteDraft')
                     ->label(__('pages/posts.draft_delete'))
                     ->icon(Heroicon::OutlinedTrash)
@@ -1896,10 +1875,19 @@ class Posts extends Page implements HasTable
                 return '<span class="fp-chip" style="background:'.$bg.'; color:'.$accent.';">'.e($label->name).'</span>';
             })->implode('');
 
+        // The "…" menu lives up here, next to the dialog's close button.
+        $kebab = '<span x-data="{ open: false }" style="position:relative; margin-left:auto;">'
+            .'<button type="button" class="fp-c-btn" @click="open = ! open">'.$this->icon('o-ellipsis-vertical').'</button>'
+            .'<span class="fp-menu" x-show="open" x-cloak @click.outside="open = false" style="top:1.9rem;">'
+            .'<button type="button" wire:click="mountAction(\'sharePost\')" @click="open = false">'.$this->icon('o-share').' '.e(__('pages/posts.share')).'</button>'
+            .'<button type="button" wire:click="mountAction(\'duplicateTo\')" @click="open = false">'.$this->icon('o-document-duplicate').' '.e(__('pages/posts.duplicate_to')).'</button>'
+            .'</span>'
+            .'</span>';
+
         return new HtmlString(
             $this->feedbackPanelCss()
             .'<span class="fp-sr">'.e($srTitle).'</span>'
-            .'<div class="fp-labels" style="margin-bottom:0; font-weight:400;">'
+            .'<div class="fp-labels" style="margin-bottom:0; font-weight:400; flex:1;">'
             .$chips
             .'<span style="position:relative;">'
             .'<button type="button" class="fp-labels-btn" wire:click="toggleLabelsPopover">'
@@ -1908,6 +1896,7 @@ class Posts extends Page implements HasTable
             .'</button>'
             .($this->labelsPopoverOpen ? $this->labelsPopoverHtml($post) : '')
             .'</span>'
+            .$kebab
             .'</div>'
         );
     }
