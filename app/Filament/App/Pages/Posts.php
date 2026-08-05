@@ -1450,7 +1450,7 @@ class Posts extends Page implements HasTable
                 .dark .fp-link { color: #a5b4fc; }
                 .fp-labels { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-bottom: .8rem; }
                 .fp-chip { display: inline-flex; align-items: center; box-sizing: border-box; height: 1.5rem; font-size: .68rem; font-weight: 700; letter-spacing: .02em; padding: 0 .55rem; border-radius: 999px; }
-                .fp-labels-btn { display: inline-flex; align-items: center; box-sizing: border-box; height: 1.5rem; gap: .3rem; font-size: .7rem; font-weight: 600; color: #374151; background: none; border: 1.5px dashed #d1d5db; border-radius: 999px; padding: 0 .6rem; line-height: 1; cursor: pointer; transition: all .12s ease; }
+                .fp-labels-btn { display: inline-flex; align-items: center; box-sizing: border-box; height: 1.45rem; gap: .3rem; font-size: .7rem; font-weight: 600; color: #374151; background: none; border: 1px dashed #c8ccd2; border-radius: 999px; padding: 0 .6rem; line-height: 1; cursor: pointer; transition: all .12s ease; }
                 .fp-labels-btn:hover { border-color: #2d19ec; color: #2d19ec; }
                 .fp-labels-btn svg { width: .8rem; height: .8rem; }
                 .dark .fp-labels-btn { color: #d4d4d8; border-color: rgb(255 255 255 / .22); }
