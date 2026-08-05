@@ -151,12 +151,8 @@
             @endif
 
             <div style="display:flex; align-items:center; gap:.5rem; margin-left:auto;">
-                {{-- Label manager (create/rename/recolor/delete), kept out of the
-                     post composer per the Planable-style layout. --}}
-                <button type="button" class="pc-btn" wire:click="mountAction('manageLabels')" style="display:inline-flex; align-items:center; gap:.4rem;">
-                    <svg style="width:1rem; height:1rem; opacity:.7;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"/></svg>
-                    {{ __('pages/posts.labels_manage') }}
-                </button>
+                {{-- Labels live in each post's dialog (header button + popover);
+                     no page-level manager needed. --}}
 
                 {{-- Unified Filter: locations (multi-select) + note tags --}}
                 @php
