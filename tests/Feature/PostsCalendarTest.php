@@ -178,11 +178,14 @@ class PostsCalendarTest extends TestCase
         Schema::create('post_comments', function ($table): void {
             $table->increments('id');
             $table->unsignedBigInteger('post_id')->index();
+            $table->unsignedBigInteger('parent_id')->nullable()->index();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->string('user_name')->nullable();
             $table->text('body');
             $table->json('attachments')->nullable();
             $table->json('mentioned_user_ids')->nullable();
+            $table->json('reactions')->nullable();
+            $table->timestamp('edited_at')->nullable();
             $table->timestamps();
         });
 
@@ -393,6 +396,61 @@ class PostsCalendarTest extends TestCase
         $this->assertNull(PostLabel::find($gone->id)); // removed row deleted
         $this->assertTrue(PostLabel::query()->where('name', 'Fresh')->exists());
         $this->assertSame(2, PostLabel::count());
+    }
+
+    public function test_comments_support_reply_edit_delete_and_reactions(): void
+    {
+        $location = $this->location();
+        $post = Post::create([
+            'type' => 'update', 'caption' => 'P', 'location_ids' => [$location->id],
+            'source_ids' => [], 'status' => 'draft',
+        ]);
+
+        $me = User::query()->first();
+        $this->actingAs($me);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $post->id);
+
+        // Top-level comment, then a reply threaded under it.
+        $component->set('commentBody', 'Root comment');
+        $component->call('addComment');
+        $root = PostComment::query()->whereNull('parent_id')->sole();
+
+        $component->call('startReply', $root->id);
+        $component->set('commentBody', 'A reply');
+        $component->call('addComment');
+        $reply = PostComment::query()->whereNotNull('parent_id')->sole();
+        $this->assertSame($root->id, $reply->parent_id);
+
+        // Replying to a reply threads under the same top-level parent.
+        $component->call('startReply', $reply->id);
+        $this->assertSame($root->id, $component->get('replyingToCommentId'));
+        $component->call('cancelReply');
+
+        // Edit own comment.
+        $component->call('startEditComment', $root->id);
+        $component->set('editingCommentBody', 'Root comment (fixed)');
+        $component->call('saveEditedComment');
+        $root->refresh();
+        $this->assertSame('Root comment (fixed)', $root->body);
+        $this->assertNotNull($root->edited_at);
+
+        // React, see who reacted, un-react.
+        $component->call('toggleReaction', $root->id, '👍');
+        $grouped = $root->refresh()->groupedReactions($me->id);
+        $this->assertTrue($grouped['👍']['mine']);
+        $this->assertSame([$me->name], $grouped['👍']['names']);
+        $component->call('toggleReaction', $root->id, '👍');
+        $this->assertSame([], $root->refresh()->groupedReactions($me->id));
+
+        // Unknown emoji is rejected.
+        $component->call('toggleReaction', $root->id, '💣');
+        $this->assertSame([], $root->refresh()->reactions ?? []);
+
+        // Deleting the root removes its replies too.
+        $component->call('deleteComment', $root->id);
+        $this->assertSame(0, PostComment::count());
     }
 
     public function test_a_comment_with_mentions_is_posted_to_a_post(): void

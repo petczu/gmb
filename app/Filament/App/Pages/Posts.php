@@ -193,29 +193,95 @@ class Posts extends Page implements HasTable
                 .'</div>';
         }
 
-        $rows = $comments->map(function (PostComment $c): string {
-            $who = (string) ($c->user_name ?? __('pages/posts.activity_system'));
-            $when = e($c->created_at?->diffForHumans() ?? '');
-            $body = nl2br(e((string) $c->body));
+        // Threaded: top-level comments with their replies nested underneath.
+        $byParent = $comments->groupBy(fn (PostComment $c) => $c->parent_id ?? 0);
 
-            $attachments = '';
-            foreach ($c->attachments ?? [] as $path) {
-                $url = e(url(Storage::disk('uploads')->url((string) $path)));
-                $name = e(basename((string) $path));
-                $attachments .= '<a href="'.$url.'" target="_blank" rel="noopener" class="fp-file">📎 '.$name.'</a>';
-            }
+        $rows = ($byParent->get(0) ?? collect())->map(function (PostComment $c) use ($byParent): string {
+            $replies = ($byParent->get($c->id) ?? collect())
+                ->map(fn (PostComment $r): string => $this->commentRowHtml($r, isReply: true))
+                ->implode('');
 
-            return '<div class="fp-comment">'
-                .'<span class="fp-avatar">'.e(mb_strtoupper(mb_substr($who, 0, 1))).'</span>'
-                .'<span class="fp-comment-main">'
-                .'<span class="fp-comment-head"><strong>'.e($who).'</strong> <span>'.$when.'</span></span>'
-                .'<span class="fp-comment-body">'.$body.'</span>'
-                .($attachments !== '' ? '<span>'.$attachments.'</span>' : '')
-                .'</span>'
-                .'</div>';
+            return $this->commentRowHtml($c).($replies !== '' ? '<div class="fp-replies">'.$replies.'</div>' : '');
         })->implode('');
 
         return '<div class="fp-thread">'.$rows.'</div>';
+    }
+
+    /** One comment row: header with hover actions, body (or inline editor),
+     *  attachments and grouped emoji reactions. */
+    private function commentRowHtml(PostComment $c, bool $isReply = false): string
+    {
+        $who = (string) ($c->user_name ?? __('pages/posts.activity_system'));
+        $when = e($c->created_at?->diffForHumans() ?? '');
+        $isMine = (int) $c->user_id === (int) auth()->id();
+
+        $attachments = '';
+        foreach ($c->attachments ?? [] as $path) {
+            $url = e(url(Storage::disk('uploads')->url((string) $path)));
+            $name = e(basename((string) $path));
+            $attachments .= '<a href="'.$url.'" target="_blank" rel="noopener" class="fp-file">📎 '.$name.'</a>';
+        }
+
+        // Reaction picker (hover) + grouped chips with reactor names on hover.
+        $picker = '';
+        foreach (PostComment::REACTION_EMOJI as $emoji) {
+            $picker .= '<button type="button" wire:click="toggleReaction('.$c->id.', \''.$emoji.'\')" @click="react = false">'.$emoji.'</button>';
+        }
+
+        $chips = '';
+        foreach ($c->groupedReactions((int) auth()->id()) as $emoji => $group) {
+            $chips .= '<button type="button" class="fp-reaction'.($group['mine'] ? ' mine' : '').'"'
+                .' wire:click="toggleReaction('.$c->id.', \''.$emoji.'\')"'
+                .' title="'.e(implode(', ', $group['names'])).'">'
+                .$emoji.' <span>'.count($group['names']).'</span></button>';
+        }
+
+        // Hover actions: react, reply, and the "…" menu (edit/delete, own only).
+        $actions = '<span class="fp-c-actions" x-data="{ menu: false, react: false }">'
+            .'<span style="position:relative;">'
+            .'<button type="button" class="fp-c-btn" @click="react = ! react; menu = false" title="'.e(__('pages/posts.comment_react')).'">'
+            .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>'
+            .'</button>'
+            .'<span class="fp-react-pop" x-show="react" x-cloak @click.outside="react = false">'.$picker.'</span>'
+            .'</span>'
+            .'<button type="button" class="fp-c-btn" wire:click="startReply('.$c->id.')" title="'.e(__('pages/posts.comment_reply')).'">'
+            .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/></svg>'
+            .'</button>'
+            .($isMine
+                ? '<span style="position:relative;">'
+                .'<button type="button" class="fp-c-btn" @click="menu = ! menu; react = false">'
+                .'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm6 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm6 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"/></svg>'
+                .'</button>'
+                .'<span class="fp-menu" x-show="menu" x-cloak @click.outside="menu = false">'
+                .'<button type="button" wire:click="startEditComment('.$c->id.')" @click="menu = false">✏️ '.e(__('pages/posts.comment_edit')).'</button>'
+                .'<button type="button" class="fp-danger" wire:click="deleteComment('.$c->id.')" wire:confirm="'.e(__('pages/posts.comment_delete_confirm')).'" @click="menu = false">🗑 '.e(__('pages/posts.comment_delete')).'</button>'
+                .'</span>'
+                .'</span>'
+                : '')
+            .'</span>';
+
+        // Body, or the inline editor while this comment is being edited.
+        $body = $this->editingCommentId === $c->id
+            ? '<span class="fp-c-edit">'
+                .'<textarea wire:model="editingCommentBody" rows="2"></textarea>'
+                .'<span class="fp-c-edit-bar">'
+                .'<button type="button" class="fp-link" wire:click="cancelEditComment">'.e(__('pages/posts.comment_cancel')).'</button>'
+                .'<button type="button" class="fp-send" wire:click="saveEditedComment">'.e(__('pages/posts.comment_save')).'</button>'
+                .'</span>'
+                .'</span>'
+            : '<span class="fp-comment-body">'.nl2br(e((string) $c->body))
+                .($c->edited_at !== null ? ' <span class="fp-edited">('.e(__('pages/posts.comment_edited')).')</span>' : '')
+                .'</span>';
+
+        return '<div class="fp-comment'.($isReply ? ' fp-reply' : '').'" wire:key="comment-'.$c->id.'">'
+            .'<span class="fp-avatar">'.e(mb_strtoupper(mb_substr($who, 0, 1))).'</span>'
+            .'<span class="fp-comment-main">'
+            .'<span class="fp-comment-head"><strong>'.e($who).'</strong> <span>'.$when.'</span>'.$actions.'</span>'
+            .$body
+            .($attachments !== '' ? '<span>'.$attachments.'</span>' : '')
+            .($chips !== '' ? '<span class="fp-reactions">'.$chips.'</span>' : '')
+            .'</span>'
+            .'</div>';
     }
 
     /** Assign labels to the currently-viewed post (a top-level dialog, so it's
@@ -844,6 +910,9 @@ class Posts extends Page implements HasTable
         $this->commentBody = '';
         $this->commentMentions = [];
         $this->commentFiles = [];
+        $this->replyingToCommentId = null;
+        $this->editingCommentId = null;
+        $this->editingCommentBody = '';
     }
 
     // ── Labels popover (inside the feedback panel) ──────────────────────────
@@ -961,8 +1030,14 @@ class Posts extends Page implements HasTable
         $members = array_map('intval', array_keys($this->workspaceMembers()));
         $mentions = array_values(array_intersect(array_map('intval', $this->commentMentions), $members));
 
+        // Replies must point at a real top-level comment on this post.
+        $parent = $this->replyingToCommentId !== null
+            ? PostComment::query()->where('post_id', $post->id)->whereNull('parent_id')->find($this->replyingToCommentId)
+            : null;
+
         $comment = PostComment::create([
             'post_id' => $post->id,
+            'parent_id' => $parent?->id,
             'user_id' => auth()->id(),
             'user_name' => auth()->user()?->name,
             'body' => $body,
@@ -974,6 +1049,127 @@ class Posts extends Page implements HasTable
         ActivityLogger::log('post.commented', [], $post);
 
         $this->resetCommentComposer();
+    }
+
+    // ── Comment collaboration: edit, delete, reply, react ──────────────────
+
+    /** The top-level comment the composer is replying to, or null. */
+    public ?int $replyingToCommentId = null;
+
+    public ?int $editingCommentId = null;
+
+    public string $editingCommentBody = '';
+
+    public function startReply(int $commentId): void
+    {
+        $comment = PostComment::query()->where('post_id', $this->viewingPostId)->find($commentId);
+
+        // Replying to a reply threads under its top-level parent.
+        $this->replyingToCommentId = $comment === null ? null : (int) ($comment->parent_id ?? $comment->id);
+    }
+
+    public function cancelReply(): void
+    {
+        $this->replyingToCommentId = null;
+    }
+
+    public function startEditComment(int $commentId): void
+    {
+        $comment = $this->ownComment($commentId);
+        if ($comment === null) {
+            return;
+        }
+
+        $this->editingCommentId = $commentId;
+        $this->editingCommentBody = $comment->body;
+    }
+
+    public function cancelEditComment(): void
+    {
+        $this->editingCommentId = null;
+        $this->editingCommentBody = '';
+    }
+
+    public function saveEditedComment(): void
+    {
+        $body = trim($this->editingCommentBody);
+        $comment = $this->editingCommentId !== null ? $this->ownComment($this->editingCommentId) : null;
+
+        if ($comment === null || $body === '') {
+            return;
+        }
+
+        $comment->forceFill(['body' => $body, 'edited_at' => now()])->save();
+        $this->cancelEditComment();
+    }
+
+    public function deleteComment(int $commentId): void
+    {
+        $comment = $this->ownComment($commentId);
+        if ($comment === null) {
+            return;
+        }
+
+        PostComment::query()->where('parent_id', $comment->id)->delete();
+        $comment->delete();
+
+        if ($this->replyingToCommentId === $commentId) {
+            $this->replyingToCommentId = null;
+        }
+    }
+
+    /** Toggle the signed-in user's emoji reaction on a comment. */
+    public function toggleReaction(int $commentId, string $emoji): void
+    {
+        if (! in_array($emoji, PostComment::REACTION_EMOJI, true)) {
+            return;
+        }
+
+        $comment = PostComment::query()->where('post_id', $this->viewingPostId)->find($commentId);
+        $userId = (int) auth()->id();
+        if ($comment === null || $userId === 0) {
+            return;
+        }
+
+        $reactions = $comment->reactions ?? [];
+        $existing = array_filter(
+            $reactions,
+            fn (array $r): bool => ($r['emoji'] ?? '') === $emoji && (int) ($r['user_id'] ?? 0) === $userId,
+        );
+
+        $reactions = $existing !== []
+            ? array_values(array_filter(
+                $reactions,
+                fn (array $r): bool => ! (($r['emoji'] ?? '') === $emoji && (int) ($r['user_id'] ?? 0) === $userId),
+            ))
+            : [...$reactions, ['emoji' => $emoji, 'user_id' => $userId, 'user_name' => (string) auth()->user()?->name]];
+
+        $comment->forceFill(['reactions' => $reactions])->save();
+    }
+
+    /** The comment, but only when the signed-in user wrote it. */
+    private function ownComment(int $commentId): ?PostComment
+    {
+        $comment = PostComment::query()->where('post_id', $this->viewingPostId)->find($commentId);
+
+        return $comment !== null && (int) $comment->user_id === (int) auth()->id() ? $comment : null;
+    }
+
+    /** "Replying to {name}" strip above the composer while a reply is armed. */
+    private function replyBannerHtml(): string
+    {
+        $parent = $this->replyingToCommentId !== null
+            ? PostComment::query()->where('post_id', $this->viewingPostId)->find($this->replyingToCommentId)
+            : null;
+
+        if ($parent === null) {
+            return '';
+        }
+
+        return '<div class="fp-reply-banner">'
+            .'<span>↩ '.e(__('pages/posts.comment_replying_to', ['name' => (string) ($parent->user_name ?? '?')])).'</span>'
+            .'<button type="button" class="fp-link" wire:click="cancelReply">✕</button>'
+            .'</div>';
     }
 
     /** Details modal for a calendar card. */
@@ -1304,6 +1500,7 @@ class Posts extends Page implements HasTable
             // Comments tab: thread + composer card
             .'<div x-show="tab === \'comments\'">'
             .$this->commentsHtml($postId)
+            .$this->replyBannerHtml()
             .'<div class="fp-composer" '.$mention.'>'
             .'<textarea x-ref="ta" wire:model="commentBody" rows="3" placeholder="'.e(__('pages/posts.comment_placeholder')).'"'
             .' @input="scan()" @click="scan()"'
@@ -1492,6 +1689,38 @@ class Posts extends Page implements HasTable
                 .fp-mention-item .fp-avatar { width: 1.5rem; height: 1.5rem; font-size: .68rem; }
                 .fp-picked { padding: .1rem .6rem 0; }
                 .fp-files { padding: .2rem .6rem 0; }
+                /* Comment hover actions, menus, reactions, replies */
+                .fp-comment-head { display: flex; align-items: center; gap: .35rem; }
+                .fp-c-actions { display: inline-flex; align-items: center; gap: .05rem; margin-left: auto; opacity: 0; transition: opacity .12s ease; }
+                .fp-comment:hover .fp-c-actions { opacity: 1; }
+                .fp-c-btn { background: none; border: none; cursor: pointer; color: #9ca3af; padding: .18rem; border-radius: .35rem; display: inline-grid; place-items: center; }
+                .fp-c-btn:hover { color: #2d19ec; background: #eef2ff; }
+                .dark .fp-c-btn:hover { color: #a5b4fc; background: rgb(99 102 241 / .15); }
+                .fp-c-btn svg { width: .95rem; height: .95rem; }
+                .fp-menu { position: absolute; right: 0; top: 1.5rem; z-index: 35; min-width: 8rem; background: #fff; border: 1px solid #e5e7eb; border-radius: .55rem; box-shadow: 0 10px 26px -6px rgb(0 0 0 / .18); padding: .25rem; display: flex; flex-direction: column; }
+                .dark .fp-menu { background: #1b1b21; border-color: rgb(255 255 255 / .12); }
+                .fp-menu button { background: none; border: none; cursor: pointer; text-align: left; font-size: .8rem; padding: .35rem .5rem; border-radius: .4rem; color: inherit; }
+                .fp-menu button:hover { background: #f4f5f7; }
+                .dark .fp-menu button:hover { background: rgb(255 255 255 / .06); }
+                .fp-react-pop { position: absolute; right: 0; top: 1.5rem; z-index: 35; background: #fff; border: 1px solid #e5e7eb; border-radius: 999px; box-shadow: 0 10px 26px -6px rgb(0 0 0 / .18); padding: .2rem .3rem; display: inline-flex; gap: .05rem; }
+                .dark .fp-react-pop { background: #1b1b21; border-color: rgb(255 255 255 / .12); }
+                .fp-react-pop button { background: none; border: none; cursor: pointer; font-size: .95rem; padding: .15rem .25rem; border-radius: 999px; }
+                .fp-react-pop button:hover { background: #eef2ff; transform: scale(1.2); }
+                .fp-reactions { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .15rem; }
+                .fp-reaction { display: inline-flex; align-items: center; gap: .25rem; background: #f4f5f7; border: 1px solid transparent; border-radius: 999px; padding: .08rem .45rem; font-size: .78rem; cursor: pointer; }
+                .fp-reaction span { font-size: .68rem; color: #6b7280; font-weight: 600; }
+                .fp-reaction.mine { background: #eef2ff; border-color: #2d19ec55; }
+                .dark .fp-reaction { background: rgb(255 255 255 / .07); }
+                .dark .fp-reaction.mine { background: rgb(99 102 241 / .2); border-color: #a5b4fc66; }
+                .fp-replies { margin-left: 2.4rem; border-left: 2px solid #f1f2f4; padding-left: .6rem; }
+                .dark .fp-replies { border-color: rgb(255 255 255 / .08); }
+                .fp-reply-banner { display: flex; align-items: center; justify-content: space-between; font-size: .74rem; color: #6b7280; background: #f4f5f7; border-radius: .5rem .5rem 0 0; padding: .3rem .6rem; margin-bottom: -.35rem; }
+                .dark .fp-reply-banner { background: rgb(255 255 255 / .06); color: #a1a1aa; }
+                .fp-edited { font-size: .68rem; color: #9ca3af; }
+                .fp-c-edit { display: block; }
+                .fp-c-edit textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: .5rem; padding: .4rem .55rem; font-size: .82rem; background: transparent; color: inherit; }
+                .dark .fp-c-edit textarea { border-color: rgb(255 255 255 / .14); }
+                .fp-c-edit-bar { display: flex; justify-content: flex-end; gap: .4rem; margin-top: .3rem; }
                 .fp-composer-bar { display: flex; align-items: center; justify-content: space-between; padding: .4rem .5rem .5rem .6rem; }
                 .fp-attach { display: inline-flex; align-items: center; gap: .3rem; cursor: pointer; color: #9ca3af; padding: .3rem; border-radius: .4rem; }
                 .fp-attach:hover { color: #2d19ec; background: #eef2ff; }
