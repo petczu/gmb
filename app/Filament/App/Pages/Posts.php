@@ -2055,6 +2055,9 @@ class Posts extends Page implements HasTable
                 .fp-composer:focus-within { border-color: #2d19ec66; }
                 .fp-composer textarea { display: block; width: 100%; border: none; outline: none; background: transparent; resize: none; padding: .6rem .75rem .3rem; font-size: .85rem; color: inherit; }
                 .fp-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+                /* The dialog heading must span the header row, or margin-left:auto
+                   inside it has no room and the kebab sticks to the Labels button. */
+                .fi-modal-header .fi-modal-heading { flex: 1 1 auto; min-width: 0; }
                 /* Anchored right under the first line of the textarea, near the "@". */
                 .fp-mention-pop { position: absolute; top: 2.4rem; left: .75rem; right: .75rem; z-index: 40; background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; box-shadow: 0 12px 32px -8px rgb(0 0 0 / .18); padding: .3rem; max-height: 12rem; overflow: auto; }
                 .dark .fp-mention-pop { background: #1b1b21; border-color: rgb(255 255 255 / .12); }
