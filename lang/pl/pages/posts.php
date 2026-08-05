@@ -114,7 +114,7 @@ return [
     'note_delete_confirm' => 'Usunąć tę notatkę?',
     'filter' => 'Filtruj',
     'notes_filter' => 'Notatki',
-    'notes_filter_title' => 'Notatki według etykiety',
+    'notes_filter_title' => 'Tag',
     'notes_filter_hint' => 'Odznaczone etykiety są ukryte w kalendarzu.',
     'notes_filter_untagged' => 'Bez etykiety',
 
@@ -199,4 +199,5 @@ return [
     'activity_comment_reacted' => 'zareagował(a) na komentarz',
     'filter_author' => 'Autor',
     'filter_clear' => 'Wyczyść filtry',
+    'filter_by' => 'Filtruj według:',
 ];

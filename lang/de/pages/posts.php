@@ -164,7 +164,7 @@ return [
     'note_delete_confirm' => 'Diese Notiz löschen?',
     'filter' => 'Filter',
     'notes_filter' => 'Notizen',
-    'notes_filter_title' => 'Notizen nach Tag',
+    'notes_filter_title' => 'Tag',
     'notes_filter_hint' => 'Abgewählte Tags werden im Kalender ausgeblendet.',
     'notes_filter_untagged' => 'Ohne Tag',
 
@@ -201,4 +201,5 @@ return [
     'calendar_delete_confirm' => 'Diesen Kalender und seine Termine aus der Ansicht entfernen?',
     'filter_author' => 'Autor',
     'filter_clear' => 'Filter zurücksetzen',
+    'filter_by' => 'Filtern nach:',
 ];

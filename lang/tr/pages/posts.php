@@ -114,7 +114,7 @@ return [
     'note_delete_confirm' => 'Bu not silinsin mi?',
     'filter' => 'Filtrele',
     'notes_filter' => 'Notlar',
-    'notes_filter_title' => 'Etikete göre notlar',
+    'notes_filter_title' => 'Etiket',
     'notes_filter_hint' => 'İşaretlenmemiş etiketler takvimden gizlenir.',
     'notes_filter_untagged' => 'Etiketsiz',
 
@@ -199,4 +199,5 @@ return [
     'activity_comment_reacted' => 'bir yoruma tepki verdi',
     'filter_author' => 'Yazar',
     'filter_clear' => 'Filtreleri temizle',
+    'filter_by' => 'Filtrele:',
 ];

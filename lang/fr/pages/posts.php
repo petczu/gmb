@@ -114,7 +114,7 @@ return [
     'note_delete_confirm' => 'Supprimer cette note ?',
     'filter' => 'Filtrer',
     'notes_filter' => 'Notes',
-    'notes_filter_title' => 'Notes par étiquette',
+    'notes_filter_title' => 'Étiquette',
     'notes_filter_hint' => 'Les étiquettes décochées sont masquées du calendrier.',
     'notes_filter_untagged' => 'Sans étiquette',
 
@@ -199,4 +199,5 @@ return [
     'activity_comment_reacted' => 'a réagi à un commentaire',
     'filter_author' => 'Auteur',
     'filter_clear' => 'Effacer les filtres',
+    'filter_by' => 'Filtrer par :',
 ];

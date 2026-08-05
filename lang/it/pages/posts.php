@@ -114,7 +114,7 @@ return [
     'note_delete_confirm' => 'Eliminare questa nota?',
     'filter' => 'Filtra',
     'notes_filter' => 'Note',
-    'notes_filter_title' => 'Note per etichetta',
+    'notes_filter_title' => 'Etichetta',
     'notes_filter_hint' => 'Le etichette deselezionate sono nascoste dal calendario.',
     'notes_filter_untagged' => 'Senza etichetta',
 
@@ -199,4 +199,5 @@ return [
     'activity_comment_reacted' => 'ha reagito a un commento',
     'filter_author' => 'Autore',
     'filter_clear' => 'Rimuovi filtri',
+    'filter_by' => 'Filtra per:',
 ];

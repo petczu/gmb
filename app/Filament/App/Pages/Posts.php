@@ -442,7 +442,12 @@ class Posts extends Page implements HasTable
             : 'month';
         $this->calMonth = now()->format('Y-m');
         $this->calWeek = now()->startOfWeek(CarbonImmutable::MONDAY)->format('Y-m-d');
-        $this->hiddenNoteTags = array_values(array_filter((array) session('posts_hidden_note_tags', []), 'is_string'));
+        // Drop the legacy "untagged" sentinel: the filter no longer offers it,
+        // so a stale session must not keep untagged notes invisible.
+        $this->hiddenNoteTags = array_values(array_filter(
+            (array) session('posts_hidden_note_tags', []),
+            fn ($tag): bool => is_string($tag) && $tag !== self::UNTAGGED,
+        ));
     }
 
     public function setMode(string $mode): void

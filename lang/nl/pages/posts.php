@@ -114,7 +114,7 @@ return [
     'note_delete_confirm' => 'Deze notitie verwijderen?',
     'filter' => 'Filteren',
     'notes_filter' => 'Notities',
-    'notes_filter_title' => 'Notities per label',
+    'notes_filter_title' => 'Tag',
     'notes_filter_hint' => 'Uitgevinkte labels worden verborgen in de kalender.',
     'notes_filter_untagged' => 'Zonder label',
 
@@ -199,4 +199,5 @@ return [
     'activity_comment_reacted' => 'reageerde op een reactie',
     'filter_author' => 'Auteur',
     'filter_clear' => 'Filters wissen',
+    'filter_by' => 'Filteren op:',
 ];

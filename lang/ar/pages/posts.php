@@ -114,7 +114,7 @@ return [
     'note_delete_confirm' => 'حذف هذه الملاحظة؟',
     'filter' => 'تصفية',
     'notes_filter' => 'الملاحظات',
-    'notes_filter_title' => 'الملاحظات حسب الوسم',
+    'notes_filter_title' => 'الوسم',
     'notes_filter_hint' => 'الوسوم غير المحددة مخفية من التقويم.',
     'notes_filter_untagged' => 'بلا وسم',
 
@@ -199,4 +199,5 @@ return [
     'activity_comment_reacted' => 'تفاعل مع تعليق',
     'filter_author' => 'الكاتب',
     'filter_clear' => 'مسح عوامل التصفية',
+    'filter_by' => 'تصفية حسب:',
 ];

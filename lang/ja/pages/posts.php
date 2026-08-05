@@ -114,7 +114,7 @@ return [
     'note_delete_confirm' => 'このメモを削除しますか？',
     'filter' => 'フィルター',
     'notes_filter' => 'メモ',
-    'notes_filter_title' => 'タグ別のメモ',
+    'notes_filter_title' => 'タグ',
     'notes_filter_hint' => 'チェックを外したタグはカレンダーから非表示になります。',
     'notes_filter_untagged' => 'タグなし',
 
@@ -199,4 +199,5 @@ return [
     'activity_comment_reacted' => 'コメントにリアクションしました',
     'filter_author' => '作成者',
     'filter_clear' => 'フィルターをクリア',
+    'filter_by' => '絞り込み：',
 ];

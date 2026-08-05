@@ -164,7 +164,7 @@ return [
     'note_delete_confirm' => 'Delete this note?',
     'filter' => 'Filter',
     'notes_filter' => 'Notes',
-    'notes_filter_title' => 'Notes by tag',
+    'notes_filter_title' => 'Tag',
     'notes_filter_hint' => 'Unticked tags are hidden from the calendar.',
     'notes_filter_untagged' => 'Without tag',
 
@@ -201,4 +201,5 @@ return [
     'calendar_delete_confirm' => 'Remove this calendar and its events from the view?',
     'filter_author' => 'Author',
     'filter_clear' => 'Clear filters',
+    'filter_by' => 'Filter by:',
 ];

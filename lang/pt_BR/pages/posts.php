@@ -114,7 +114,7 @@ return [
     'note_delete_confirm' => 'Excluir esta nota?',
     'filter' => 'Filtrar',
     'notes_filter' => 'Notas',
-    'notes_filter_title' => 'Notas por etiqueta',
+    'notes_filter_title' => 'Etiqueta',
     'notes_filter_hint' => 'As etiquetas desmarcadas ficam ocultas no calendário.',
     'notes_filter_untagged' => 'Sem etiqueta',
 
@@ -199,4 +199,5 @@ return [
     'activity_comment_reacted' => 'reagiu a um comentário',
     'filter_author' => 'Autor',
     'filter_clear' => 'Limpar filtros',
+    'filter_by' => 'Filtrar por:',
 ];

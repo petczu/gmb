@@ -19,7 +19,24 @@
             .pc-toggle button.active { background:#2d19ec; color:#fff; }
 
             .pc-fcount { display:inline-flex; align-items:center; justify-content:center; min-width:1.02rem; height:1.02rem; border-radius:999px; background:#2d19ec; color:#fff; font-size:.62rem; font-weight:700; padding:0 .25rem; }
-            .pc-pop-filter { max-height:24rem; overflow-y:auto; }
+            /* Planable-style Filter popover: accordion sections with icons + counts */
+            .pc-pop-filter { width:17.5rem; max-height:26rem; overflow-y:auto; padding:.5rem .55rem .6rem; }
+            .pcf-title { display:flex; justify-content:space-between; align-items:center; padding:.15rem .3rem .45rem; font-size:.92rem; }
+            .pcf-cap { font-size:.62rem; letter-spacing:.09em; text-transform:uppercase; color:#9ca3af; padding:.3rem .3rem .35rem; font-weight:700; }
+            .pcf-sec { border-radius:.55rem; }
+            .pcf-sec.open { background:rgb(0 0 0 / .045); }
+            .dark .pcf-sec.open { background:rgb(255 255 255 / .05); }
+            .pcf-head { display:flex; align-items:center; gap:.55rem; width:100%; background:none; border:none; cursor:pointer; padding:.5rem .55rem; font-size:.83rem; font-weight:500; color:inherit; border-radius:.55rem; text-align:left; }
+            .pcf-head:hover { background:rgb(0 0 0 / .045); }
+            .dark .pcf-head:hover { background:rgb(255 255 255 / .05); }
+            .pcf-head svg { transition:transform .15s ease; }
+            .pcf-body { padding:.05rem .45rem .5rem 1.05rem; display:grid; gap:.1rem; }
+            .pcf-row { display:flex; align-items:center; gap:.5rem; padding:.28rem .35rem; font-size:.8rem; cursor:pointer; border-radius:.4rem; }
+            .pcf-row:hover { background:rgb(0 0 0 / .045); }
+            .dark .pcf-row:hover { background:rgb(255 255 255 / .05); }
+            .pcf-row input { cursor:pointer; accent-color:#2d19ec; flex:none; }
+            .pcf-row .nm { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .pcf-row .cnt { margin-left:auto; color:#9ca3af; font-size:.72rem; }
             .pc-grid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); border:1px solid rgb(0 0 0 / .08); border-radius:.75rem; background:#fff; }
             /* Phones: keep readable day cells and scroll the grid sideways. */
             @media (max-width:700px) {
@@ -179,7 +196,41 @@
                         $fbGroups[] = ['key' => 'filterAuthors', 'title' => __('pages/posts.filter_author'), 'selected' => array_map('strval', $this->filterAuthors), 'options' => array_combine($fbAuthors, $fbAuthors)];
                     }
                 @endphp
-                <div x-data="{ open: false }" style="position:relative;">
+                @php
+                    // Per-option counts, Planable-style, from one slim query.
+                    $fpAll = \App\Models\Post::query()->get(['type', 'status', 'created_by_name', 'location_ids', 'label_ids']);
+                    $fpTypeCounts = $fpAll->countBy('type');
+                    $fpStatusCounts = $fpAll->countBy('status');
+                    $fpAuthorCounts = $fpAll->countBy('created_by_name');
+                    $fpLocCounts = fn (int $id): int => $fpAll->filter(fn ($p) => in_array($id, array_map('intval', $p->location_ids ?? []), true))->count();
+                    $fpLabelCounts = fn (int $id): int => $fpAll->filter(fn ($p) => in_array($id, array_map('intval', $p->label_ids ?? []), true))->count();
+                    $fpTagCounts = \App\Models\PostNote::query()->get(['tag'])->countBy(fn ($n) => $n->tag ?? '');
+
+                    $fpSections = [];
+                    if (count($fbLocations) > 1) {
+                        $fpSections[] = ['id' => 'locations', 'icon' => 'heroicon-o-map-pin', 'title' => __('pages/posts.field_locations'), 'mode' => 'locations',
+                            'active' => count($this->hiddenLocations),
+                            'options' => collect($fbLocations)->map(fn ($name, $id) => ['value' => (int) $id, 'label' => $name, 'count' => $fpLocCounts((int) $id), 'checked' => ! in_array((int) $id, $this->hiddenLocations, true)])->values()->all()];
+                    }
+                    $sectionIcons = ['filterTypes' => 'heroicon-o-photo', 'filterStatuses' => 'heroicon-o-clock', 'filterLabels' => 'heroicon-o-tag', 'filterAuthors' => 'heroicon-o-user'];
+                    foreach ($fbGroups as $group) {
+                        $counts = match ($group['key']) {
+                            'filterTypes' => fn ($v) => (int) ($fpTypeCounts[$v] ?? 0),
+                            'filterStatuses' => fn ($v) => (int) ($fpStatusCounts[$v] ?? 0),
+                            'filterAuthors' => fn ($v) => (int) ($fpAuthorCounts[$v] ?? 0),
+                            'filterLabels' => fn ($v) => $fpLabelCounts((int) $v),
+                        };
+                        $fpSections[] = ['id' => $group['key'], 'icon' => $sectionIcons[$group['key']], 'title' => $group['title'], 'mode' => 'array', 'key' => $group['key'],
+                            'active' => count($group['selected']),
+                            'options' => collect($group['options'])->map(fn ($label, $value) => ['value' => (string) $value, 'label' => $label, 'count' => $counts((string) $value), 'checked' => in_array((string) $value, $group['selected'], true)])->values()->all()];
+                    }
+                    if ($fbTags !== []) {
+                        $fpSections[] = ['id' => 'tags', 'icon' => 'heroicon-o-hashtag', 'title' => __('pages/posts.notes_filter_title'), 'mode' => 'tags',
+                            'active' => count($this->hiddenNoteTags),
+                            'options' => collect($fbTags)->map(fn ($tag) => ['value' => $tag, 'label' => '# '.$tag, 'count' => (int) ($fpTagCounts[$tag] ?? 0), 'checked' => ! in_array($tag, $this->hiddenNoteTags, true)])->values()->all()];
+                    }
+                @endphp
+                <div x-data="{ open: false, sec: null }" style="position:relative;">
                     <button type="button" class="pc-btn" @click="open = !open" style="display:inline-flex; align-items:center; gap:.4rem;">
                         @svg('heroicon-o-funnel', ['style' => 'width:1rem; height:1rem; opacity:.7;'])
                         {{ __('pages/posts.filter') }}
@@ -189,39 +240,34 @@
                     </button>
 
                     <div class="pc-pop pc-pop-filter" x-show="open" x-cloak @click.outside="open = false">
-                        @if (count($fbLocations) > 1)
-                            <div class="head"><b>{{ __('pages/posts.field_locations') }}</b></div>
-                            @foreach ($fbLocations as $id => $name)
-                                <label class="row" style="cursor:pointer;">
-                                    <input type="checkbox" @checked(! in_array((int) $id, $this->hiddenLocations, true)) wire:click="toggleLocationFilter({{ (int) $id }})" style="cursor:pointer;">
-                                    <span class="nm">{{ $name }}</span>
-                                </label>
-                            @endforeach
-                        @endif
+                        <div class="pcf-title">
+                            <b>{{ __('pages/posts.filter') }}</b>
+                            <button type="button" class="pc-iconbtn" @click="open = false">@svg('heroicon-o-x-mark', ['style' => 'width:1rem; height:1rem;'])</button>
+                        </div>
+                        <div class="pcf-cap">{{ __('pages/posts.filter_by') }}</div>
 
-                        @foreach ($fbGroups as $group)
-                            <div class="head" style="margin-top:.55rem;"><b>{{ $group['title'] }}</b></div>
-                            @foreach ($group['options'] as $value => $label)
-                                <label class="row" style="cursor:pointer;">
-                                    <input type="checkbox" @checked(in_array((string) $value, $group['selected'], true)) wire:click="toggleArrayFilter('{{ $group['key'] }}', {{ \Illuminate\Support\Js::from((string) $value) }})" style="cursor:pointer;">
-                                    <span class="nm">{{ $label }}</span>
-                                </label>
-                            @endforeach
+                        @foreach ($fpSections as $section)
+                            <div class="pcf-sec" :class="sec === '{{ $section['id'] }}' ? 'open' : ''">
+                                <button type="button" class="pcf-head" @click="sec = sec === '{{ $section['id'] }}' ? null : '{{ $section['id'] }}'">
+                                    @svg($section['icon'], ['style' => 'width:1rem; height:1rem; flex:none;'])
+                                    <span>{{ $section['title'] }}</span>
+                                    @if ($section['active'] > 0)<span class="pc-fcount">{{ $section['active'] }}</span>@endif
+                                    @svg('heroicon-o-chevron-down', ['style' => 'width:.8rem; height:.8rem; margin-left:auto; opacity:.55;', 'x-bind:style' => "sec === '{$section['id']}' ? 'transform: rotate(180deg)' : ''"])
+                                </button>
+                                <div class="pcf-body" x-show="sec === '{{ $section['id'] }}'" x-collapse>
+                                    @foreach ($section['options'] as $option)
+                                        <label class="pcf-row">
+                                            <input type="checkbox" @checked($option['checked'])
+                                                @if ($section['mode'] === 'locations') wire:click="toggleLocationFilter({{ (int) $option['value'] }})"
+                                                @elseif ($section['mode'] === 'tags') wire:click="toggleNoteTagFilter(@js($option['value']))"
+                                                @else wire:click="toggleArrayFilter('{{ $section['key'] }}', {{ \Illuminate\Support\Js::from((string) $option['value']) }})" @endif>
+                                            <span class="nm">{{ $option['label'] }}</span>
+                                            <span class="cnt">{{ $option['count'] }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
                         @endforeach
-
-                        @if ($fbTags !== [])
-                            <div class="head" style="margin-top:.55rem;"><b>{{ __('pages/posts.notes_filter_title') }}</b></div>
-                            @foreach ($fbTags as $tag)
-                                <label class="row" style="cursor:pointer;">
-                                    <input type="checkbox" @checked(! in_array($tag, $this->hiddenNoteTags, true)) wire:click="toggleNoteTagFilter(@js($tag))" style="cursor:pointer;">
-                                    <span class="nm"># {{ $tag }}</span>
-                                </label>
-                            @endforeach
-                            <label class="row" style="cursor:pointer;">
-                                <input type="checkbox" @checked(! in_array(\App\Filament\App\Pages\Posts::UNTAGGED, $this->hiddenNoteTags, true)) wire:click="toggleNoteTagFilter('{{ \App\Filament\App\Pages\Posts::UNTAGGED }}')" style="cursor:pointer;">
-                                <span class="nm" style="color:#6b7280;">{{ __('pages/posts.notes_filter_untagged') }}</span>
-                            </label>
-                        @endif
 
                         @if ($this->activeFilterCount() > 0)
                             <button type="button" class="foot" wire:click="clearPostFilters">{{ __('pages/posts.filter_clear') }}</button>
