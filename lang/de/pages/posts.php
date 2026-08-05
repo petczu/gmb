@@ -118,6 +118,7 @@ return [
     'activity_duplicated' => 'hat diesen Beitrag als Entwurf dupliziert',
     'activity_deleted' => 'hat diesen Beitrag entfernt',
     'activity_labels_updated' => 'hat die Labels geändert',
+    'activity_comment_reacted' => 'hat auf einen Kommentar reagiert',
     'activity_reverted' => 'hat diesen Beitrag zurück in einen Entwurf verschoben',
 
     // Kalenderansicht

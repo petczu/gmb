@@ -274,7 +274,7 @@ class Posts extends Page implements HasTable
                 .'</span>';
 
         return '<div class="fp-comment'.($isReply ? ' fp-reply' : '').'" wire:key="comment-'.$c->id.'">'
-            .'<span class="fp-avatar">'.e(mb_strtoupper(mb_substr($who, 0, 1))).'</span>'
+            .$this->avatarHtml($c->user_id !== null ? (int) $c->user_id : null, $who)
             .'<span class="fp-comment-main">'
             .'<span class="fp-comment-head"><strong>'.e($who).'</strong> <span>'.$when.'</span>'.$actions.'</span>'
             .$body
@@ -1470,7 +1470,7 @@ class Posts extends Page implements HasTable
         $members = [];
         foreach ($this->workspaceMembers() as $id => $name) {
             if ((int) $id !== $selfId) {
-                $members[] = ['id' => (int) $id, 'name' => (string) $name];
+                $members[] = ['id' => (int) $id, 'name' => (string) $name, 'a' => $this->memberAvatars()[(int) $id] ?? null];
             }
         }
         $membersJson = htmlspecialchars((string) json_encode($members), ENT_QUOTES);
@@ -1518,7 +1518,9 @@ class Posts extends Page implements HasTable
             .'<div class="fp-mention-pop" x-show="open" x-cloak @click.outside="open = false">'
             .'<template x-for="(m, i) in items" :key="m.id">'
             .'<button type="button" class="fp-mention-item" :class="i === active ? \'active\' : \'\'" @mouseenter="active = i" @click="pick(m)">'
-            .'<span class="fp-avatar" x-text="m.name.charAt(0).toUpperCase()"></span><span x-text="m.name"></span>'
+            .'<template x-if="m.a"><img class="fp-avatar" :src="m.a" alt="" /></template>'
+            .'<template x-if="! m.a"><span class="fp-avatar fp-avatar-solid" x-text="m.name.charAt(0).toUpperCase()"></span></template>'
+            .'<span x-text="m.name"></span>'
             .'</button>'
             .'</template>'
             .'</div>'
@@ -1643,6 +1645,32 @@ class Posts extends Page implements HasTable
         return svg('heroicon-'.$name)->toHtml();
     }
 
+    /** Workspace member avatars (user id => URL), one query per request. */
+    private function memberAvatars(): array
+    {
+        return once(function (): array {
+            $workspace = tenant();
+            if (! $workspace instanceof Workspace) {
+                return [];
+            }
+
+            return $workspace->users()->get()
+                ->mapWithKeys(fn (User $user): array => [(int) $user->id => $user->getFilamentAvatarUrl()])
+                ->filter()
+                ->all();
+        });
+    }
+
+    /** The user's photo when they have one, otherwise their initial. */
+    private function avatarHtml(?int $userId, string $name): string
+    {
+        $url = $userId !== null ? ($this->memberAvatars()[$userId] ?? null) : null;
+
+        return $url !== null
+            ? '<img class="fp-avatar" src="'.e($url).'" alt="" loading="lazy" />'
+            : '<span class="fp-avatar">'.e(mb_strtoupper(mb_substr($name, 0, 1))).'</span>';
+    }
+
     /** Scoped styles for the feedback panel (light + dark). Emitted once per panel. */
     private function feedbackPanelCss(): string
     {
@@ -1674,7 +1702,9 @@ class Posts extends Page implements HasTable
                 .fp-empty { text-align: center; padding: 1.4rem .5rem 1.6rem; }
                 .fp-empty-title { font-weight: 600; font-size: .9rem; margin-bottom: .2rem; }
                 .fp-empty-body { color: #9ca3af; font-size: .8rem; }
-                .fp-thread { max-height: 16rem; overflow: auto; margin-bottom: .6rem; }
+                /* No inner scrollbox: the dialog scrolls, and clipping here cut
+                   off the reaction/menu popovers on the last comments. */
+                .fp-thread { margin-bottom: .6rem; }
                 .fp-comment { display: flex; gap: .55rem; padding: .55rem 0; }
                 .fp-comment + .fp-comment { border-top: 1px solid #f1f2f4; }
                 .dark .fp-comment + .fp-comment { border-color: rgb(255 255 255 / .06); }
@@ -1692,12 +1722,16 @@ class Posts extends Page implements HasTable
                 .fp-composer:focus-within { border-color: #2d19ec66; }
                 .fp-composer textarea { display: block; width: 100%; border: none; outline: none; background: transparent; resize: none; padding: .6rem .75rem .3rem; font-size: .85rem; color: inherit; }
                 .fp-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-                .fp-mention-pop { position: absolute; left: .75rem; right: .75rem; z-index: 40; background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; box-shadow: 0 12px 32px -8px rgb(0 0 0 / .18); padding: .3rem; max-height: 12rem; overflow: auto; }
+                /* Anchored right under the first line of the textarea, near the "@". */
+                .fp-mention-pop { position: absolute; top: 2.4rem; left: .75rem; right: .75rem; z-index: 40; background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; box-shadow: 0 12px 32px -8px rgb(0 0 0 / .18); padding: .3rem; max-height: 12rem; overflow: auto; }
                 .dark .fp-mention-pop { background: #1b1b21; border-color: rgb(255 255 255 / .12); }
                 .fp-mention-item { display: flex; align-items: center; gap: .5rem; width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: .35rem .5rem; border-radius: .45rem; font-size: .82rem; color: inherit; }
                 .fp-mention-item.active { background: #eef2ff; }
                 .dark .fp-mention-item.active { background: rgb(99 102 241 / .18); }
                 .fp-mention-item .fp-avatar { width: 1.5rem; height: 1.5rem; font-size: .68rem; }
+                /* Initial fallback must stay visible on the highlighted row. */
+                .fp-avatar-solid { background: #2d19ec; color: #fff; }
+                img.fp-avatar { object-fit: cover; }
                 .fp-picked { padding: .1rem .6rem 0; }
                 .fp-files { padding: .2rem .6rem 0; }
                 /* Comment hover actions, menus, reactions, replies */
@@ -1725,7 +1759,9 @@ class Posts extends Page implements HasTable
                 .dark .fp-reaction.mine { background: rgb(99 102 241 / .2); border-color: #a5b4fc66; }
                 .fp-replies { margin-left: 2.4rem; border-left: 2px solid #f1f2f4; padding-left: .6rem; }
                 .dark .fp-replies { border-color: rgb(255 255 255 / .08); }
-                .fp-reply-banner { display: flex; align-items: center; justify-content: space-between; font-size: .74rem; color: #6b7280; background: #f4f5f7; border-radius: .5rem .5rem 0 0; padding: .3rem .6rem; margin-bottom: -.35rem; }
+                .fp-reply-banner { display: flex; align-items: center; justify-content: space-between; font-size: .74rem; line-height: 1; color: #6b7280; background: #f4f5f7; border-radius: .5rem .5rem 0 0; padding: .38rem .6rem; margin-bottom: -.35rem; }
+                .fp-reply-banner > span { display: inline-flex; align-items: center; gap: .3rem; }
+                .fp-reply-banner svg { display: block; }
                 .dark .fp-reply-banner { background: rgb(255 255 255 / .06); color: #a1a1aa; }
                 .fp-edited { font-size: .68rem; color: #9ca3af; }
                 /* Heroicon sizing for the hand-built panel markup */
@@ -1807,7 +1843,7 @@ class Posts extends Page implements HasTable
 
             // Same avatar + name layout as the comment thread, so both feeds read alike.
             return '<div class="fp-comment">'
-                .'<span class="fp-avatar">'.e(mb_strtoupper(mb_substr($whoRaw, 0, 1))).'</span>'
+                .$this->avatarHtml($entry->user_id !== null ? (int) $entry->user_id : null, $whoRaw)
                 .'<span class="fp-comment-main">'
                 .'<span class="fp-comment-head"><strong>'.$who.'</strong> '.e($label).'</span>'
                 .'<span class="fp-comment-head"><span>'.$when.'</span></span>'

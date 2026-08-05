@@ -118,6 +118,7 @@ return [
     'activity_duplicated' => 'duplicated this post as a draft',
     'activity_deleted' => 'removed this post',
     'activity_labels_updated' => 'changed the labels',
+    'activity_comment_reacted' => 'reacted to a comment',
     'activity_reverted' => 'moved this post back to draft',
 
     // Calendar view
