@@ -398,6 +398,54 @@ class PostsCalendarTest extends TestCase
         $this->assertSame(2, PostLabel::count());
     }
 
+    public function test_the_filter_bar_restricts_the_calendar_by_type_status_label_and_author(): void
+    {
+        $location = $this->location();
+        $label = PostLabel::create(['name' => 'Pending', 'color' => 'red']);
+        $base = ['location_ids' => [$location->id], 'source_ids' => [], 'scheduled_at' => now()->setTime(10, 0)];
+
+        $draftUpdate = Post::create($base + ['type' => 'update', 'caption' => 'A', 'status' => 'draft', 'created_by_name' => 'Peter', 'label_ids' => [$label->id]]);
+        $publishedOffer = Post::create($base + ['type' => 'offer', 'caption' => 'B', 'status' => 'published', 'created_by_name' => 'Google']);
+
+        $visibleIds = function ($component): array {
+            $ids = [];
+            foreach ($component->instance()->calendarWeeks() as $week) {
+                foreach ($week as $day) {
+                    foreach ($day['posts'] as $post) {
+                        $ids[] = $post->id;
+                    }
+                }
+            }
+
+            return $ids;
+        };
+
+        $component = Livewire::test(Posts::class);
+        $this->assertEqualsCanonicalizing([$draftUpdate->id, $publishedOffer->id], $visibleIds($component));
+
+        $component->call('toggleArrayFilter', 'filterTypes', 'offer');
+        $this->assertSame([$publishedOffer->id], $visibleIds($component));
+        $component->call('toggleArrayFilter', 'filterTypes', 'offer');
+
+        $component->call('toggleArrayFilter', 'filterStatuses', 'draft');
+        $this->assertSame([$draftUpdate->id], $visibleIds($component));
+        $component->call('toggleArrayFilter', 'filterStatuses', 'draft');
+
+        $component->call('toggleArrayFilter', 'filterLabels', (string) $label->id);
+        $this->assertSame([$draftUpdate->id], $visibleIds($component));
+
+        $component->call('toggleArrayFilter', 'filterAuthors', 'Google');
+        $this->assertSame([], $visibleIds($component));
+
+        // Clear resets every dimension at once.
+        $component->call('clearPostFilters');
+        $this->assertEqualsCanonicalizing([$draftUpdate->id, $publishedOffer->id], $visibleIds($component));
+
+        // Unknown property names are ignored, not written.
+        $component->call('toggleArrayFilter', 'mode', 'table');
+        $this->assertSame('calendar', $component->get('mode'));
+    }
+
     public function test_comments_support_reply_edit_delete_and_reactions(): void
     {
         $location = $this->location();

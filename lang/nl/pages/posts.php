@@ -197,4 +197,6 @@ return [
     'activity_labels_updated' => 'wijzigde de labels',
     'activity_reverted' => 'zette deze post terug naar concept',
     'activity_comment_reacted' => 'reageerde op een reactie',
+    'filter_author' => 'Auteur',
+    'filter_clear' => 'Filters wissen',
 ];

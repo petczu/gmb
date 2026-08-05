@@ -197,4 +197,6 @@ return [
     'activity_labels_updated' => 'a modifié les étiquettes',
     'activity_reverted' => 'a remis ce post en brouillon',
     'activity_comment_reacted' => 'a réagi à un commentaire',
+    'filter_author' => 'Auteur',
+    'filter_clear' => 'Effacer les filtres',
 ];

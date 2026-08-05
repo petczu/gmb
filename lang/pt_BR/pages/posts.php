@@ -197,4 +197,6 @@ return [
     'activity_labels_updated' => 'alterou as etiquetas',
     'activity_reverted' => 'devolveu esta publicação para rascunho',
     'activity_comment_reacted' => 'reagiu a um comentário',
+    'filter_author' => 'Autor',
+    'filter_clear' => 'Limpar filtros',
 ];

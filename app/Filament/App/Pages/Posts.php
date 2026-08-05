@@ -549,7 +549,7 @@ class Posts extends Page implements HasTable
                 $q->whereBetween('scheduled_at', [$gridStart, $gridEnd])
                     ->orWhere(fn (Builder $qq) => $qq->whereNull('scheduled_at')->whereBetween('created_at', [$gridStart, $gridEnd]));
             })
-            ->tap(fn (Builder $q) => $this->applyLocationFilter($q))
+            ->tap(fn (Builder $q) => $this->applyLocationFilter($q))->tap(fn (Builder $q) => $this->applyPostFilters($q))
             ->orderBy('scheduled_at')
             ->orderBy('created_at')
             ->get()
@@ -590,6 +590,79 @@ class Posts extends Page implements HasTable
     public function locationOptions(): array
     {
         return Location::query()->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    // ── Always-visible filter bar (type / status / label / author) ─────────
+    // Empty selection = show everything.
+
+    /** @var list<string> */
+    public array $filterTypes = [];
+
+    /** @var list<string> */
+    public array $filterStatuses = [];
+
+    /** @var list<int|string> */
+    public array $filterLabels = [];
+
+    /** @var list<string> */
+    public array $filterAuthors = [];
+
+    public function toggleArrayFilter(string $key, string $value): void
+    {
+        if (! in_array($key, ['filterTypes', 'filterStatuses', 'filterLabels', 'filterAuthors'], true)) {
+            return;
+        }
+
+        $current = array_map('strval', $this->{$key});
+        $this->{$key} = in_array($value, $current, true)
+            ? array_values(array_diff($current, [$value]))
+            : [...$current, $value];
+    }
+
+    public function clearPostFilters(): void
+    {
+        $this->filterTypes = [];
+        $this->filterStatuses = [];
+        $this->filterLabels = [];
+        $this->filterAuthors = [];
+        $this->hiddenLocations = [];
+        $this->hiddenNoteTags = [];
+        session(['posts_hidden_note_tags' => []]);
+    }
+
+    public function activeFilterCount(): int
+    {
+        return count($this->filterTypes) + count($this->filterStatuses)
+            + count($this->filterLabels) + count($this->filterAuthors)
+            + count($this->hiddenLocations) + count($this->hiddenNoteTags);
+    }
+
+    /** Distinct post authors for the filter (imported posts show as Google). */
+    public function authorOptions(): array
+    {
+        return Post::query()->whereNotNull('created_by_name')->distinct()->orderBy('created_by_name')->pluck('created_by_name')->all();
+    }
+
+    /** @return array<int, string> label id => name */
+    public function labelFilterOptions(): array
+    {
+        return PostLabel::query()->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    /** Restrict posts to the selected types/statuses/authors/labels. */
+    protected function applyPostFilters(Builder $q): Builder
+    {
+        return $q
+            ->when($this->filterTypes !== [], fn (Builder $qq) => $qq->whereIn('type', $this->filterTypes))
+            ->when($this->filterStatuses !== [], fn (Builder $qq) => $qq->whereIn('status', $this->filterStatuses))
+            ->when($this->filterAuthors !== [], fn (Builder $qq) => $qq->whereIn('created_by_name', $this->filterAuthors))
+            ->when($this->filterLabels !== [], function (Builder $qq): Builder {
+                return $qq->where(function (Builder $sub): void {
+                    foreach (array_map('intval', $this->filterLabels) as $labelId) {
+                        $sub->orWhereJsonContains('label_ids', $labelId);
+                    }
+                });
+            });
     }
 
     /** Toggle a location's visibility (checked = shown, like the note-tag filter). */
@@ -1922,7 +1995,7 @@ class Posts extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => Post::query()->tap(fn (Builder $q) => $this->applyLocationFilter($q)))
+            ->query(fn (): Builder => Post::query()->tap(fn (Builder $q) => $this->applyLocationFilter($q))->tap(fn (Builder $q) => $this->applyPostFilters($q)))
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading(__('pages/posts.empty'))
             ->emptyStateDescription(__('pages/posts.empty_desc'))

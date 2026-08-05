@@ -197,4 +197,6 @@ return [
     'activity_labels_updated' => 'cambió las etiquetas',
     'activity_reverted' => 'devolvió esta publicación a borrador',
     'activity_comment_reacted' => 'reaccionó a un comentario',
+    'filter_author' => 'Autor',
+    'filter_clear' => 'Quitar filtros',
 ];

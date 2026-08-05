@@ -197,4 +197,6 @@ return [
     'activity_labels_updated' => 'ラベルを変更しました',
     'activity_reverted' => 'この投稿を下書きに戻しました',
     'activity_comment_reacted' => 'コメントにリアクションしました',
+    'filter_author' => '作成者',
+    'filter_clear' => 'フィルターをクリア',
 ];

@@ -197,4 +197,6 @@ return [
     'activity_labels_updated' => 'zmienił(a) etykiety',
     'activity_reverted' => 'przywrócił(a) ten post do szkicu',
     'activity_comment_reacted' => 'zareagował(a) na komentarz',
+    'filter_author' => 'Autor',
+    'filter_clear' => 'Wyczyść filtry',
 ];

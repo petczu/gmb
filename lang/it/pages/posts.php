@@ -197,4 +197,6 @@ return [
     'activity_labels_updated' => 'ha modificato le etichette',
     'activity_reverted' => 'ha riportato questo post in bozza',
     'activity_comment_reacted' => 'ha reagito a un commento',
+    'filter_author' => 'Autore',
+    'filter_clear' => 'Rimuovi filtri',
 ];

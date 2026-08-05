@@ -18,6 +18,13 @@
             .pc-toggle button { border:0; background:transparent; padding:.35rem .8rem; font-size:.85rem; cursor:pointer; color:inherit; }
             .pc-toggle button.active { background:#2d19ec; color:#fff; }
 
+            .pc-fbar { display:flex; align-items:center; flex-wrap:wrap; gap:.4rem; margin:.65rem 0 .9rem; }
+            .pc-fpill { display:inline-flex; align-items:center; gap:.35rem; font-size:.78rem; }
+            .pc-fpill.on { border-color:#2d19ec66; color:#2d19ec; }
+            .dark .pc-fpill.on { border-color:#a5b4fc66; color:#a5b4fc; }
+            .pc-fcount { display:inline-flex; align-items:center; justify-content:center; min-width:1.02rem; height:1.02rem; border-radius:999px; background:#2d19ec; color:#fff; font-size:.62rem; font-weight:700; padding:0 .25rem; }
+            .pc-fclear { background:none; border:none; color:#6b7280; font-size:.75rem; cursor:pointer; text-decoration:underline; }
+            .pc-fclear:hover { color:#2d19ec; }
             .pc-grid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); border:1px solid rgb(0 0 0 / .08); border-radius:.75rem; background:#fff; }
             /* Phones: keep readable day cells and scroll the grid sideways. */
             @media (max-width:700px) {
@@ -159,50 +166,7 @@
                 {{-- Labels live in each post's dialog (header button + popover);
                      no page-level manager needed. --}}
 
-                {{-- Unified Filter: locations (multi-select) + note tags --}}
-                @php
-                    $filterTags = $this->mode === 'calendar' ? $this->noteTags() : [];
-                    $hasLocationFilter = count($this->locationOptions()) > 1;
-                    $activeFilters = count($this->hiddenLocations) + count($this->hiddenNoteTags);
-                @endphp
-                @if ($hasLocationFilter || $filterTags !== [])
-                    <div x-data="{ open: false }" style="position:relative;">
-                        <button type="button" class="pc-btn" @click="open = !open" style="display:inline-flex; align-items:center; gap:.4rem;">
-                            <svg style="width:1rem; height:1rem; opacity:.7;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.792 2.938A49.069 49.069 0 0 1 12 2.25c2.797 0 5.54.236 8.209.688a1.857 1.857 0 0 1 1.541 1.836v1.044a3 3 0 0 1-.879 2.121l-6.182 6.182a1.5 1.5 0 0 0-.439 1.061v2.927a3 3 0 0 1-1.658 2.684l-1.757.878A.75.75 0 0 1 9.75 21v-5.818a1.5 1.5 0 0 0-.44-1.06L3.13 7.938a3 3 0 0 1-.879-2.121V4.773c0-.897.64-1.683 1.542-1.835Z"/></svg>
-                            {{ __('pages/posts.filter') }}
-                            @if ($activeFilters > 0)
-                                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:1.05rem; height:1.05rem; border-radius:999px; background:#2d19ec; color:#fff; font-size:.65rem; font-weight:700;">{{ $activeFilters }}</span>
-                            @endif
-                        </button>
-
-                        <div class="pc-pop" x-show="open" x-cloak @click.outside="open = false">
-                            @if ($hasLocationFilter)
-                                <div class="head"><b>{{ __('pages/posts.field_locations') }}</b></div>
-                                @foreach ($this->locationOptions() as $id => $name)
-                                    <label class="row" style="cursor:pointer;">
-                                        <input type="checkbox" @checked(! in_array((int) $id, $this->hiddenLocations, true)) wire:click="toggleLocationFilter({{ (int) $id }})" style="cursor:pointer;">
-                                        <span class="nm">{{ $name }}</span>
-                                    </label>
-                                @endforeach
-                            @endif
-
-                            @if ($filterTags !== [])
-                                <div class="head" style="{{ $hasLocationFilter ? 'margin-top:.7rem;' : '' }}"><b>{{ __('pages/posts.notes_filter_title') }}</b></div>
-                                @foreach ($filterTags as $tag)
-                                    <label class="row" style="cursor:pointer;">
-                                        <input type="checkbox" @checked(! in_array($tag, $this->hiddenNoteTags, true)) wire:click="toggleNoteTagFilter(@js($tag))" style="cursor:pointer;">
-                                        <span class="nm"># {{ $tag }}</span>
-                                    </label>
-                                @endforeach
-                                <label class="row" style="cursor:pointer;">
-                                    <input type="checkbox" @checked(! in_array(\App\Filament\App\Pages\Posts::UNTAGGED, $this->hiddenNoteTags, true)) wire:click="toggleNoteTagFilter('{{ \App\Filament\App\Pages\Posts::UNTAGGED }}')" style="cursor:pointer;">
-                                    <span class="nm" style="color:#6b7280;">{{ __('pages/posts.notes_filter_untagged') }}</span>
-                                </label>
-                            @endif
-                        </div>
-                    </div>
-                @endif
-
+                {{-- Filters moved to the always-visible bar under the toolbar. --}}
                 @if ($this->mode === 'calendar')
                     {{-- External calendars: direct add when none yet, else a popover --}}
                     @if ($calendars->isEmpty())
@@ -259,6 +223,90 @@
                     <button type="button" class="{{ $this->mode === 'table' ? 'active' : '' }}" wire:click="setMode('table')">{{ __('pages/posts.view_list') }}</button>
                 </div>
             </div>
+        </div>
+
+        {{-- Always-visible filter bar: locations, content type, status, labels,
+             author, and (calendar only) note tags. Empty selection = show all. --}}
+        @php
+            $fbLocations = $this->locationOptions();
+            $fbTags = $this->mode === 'calendar' ? $this->noteTags() : [];
+            $fbAuthors = $this->authorOptions();
+            $fbLabels = $this->labelFilterOptions();
+            $fbGroups = [
+                ['key' => 'filterTypes', 'title' => __('pages/posts.col_type'), 'selected' => array_map('strval', $this->filterTypes), 'options' => collect(\App\Models\Post::TYPES)->mapWithKeys(fn ($t) => [$t => __('pages/posts.type_'.$t)])->all()],
+                ['key' => 'filterStatuses', 'title' => __('pages/posts.col_status'), 'selected' => array_map('strval', $this->filterStatuses), 'options' => collect(['draft', 'scheduled', 'in_progress', 'published', 'failed'])->mapWithKeys(fn ($s) => [$s => __('pages/posts.status_'.$s)])->all()],
+            ];
+            if ($fbLabels !== []) {
+                $fbGroups[] = ['key' => 'filterLabels', 'title' => __('pages/posts.field_labels'), 'selected' => array_map('strval', $this->filterLabels), 'options' => $fbLabels];
+            }
+            if (count($fbAuthors) > 1) {
+                $fbGroups[] = ['key' => 'filterAuthors', 'title' => __('pages/posts.filter_author'), 'selected' => array_map('strval', $this->filterAuthors), 'options' => array_combine($fbAuthors, $fbAuthors)];
+            }
+        @endphp
+        <div class="pc-fbar">
+            @svg('heroicon-o-funnel', ['style' => 'width:.95rem; height:.95rem; color:#9ca3af; flex:none;'])
+
+            @if (count($fbLocations) > 1)
+                <div x-data="{ open: false }" style="position:relative;">
+                    <button type="button" class="pc-btn pc-fpill {{ $this->hiddenLocations !== [] ? 'on' : '' }}" @click="open = !open">
+                        {{ __('pages/posts.field_locations') }}
+                        @if ($this->hiddenLocations !== [])<span class="pc-fcount">{{ count($fbLocations) - count($this->hiddenLocations) }}</span>@endif
+                        @svg('heroicon-o-chevron-down', ['style' => 'width:.7rem; height:.7rem; opacity:.6;'])
+                    </button>
+                    <div class="pc-pop" x-show="open" x-cloak @click.outside="open = false">
+                        @foreach ($fbLocations as $id => $name)
+                            <label class="row" style="cursor:pointer;">
+                                <input type="checkbox" @checked(! in_array((int) $id, $this->hiddenLocations, true)) wire:click="toggleLocationFilter({{ (int) $id }})" style="cursor:pointer;">
+                                <span class="nm">{{ $name }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @foreach ($fbGroups as $group)
+                <div x-data="{ open: false }" style="position:relative;">
+                    <button type="button" class="pc-btn pc-fpill {{ $group['selected'] !== [] ? 'on' : '' }}" @click="open = !open">
+                        {{ $group['title'] }}
+                        @if ($group['selected'] !== [])<span class="pc-fcount">{{ count($group['selected']) }}</span>@endif
+                        @svg('heroicon-o-chevron-down', ['style' => 'width:.7rem; height:.7rem; opacity:.6;'])
+                    </button>
+                    <div class="pc-pop" x-show="open" x-cloak @click.outside="open = false">
+                        @foreach ($group['options'] as $value => $label)
+                            <label class="row" style="cursor:pointer;">
+                                <input type="checkbox" @checked(in_array((string) $value, $group['selected'], true)) wire:click="toggleArrayFilter('{{ $group['key'] }}', {{ \Illuminate\Support\Js::from((string) $value) }})" style="cursor:pointer;">
+                                <span class="nm">{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+
+            @if ($fbTags !== [])
+                <div x-data="{ open: false }" style="position:relative;">
+                    <button type="button" class="pc-btn pc-fpill {{ $this->hiddenNoteTags !== [] ? 'on' : '' }}" @click="open = !open">
+                        {{ __('pages/posts.notes_filter') }}
+                        @if ($this->hiddenNoteTags !== [])<span class="pc-fcount">{{ count($this->hiddenNoteTags) }}</span>@endif
+                        @svg('heroicon-o-chevron-down', ['style' => 'width:.7rem; height:.7rem; opacity:.6;'])
+                    </button>
+                    <div class="pc-pop" x-show="open" x-cloak @click.outside="open = false">
+                        @foreach ($fbTags as $tag)
+                            <label class="row" style="cursor:pointer;">
+                                <input type="checkbox" @checked(! in_array($tag, $this->hiddenNoteTags, true)) wire:click="toggleNoteTagFilter(@js($tag))" style="cursor:pointer;">
+                                <span class="nm"># {{ $tag }}</span>
+                            </label>
+                        @endforeach
+                        <label class="row" style="cursor:pointer;">
+                            <input type="checkbox" @checked(! in_array(\App\Filament\App\Pages\Posts::UNTAGGED, $this->hiddenNoteTags, true)) wire:click="toggleNoteTagFilter('{{ \App\Filament\App\Pages\Posts::UNTAGGED }}')" style="cursor:pointer;">
+                            <span class="nm" style="color:#6b7280;">{{ __('pages/posts.notes_filter_untagged') }}</span>
+                        </label>
+                    </div>
+                </div>
+            @endif
+
+            @if ($this->activeFilterCount() > 0)
+                <button type="button" class="pc-fclear" wire:click="clearPostFilters">{{ __('pages/posts.filter_clear') }}</button>
+            @endif
         </div>
 
         @if ($this->mode === 'calendar')

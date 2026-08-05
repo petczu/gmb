@@ -197,4 +197,6 @@ return [
     'activity_labels_updated' => 'غيّر التسميات',
     'activity_reverted' => 'أعاد هذا المنشور إلى مسودة',
     'activity_comment_reacted' => 'تفاعل مع تعليق',
+    'filter_author' => 'الكاتب',
+    'filter_clear' => 'مسح عوامل التصفية',
 ];

@@ -199,4 +199,6 @@ return [
     'calendar_sync_error' => 'Calendar added, but the feed could not be synced',
     'calendar_delete' => 'Remove calendar',
     'calendar_delete_confirm' => 'Remove this calendar and its events from the view?',
+    'filter_author' => 'Author',
+    'filter_clear' => 'Clear filters',
 ];

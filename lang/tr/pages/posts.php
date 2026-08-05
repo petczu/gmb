@@ -197,4 +197,6 @@ return [
     'activity_labels_updated' => 'etiketleri değiştirdi',
     'activity_reverted' => 'bu gönderiyi taslağa geri aldı',
     'activity_comment_reacted' => 'bir yoruma tepki verdi',
+    'filter_author' => 'Yazar',
+    'filter_clear' => 'Filtreleri temizle',
 ];
