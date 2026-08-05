@@ -54,6 +54,10 @@
             .pc-card:hover { border-color:#2d19ec55; }
             .pc-card.draft { border-style:dashed; }
             .pc-card img { width:100%; height:2.6rem; object-fit:cover; border-radius:.3rem; margin-bottom:.25rem; }
+            .pc-thumb { position:relative; display:block; margin-bottom:.25rem; pointer-events:none; }
+            .pc-thumb video { display:block; width:100%; height:2.6rem; object-fit:cover; border-radius:.3rem; }
+            .pc-thumb-badge { position:absolute; inset:0; display:grid; place-items:center; }
+            .pc-thumb-badge svg { width:.8rem; height:.8rem; color:#fff; background:rgb(0 0 0 / .55); border-radius:999px; padding:.3rem; box-sizing:content-box; }
             .pc-card .meta { display:flex; align-items:center; gap:.3rem; font-size:.68rem; color:#6b7280; }
             .dark .pc-card .meta { color:#a1a1aa; }
             .pc-card .meta .badge { border-radius:.3rem; padding:0 .3rem; background:rgb(0 0 0 / .06); }
@@ -365,6 +369,15 @@
                                     @endif>
                                     @if ($post->image_url)
                                         <img src="{{ $post->image_url }}" alt="" loading="lazy">
+                                    @elseif ($post->video_url)
+                                        {{-- First frame as the thumbnail (metadata preload only, never
+                                             playable from the card) + a Planable-style video badge. --}}
+                                        <span class="pc-thumb">
+                                            <video src="{{ $post->video_url }}#t=0.1" preload="metadata" muted playsinline disablepictureinpicture tabindex="-1"></video>
+                                            <span class="pc-thumb-badge">
+                                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"/></svg>
+                                            </span>
+                                        </span>
                                     @endif
                                     <span class="meta">
                                         <span>{{ ($post->scheduled_at ?? $post->created_at)->format('H:i') }}</span>

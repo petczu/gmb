@@ -1450,9 +1450,9 @@ class Posts extends Page implements HasTable
                 .dark .fp-link { color: #a5b4fc; }
                 .fp-labels { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-bottom: .8rem; }
                 .fp-chip { font-size: .68rem; font-weight: 700; letter-spacing: .02em; padding: .18rem .55rem; border-radius: 999px; }
-                .fp-labels-btn { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 500; color: #374151; background: none; border: 1.5px dashed #d1d5db; border-radius: .55rem; padding: .32rem .7rem; cursor: pointer; transition: all .12s ease; }
+                .fp-labels-btn { display: inline-flex; align-items: center; gap: .3rem; font-size: .7rem; font-weight: 600; color: #374151; background: none; border: 1.5px dashed #d1d5db; border-radius: 999px; padding: .13rem .6rem; line-height: 1.3; cursor: pointer; transition: all .12s ease; }
                 .fp-labels-btn:hover { border-color: #2d19ec; color: #2d19ec; }
-                .fp-labels-btn svg { width: .95rem; height: .95rem; }
+                .fp-labels-btn svg { width: .8rem; height: .8rem; }
                 .dark .fp-labels-btn { color: #d4d4d8; border-color: rgb(255 255 255 / .22); }
                 .dark .fp-labels-btn:hover { border-color: #a5b4fc; color: #a5b4fc; }
                 .fp-tabs { display: flex; gap: .2rem; border-bottom: 1px solid #eceef2; margin-bottom: .7rem; }
