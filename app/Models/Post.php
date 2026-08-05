@@ -33,13 +33,14 @@ class Post extends Model
         'photo_category', 'starts_at', 'ends_at', 'voucher_code', 'redeem_url',
         'terms_url', 'location_ids', 'source_ids', 'scheduled_at', 'status',
         'external_ids', 'error', 'created_by', 'created_by_name',
-        'origin', 'platform_post_id',
+        'origin', 'platform_post_id', 'label_ids',
     ];
 
     protected $casts = [
         'location_ids' => 'array',
         'source_ids' => 'array',
         'external_ids' => 'array',
+        'label_ids' => 'array',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'scheduled_at' => 'datetime',

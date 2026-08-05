@@ -8,6 +8,7 @@ use App\Filament\App\Pages\Posts;
 use App\Models\ExternalCalendar;
 use App\Models\Location;
 use App\Models\Post;
+use App\Models\PostLabel;
 use App\Models\PostNote;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -112,6 +113,7 @@ class PostsCalendarTest extends TestCase
             $table->string('redeem_url', 2048)->nullable();
             $table->string('terms_url', 2048)->nullable();
             $table->json('location_ids');
+            $table->json('label_ids')->nullable();
             $table->json('source_ids');
             $table->dateTime('scheduled_at')->nullable();
             $table->string('status', 20);
@@ -154,12 +156,19 @@ class PostsCalendarTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('post_labels', function ($table): void {
+            $table->increments('id');
+            $table->string('name', 60);
+            $table->string('color', 20)->default('blue');
+            $table->timestamps();
+        });
+
         Filament::setCurrentPanel(Filament::getPanel('app'));
     }
 
     protected function tearDown(): void
     {
-        foreach (['external_calendar_events', 'external_calendars', 'post_notes', 'posts', 'locations'] as $table) {
+        foreach (['post_labels', 'external_calendar_events', 'external_calendars', 'post_notes', 'posts', 'locations'] as $table) {
             Schema::dropIfExists($table);
         }
         parent::tearDown();
@@ -329,6 +338,25 @@ class PostsCalendarTest extends TestCase
         // Duplicating a missing post is a no-op.
         Livewire::test(Posts::class)->call('duplicateAsDraft', 99999);
         $this->assertSame(2, Post::query()->count());
+    }
+
+    public function test_a_draft_saves_its_assigned_labels(): void
+    {
+        $location = $this->location();
+        $review = PostLabel::create(['name' => 'For review', 'color' => 'yellow']);
+        $approved = PostLabel::create(['name' => 'Approved', 'color' => 'green']);
+
+        $component = Livewire::test(Posts::class);
+        $component->callAction('create', [
+            'type' => 'update',
+            'locations' => [$location->id],
+            'label_ids' => [$review->id, $approved->id],
+            'caption' => 'Tagged post',
+        ], ['draft' => true]);
+
+        $post = Post::query()->sole();
+        $this->assertSame('draft', $post->status);
+        $this->assertSame([$review->id, $approved->id], $post->label_ids);
     }
 
     public function test_a_scheduled_post_can_be_reverted_to_a_draft_for_editing(): void

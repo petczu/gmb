@@ -129,6 +129,7 @@
         @php
             $noteColors = \App\Models\PostNote::COLORS;
             $calendars = $this->externalCalendars();
+            $postLabelMap = \App\Models\PostLabel::query()->orderBy('name')->get()->keyBy('id');
         @endphp
 
         <div class="pc-toolbar">
@@ -367,6 +368,17 @@
                                     </span>
                                     @if (filled($post->caption) || filled($post->title))
                                         <span class="cap">{{ \Illuminate\Support\Str::limit($post->title ?: $post->caption, 60) }}</span>
+                                    @endif
+                                    @if (! empty($post->label_ids))
+                                        <span style="display:flex; flex-wrap:wrap; gap:.2rem; margin-top:.25rem;">
+                                            @foreach ($post->label_ids as $lid)
+                                                @php $lbl = $postLabelMap->get($lid); @endphp
+                                                @if ($lbl)
+                                                    @php [$lBg, $lAccent] = $noteColors[$lbl->color] ?? $noteColors['blue']; @endphp
+                                                    <span style="font-size:.6rem; font-weight:700; letter-spacing:.02em; padding:.05rem .3rem; border-radius:.25rem; background:{{ $lBg }}; color:{{ $lAccent }};">{{ $lbl->name }}</span>
+                                                @endif
+                                            @endforeach
+                                        </span>
                                     @endif
                                     @php $loc = $this->locationLabel($post); @endphp
                                     @if ($loc)

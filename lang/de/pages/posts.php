@@ -36,6 +36,9 @@ return [
 
     'field_type' => 'Post-Typ',
     'field_locations' => 'Standorte',
+    'field_labels' => 'Labels',
+    'label_name' => 'Label-Name',
+    'label_color' => 'Farbe',
     'field_caption' => 'Text',
     'field_image' => 'Bild',
     'field_image_helper' => 'Bild per Drag-and-drop ablegen oder vom Computer auswählen. JPG oder PNG, bis 4 MB.',

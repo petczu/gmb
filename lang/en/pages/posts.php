@@ -36,6 +36,9 @@ return [
 
     'field_type' => 'Post type',
     'field_locations' => 'Locations',
+    'field_labels' => 'Labels',
+    'label_name' => 'Label name',
+    'label_color' => 'Color',
     'field_caption' => 'Text',
     'field_image' => 'Image',
     'field_image_helper' => 'Drag and drop an image or choose one from your computer. JPG or PNG, up to 4 MB.',

@@ -9,6 +9,7 @@ use App\Models\ExternalCalendar;
 use App\Models\ExternalCalendarEvent;
 use App\Models\Location;
 use App\Models\Post;
+use App\Models\PostLabel;
 use App\Models\PostNote;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
@@ -738,6 +739,7 @@ class Posts extends Page implements HasTable
             'redeem_url' => $post->redeem_url,
             'terms_url' => $post->terms_url,
             'location_ids' => $post->location_ids ?? [],
+            'label_ids' => $post->label_ids ?? [],
             // source_ids is a NOT NULL json column; a fresh draft hasn't been
             // sent anywhere yet, so it starts empty.
             'source_ids' => [],
@@ -790,6 +792,7 @@ class Posts extends Page implements HasTable
             'locations' => $post->location_ids ?? [],
             'caption' => $post->caption,
             'media' => $this->imagePathFromUrl($post->video_url ?: $post->image_url),
+            'label_ids' => $post->label_ids ?? [],
             'title' => $post->title,
             'starts_at' => $post->starts_at?->format('Y-m-d H:i'),
             'ends_at' => $post->ends_at?->format('Y-m-d H:i'),
@@ -1084,6 +1087,28 @@ class Posts extends Page implements HasTable
                 ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
                 ->default(fn (): array => Location::query()->pluck('id')->all())
                 ->required(),
+
+            // Colored labels for internal organization (never sent to Google).
+            // New ones can be created inline from the field.
+            Select::make('label_ids')
+                ->label(__('pages/posts.field_labels'))
+                ->multiple()
+                ->options(fn (): array => PostLabel::query()->orderBy('name')->pluck('name', 'id')->all())
+                ->createOptionForm([
+                    TextInput::make('name')
+                        ->label(__('pages/posts.label_name'))
+                        ->required()
+                        ->maxLength(60),
+                    Select::make('color')
+                        ->label(__('pages/posts.label_color'))
+                        ->options(collect(PostLabel::COLORS)->keys()->mapWithKeys(
+                            fn (string $c): array => [$c => __('pages/posts.color_'.$c)],
+                        )->all())
+                        ->default('blue')
+                        ->required()
+                        ->native(false),
+                ])
+                ->createOptionUsing(fn (array $data): int => PostLabel::create($data)->getKey()),
 
             // Offer/Event carry a headline: keep it above the body text, with a
             // counter + hard 58-char cap (Google truncates longer titles).
@@ -1421,6 +1446,7 @@ class Posts extends Page implements HasTable
             'terms_url' => $data['terms_url'] ?? null,
             'location_ids' => $locations->pluck('id')->all(),
             'source_ids' => $locations->pluck('external_id')->all(),
+            'label_ids' => array_values(array_map('intval', $data['label_ids'] ?? [])),
             'scheduled_at' => $data['scheduled_at'] ?? null,
             'status' => $draft ? 'draft' : 'in_progress',
         ];
