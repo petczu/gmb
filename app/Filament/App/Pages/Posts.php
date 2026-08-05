@@ -315,17 +315,26 @@ class Posts extends Page implements HasTable
     }
 
     /** The composer form next to a live Google-style preview of the post. */
-    protected function composerSchema(): array
+    protected function composerSchema(bool $withFeedback = false): array
     {
         return [
             Grid::make(['default' => 1, 'lg' => 2])
                 ->schema([
                     Group::make($this->formSchema()),
-                    Group::make([
+                    Group::make(array_values(array_filter([
                         Placeholder::make('post_preview')
                             ->hiddenLabel()
                             ->content(fn (Get $get): HtmlString => new HtmlString($this->previewHtml($get))),
-                    ])->extraAttributes(['class' => 'lg:sticky lg:top-4']),
+                        // Drafts carry the feedback panel (labels, comments,
+                        // activity) under the live preview, like the view dialog.
+                        $withFeedback
+                            ? Placeholder::make('post_feedback')
+                                ->hiddenLabel()
+                                ->content(fn (): HtmlString => new HtmlString(
+                                    '<div style="margin-top:1.2rem;">'.$this->feedbackPanelHtml((int) $this->viewingPostId, bordered: false).'</div>'
+                                ))
+                            : null,
+                    ])))->extraAttributes(['class' => 'lg:sticky lg:top-4']),
                 ]),
         ];
     }
@@ -1026,22 +1035,15 @@ class Posts extends Page implements HasTable
             ->modalHeading(__('pages/posts.draft_heading'))
             ->modalSubmitActionLabel(__('pages/posts.submit'))
             ->modalWidth(Width::SixExtraLarge)
-            ->schema($this->composerSchema())
+            // The draft composer carries the feedback panel (labels, comments,
+            // activity) under the live preview — same collaboration surface as
+            // the view dialog, no separate footer dialogs.
+            ->schema($this->composerSchema(withFeedback: true))
             ->fillForm(fn (): array => $this->draftFormState())
             ->extraModalFooterActions(fn (Action $action): array => [
                 $action->makeModalSubmitAction('saveDraft', arguments: ['draft' => true])
                     ->label(__('pages/posts.save_draft'))
                     ->color('gray'),
-                Action::make('comments')
-                    ->label(__('pages/posts.comments'))
-                    ->icon(Heroicon::OutlinedChatBubbleLeftRight)
-                    ->color('gray')
-                    ->action(fn () => $this->replaceMountedAction('comments')),
-                Action::make('assignLabels')
-                    ->label(__('pages/posts.labels_assign'))
-                    ->icon(Heroicon::OutlinedTag)
-                    ->color('gray')
-                    ->action(fn () => $this->replaceMountedAction('assignLabels')),
                 Action::make('deleteDraft')
                     ->label(__('pages/posts.draft_delete'))
                     ->icon(Heroicon::OutlinedTrash)
@@ -1154,12 +1156,14 @@ class Posts extends Page implements HasTable
      * Comments / Activity tab switch, the comment thread and a live composer
      * (textarea + mentions + attachments) wired straight to this page.
      */
-    private function feedbackPanelHtml(int $postId): string
+    private function feedbackPanelHtml(int $postId, bool $bordered = true): string
     {
         $post = Post::find($postId);
         if ($post === null) {
             return '';
         }
+
+        $frame = $bordered ? 'border-left:1px solid #eceef2; padding-left:1.4rem; min-height:20rem;' : 'border-top:1px solid #eceef2; padding-top:1rem;';
 
         // Assigned labels as chips + a manage shortcut.
         $labelMap = PostLabel::query()->whereIn('id', $post->label_ids ?? [])->get();
@@ -1176,7 +1180,7 @@ class Posts extends Page implements HasTable
 
         $count = PostComment::query()->where('post_id', $postId)->count();
 
-        return '<div x-data="{ tab: \'comments\' }" style="border-left:1px solid #eceef2; padding-left:1.4rem; min-height:20rem;" class="fp-panel">'
+        return '<div x-data="{ tab: \'comments\' }" style="'.$frame.'" class="fp-panel">'
             // Labels row
             .'<div style="display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-bottom:.8rem;">'
             .($chips !== '' ? $chips : '<span style="font-size:.75rem; color:#9ca3af;">'.e(__('pages/posts.labels_none')).'</span>')

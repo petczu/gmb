@@ -164,6 +164,17 @@ class PostsCalendarTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('activity_log', function ($table): void {
+            $table->increments('id');
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('user_name')->nullable();
+            $table->string('action');
+            $table->string('subject_type')->nullable();
+            $table->unsignedBigInteger('subject_id')->nullable();
+            $table->json('meta')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
         Schema::create('post_comments', function ($table): void {
             $table->increments('id');
             $table->unsignedBigInteger('post_id')->index();
@@ -190,7 +201,7 @@ class PostsCalendarTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (['post_comments', 'post_labels', 'external_calendar_events', 'external_calendars', 'post_notes', 'posts', 'locations'] as $table) {
+        foreach (['activity_log', 'post_comments', 'post_labels', 'external_calendar_events', 'external_calendars', 'post_notes', 'posts', 'locations'] as $table) {
             Schema::dropIfExists($table);
         }
         Schema::connection('mysql')->dropIfExists('notifications');
