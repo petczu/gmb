@@ -2212,7 +2212,6 @@ class Posts extends Page implements HasTable
                    margin-left:auto has no room and it sticks to Labels. The
                    padding keeps it clear of the absolutely-positioned close ✕. */
                 .fi-modal-header > div:not(.fi-modal-icon-ctn) { flex: 1 1 auto; min-width: 0; }
-                .fi-modal-header .fp-labels { padding-inline-end: 2.35rem; }
                 /* Anchored right under the first line of the textarea, near the "@". */
                 .fp-mention-pop { position: absolute; top: 2.4rem; left: .75rem; right: .75rem; z-index: 40; background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; box-shadow: 0 12px 32px -8px rgb(0 0 0 / .18); padding: .3rem; max-height: 12rem; overflow: auto; }
                 .dark .fp-mention-pop { background: #1b1b21; border-color: rgb(255 255 255 / .12); }
