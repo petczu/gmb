@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Posts;
 
+use App\Mail\PostMentionMail;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\User;
@@ -12,6 +13,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\DatabaseNotification as FilamentDatabaseNotification;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -41,9 +43,31 @@ class PostCommentNotifier
 
         $author = (string) ($comment->user_name ?? __('pages/posts.activity_system'));
         $url = rtrim((string) config('app.url'), '/').'/posts';
+        // Escaped: the excerpt lands in the email's HTML body.
+        $excerpt = e(Str::limit((string) $comment->body, 300));
 
         foreach (User::query()->whereIn('id', $mentionedIds)->get() as $user) {
             $this->toDatabase($user, $workspace, $author, $post, $url);
+            $this->toEmail($user, $author, $excerpt, $url);
+        }
+    }
+
+    /** Email the mentioned member in their own language. Best-effort. */
+    private function toEmail(User $user, string $author, string $excerpt, string $url): void
+    {
+        if (blank($user->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($user->email)->send(new PostMentionMail(
+                mentionerName: $author,
+                excerpt: $excerpt,
+                postsUrl: $url,
+                lang: $user->locale ?? 'en',
+            ));
+        } catch (Throwable $e) {
+            Log::warning('Post mention email failed', ['user' => $user->id, 'error' => $e->getMessage()]);
         }
     }
 

@@ -7,6 +7,12 @@ return [
     'signoff' => 'Thanks,',
     'team' => 'The Repunio team',
 
+    'post_mention' => [
+        'subject' => ':name mentioned you on a post',
+        'intro' => ':name mentioned you in a comment on a Google post:',
+        'cta' => 'Open the post',
+    ],
+
     'drip_competitors' => [
         'subject' => 'Do you know how the business next door is doing?',
         'intro' => 'Your own reviews are under control. The next question every owner asks: am I ahead of the competition or falling behind? Repunio can watch that for you, with daily rating and review counts for any business on Google.',

@@ -7,6 +7,12 @@ return [
     'signoff' => 'Danke',
     'team' => 'Dein Repunio-Team',
 
+    'post_mention' => [
+        'subject' => ':name hat dich in einem Beitrag erwähnt',
+        'intro' => ':name hat dich in einem Kommentar zu einem Google-Beitrag erwähnt:',
+        'cta' => 'Beitrag öffnen',
+    ],
+
     'drip_competitors' => [
         'subject' => 'Weißt du, wie es dem Geschäft nebenan geht?',
         'intro' => 'Deine eigenen Bewertungen sind unter Kontrolle. Die nächste Frage, die sich jeder Inhaber stellt: liege ich vor der Konkurrenz oder falle ich zurück? Repunio beobachtet das für dich, mit täglichen Ratings und Bewertungszahlen für jedes Unternehmen auf Google.',
