@@ -201,6 +201,6 @@ return [
     'filter_clear' => 'Filtreleri temizle',
     'filter_by' => 'Filtrele:',
     'filter_media' => 'Medya',
-    'filter_media_with' => 'Fotoğraflı veya videolu',
-    'filter_media_without' => 'Medyasız',
+    'filter_media_photo' => 'Fotoğraf',
+    'filter_media_video' => 'Video',
 ];

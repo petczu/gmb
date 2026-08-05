@@ -203,6 +203,6 @@ return [
     'filter_clear' => 'Filter zurücksetzen',
     'filter_by' => 'Filtern nach:',
     'filter_media' => 'Medien',
-    'filter_media_with' => 'Mit Foto oder Video',
-    'filter_media_without' => 'Ohne Medien',
+    'filter_media_photo' => 'Foto',
+    'filter_media_video' => 'Video',
 ];

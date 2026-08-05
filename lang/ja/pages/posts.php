@@ -201,6 +201,6 @@ return [
     'filter_clear' => 'フィルターをクリア',
     'filter_by' => '絞り込み：',
     'filter_media' => 'メディア',
-    'filter_media_with' => '写真・動画あり',
-    'filter_media_without' => 'メディアなし',
+    'filter_media_photo' => '写真',
+    'filter_media_video' => '動画',
 ];

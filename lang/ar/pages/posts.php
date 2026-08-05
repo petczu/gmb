@@ -201,6 +201,6 @@ return [
     'filter_clear' => 'مسح عوامل التصفية',
     'filter_by' => 'تصفية حسب:',
     'filter_media' => 'الوسائط',
-    'filter_media_with' => 'بصورة أو فيديو',
-    'filter_media_without' => 'بدون وسائط',
+    'filter_media_photo' => 'صورة',
+    'filter_media_video' => 'فيديو',
 ];

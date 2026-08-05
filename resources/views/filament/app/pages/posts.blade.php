@@ -39,6 +39,14 @@
             .pcf-row input { cursor:pointer; accent-color:#2d19ec; flex:none; }
             .pcf-row .nm { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
             .pcf-row .cnt { margin-left:auto; color:#9ca3af; font-size:.72rem; }
+            .pcf-foot { border-top:1px solid rgb(0 0 0 / .07); margin-top:.45rem; padding-top:.45rem; }
+            .dark .pcf-foot { border-color:rgb(255 255 255 / .08); }
+            .pcf-foot button { display:flex; align-items:center; gap:.5rem; width:100%; background:none; border:none; cursor:pointer; padding:.45rem .55rem; font-size:.8rem; font-weight:600; color:#2d19ec; border-radius:.5rem; text-align:left; }
+            .pcf-foot button:hover { background:#eef2ff; }
+            .dark .pcf-foot button { color:#a5b4fc; }
+            .dark .pcf-foot button:hover { background:rgb(99 102 241 / .15); }
+            .pcf-foot button svg { width:.9rem; height:.9rem; flex:none; }
+            .pcf-foot .pc-fcount { margin-left:auto; }
             .pc-grid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); border:1px solid rgb(0 0 0 / .08); border-radius:.75rem; background:#fff; }
             /* Phones: keep readable day cells and scroll the grid sideways. */
             @media (max-width:700px) {
@@ -189,7 +197,7 @@
                     $fbLabels = $this->labelFilterOptions();
                     $fbGroups = [
                         ['key' => 'filterTypes', 'title' => __('pages/posts.col_type'), 'selected' => array_map('strval', $this->filterTypes), 'options' => collect(['update', 'offer', 'event'])->mapWithKeys(fn ($t) => [$t => __('pages/posts.type_'.$t)])->all()],
-                        ['key' => 'filterMedia', 'title' => __('pages/posts.filter_media'), 'selected' => array_map('strval', $this->filterMedia), 'options' => ['with' => __('pages/posts.filter_media_with'), 'without' => __('pages/posts.filter_media_without')]],
+                        ['key' => 'filterMedia', 'title' => __('pages/posts.filter_media'), 'selected' => array_map('strval', $this->filterMedia), 'options' => ['photo' => __('pages/posts.filter_media_photo'), 'video' => __('pages/posts.filter_media_video')]],
                         ['key' => 'filterStatuses', 'title' => __('pages/posts.col_status'), 'selected' => array_map('strval', $this->filterStatuses), 'options' => collect(['draft', 'scheduled', 'in_progress', 'published', 'failed'])->mapWithKeys(fn ($s) => [$s => __('pages/posts.status_'.$s)])->all()],
                     ];
                     if ($fbLabels !== []) {
@@ -215,12 +223,13 @@
                             'active' => count($this->hiddenLocations),
                             'options' => collect($fbLocations)->map(fn ($name, $id) => ['value' => (int) $id, 'label' => $name, 'count' => $fpLocCounts((int) $id), 'checked' => ! in_array((int) $id, $this->hiddenLocations, true)])->values()->all()];
                     }
-                    $fpMediaWith = $fpAll->filter(fn ($p) => filled($p->image_url) || filled($p->video_url))->count();
+                    $fpMediaPhoto = $fpAll->filter(fn ($p) => filled($p->image_url))->count();
+                    $fpMediaVideo = $fpAll->filter(fn ($p) => filled($p->video_url))->count();
                     $sectionIcons = ['filterTypes' => 'heroicon-o-rectangle-stack', 'filterMedia' => 'heroicon-o-photo', 'filterStatuses' => 'heroicon-o-clock', 'filterLabels' => 'heroicon-o-tag', 'filterAuthors' => 'heroicon-o-user'];
                     foreach ($fbGroups as $group) {
                         $counts = match ($group['key']) {
                             'filterTypes' => fn ($v) => (int) ($fpTypeCounts[$v] ?? 0),
-                            'filterMedia' => fn ($v) => $v === 'with' ? $fpMediaWith : $fpAll->count() - $fpMediaWith,
+                            'filterMedia' => fn ($v) => $v === 'photo' ? $fpMediaPhoto : $fpMediaVideo,
                             'filterStatuses' => fn ($v) => (int) ($fpStatusCounts[$v] ?? 0),
                             'filterAuthors' => fn ($v) => (int) ($fpAuthorCounts[$v] ?? 0),
                             'filterLabels' => fn ($v) => $fpLabelCounts((int) $v),
@@ -275,7 +284,13 @@
                         @endforeach
 
                         @if ($this->activeFilterCount() > 0)
-                            <button type="button" class="foot" wire:click="clearPostFilters">{{ __('pages/posts.filter_clear') }}</button>
+                            <div class="pcf-foot">
+                                <button type="button" wire:click="clearPostFilters">
+                                    @svg('heroicon-o-arrow-uturn-left')
+                                    {{ __('pages/posts.filter_clear') }}
+                                    <span class="pc-fcount">{{ $this->activeFilterCount() }}</span>
+                                </button>
+                            </div>
                         @endif
                     </div>
                 </div>

@@ -612,7 +612,7 @@ class Posts extends Page implements HasTable
     /** @var list<string> */
     public array $filterAuthors = [];
 
-    /** @var list<string> 'with' | 'without' (photo/video attached) */
+    /** @var list<string> 'photo' | 'video' (attachment kind) */
     public array $filterMedia = [];
 
     public function toggleArrayFilter(string $key, string $value): void
@@ -673,11 +673,16 @@ class Posts extends Page implements HasTable
                     }
                 });
             })
-            // Media: only when exactly one side is picked (both = everything).
-            ->when(count($this->filterMedia) === 1, function (Builder $qq): Builder {
-                return in_array('with', $this->filterMedia, true)
-                    ? $qq->where(fn (Builder $sub) => $sub->whereNotNull('image_url')->orWhereNotNull('video_url'))
-                    : $qq->whereNull('image_url')->whereNull('video_url');
+            // Media kind: photo and/or video attached (union when both picked).
+            ->when($this->filterMedia !== [], function (Builder $qq): Builder {
+                return $qq->where(function (Builder $sub): void {
+                    if (in_array('photo', $this->filterMedia, true)) {
+                        $sub->orWhereNotNull('image_url');
+                    }
+                    if (in_array('video', $this->filterMedia, true)) {
+                        $sub->orWhereNotNull('video_url');
+                    }
+                });
             });
     }
 

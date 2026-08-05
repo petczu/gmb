@@ -201,6 +201,6 @@ return [
     'filter_clear' => 'Filters wissen',
     'filter_by' => 'Filteren op:',
     'filter_media' => 'Media',
-    'filter_media_with' => 'Met foto of video',
-    'filter_media_without' => 'Zonder media',
+    'filter_media_photo' => 'Foto',
+    'filter_media_video' => 'Video',
 ];

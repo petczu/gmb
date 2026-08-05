@@ -438,14 +438,15 @@ class PostsCalendarTest extends TestCase
         $this->assertSame([], $visibleIds($component));
         $component->call('clearPostFilters');
 
-        // Media: the draft carries none, the offer gets an image.
+        // Media kind: the offer carries a photo, the draft a video.
         $publishedOffer->forceFill(['image_url' => 'https://x/i.jpg'])->save();
-        $component->call('toggleArrayFilter', 'filterMedia', 'with');
+        $draftUpdate->forceFill(['video_url' => 'https://x/v.mp4'])->save();
+        $component->call('toggleArrayFilter', 'filterMedia', 'photo');
         $this->assertSame([$publishedOffer->id], $visibleIds($component));
-        $component->call('toggleArrayFilter', 'filterMedia', 'without');
-        // Both sides picked = no restriction.
+        $component->call('toggleArrayFilter', 'filterMedia', 'video');
+        // Both kinds picked = union.
         $this->assertEqualsCanonicalizing([$draftUpdate->id, $publishedOffer->id], $visibleIds($component));
-        $component->call('toggleArrayFilter', 'filterMedia', 'with');
+        $component->call('toggleArrayFilter', 'filterMedia', 'photo');
         $this->assertSame([$draftUpdate->id], $visibleIds($component));
 
         // Clear resets every dimension at once.

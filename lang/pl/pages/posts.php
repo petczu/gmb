@@ -201,6 +201,6 @@ return [
     'filter_clear' => 'Wyczyść filtry',
     'filter_by' => 'Filtruj według:',
     'filter_media' => 'Multimedia',
-    'filter_media_with' => 'Ze zdjęciem lub wideo',
-    'filter_media_without' => 'Bez multimediów',
+    'filter_media_photo' => 'Zdjęcie',
+    'filter_media_video' => 'Wideo',
 ];
