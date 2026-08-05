@@ -2332,33 +2332,36 @@ class Posts extends Page implements HasTable
                    They render INSIDE the dialog's h2 heading, so reset its
                    typography or everything inherits large semibold text. */
                 .fp-panel-float { width: 23.5rem; right: 0; left: auto; top: 2.5rem; text-align: left; font-size: .8rem; font-weight: 400; line-height: 1.45; letter-spacing: normal; color: inherit; }
-                .fp-panel-float .fp-pop-title { font-size: .86rem; font-weight: 700; margin-bottom: .35rem; }
-                .fp-panel-float .fp-muted { font-size: .74rem; line-height: 1.4; }
+                .fp-panel-float { padding: .95rem 1.05rem 1.05rem; }
+                .fp-panel-float .fp-pop-title { font-size: .95rem; font-weight: 700; margin-bottom: .4rem; }
+                .fp-panel-float .fp-muted { font-size: .8rem; line-height: 1.45; }
                 .fp-kebab { display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border: 1px solid #e5e7eb; border-radius: .5rem; background: none; color: #6b7280; cursor: pointer; }
                 .fp-kebab:hover { border-color: #2d19ec66; color: #2d19ec; background: #eef2ff; }
                 .fp-kebab svg { width: 1.05rem; height: 1.05rem; }
                 .dark .fp-kebab { border-color: rgb(255 255 255 / .16); color: #a1a1aa; }
                 .dark .fp-kebab:hover { border-color: #a5b4fc66; color: #a5b4fc; background: rgb(99 102 241 / .15); }
-                .fp-float-label { font-size: .72rem; font-weight: 600; color: #6b7280; margin: .5rem 0 .25rem; }
+                .fp-float-label { font-size: .82rem; font-weight: 600; color: #374151; margin: .65rem 0 .3rem; }
                 .dark .fp-float-label { color: #a1a1aa; }
-                .fp-float-input { width: 100%; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: .45rem; padding: .38rem .55rem; font-size: .8rem; background: transparent; color: inherit; }
+                .fp-float-input { width: 100%; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: .5rem; padding: .5rem .75rem; font-size: .875rem; background: #fff; color: inherit; box-shadow: 0 1px 2px rgb(0 0 0 / .04); }
+                .fp-float-input:focus { outline: none; border-color: #2d19ec; box-shadow: 0 0 0 1px #2d19ec; }
+                .dark .fp-float-input { background: rgb(255 255 255 / .05); }
                 .dark .fp-float-input { border-color: rgb(255 255 255 / .14); }
                 .fp-float-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
                 /* Native select: custom chevron, evenly inset from the edge. */
-                select.fp-float-input { appearance: none; -webkit-appearance: none; padding-inline-end: 2.1rem; background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .7rem center; background-size: .85rem; }
+                select.fp-float-input { appearance: none; -webkit-appearance: none; padding-inline-end: 2.3rem; background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .7rem center; background-size: .85rem; }
                 .fp-share-link { display: flex; align-items: center; gap: .4rem; }
-                .fp-share-link a { flex: 1; min-width: 0; font-size: .74rem; color: #2d19ec; word-break: break-all; }
+                .fp-share-link a { flex: 1; min-width: 0; font-size: .8rem; line-height: 1.45; color: #2d19ec; word-break: break-all; }
                 .dark .fp-share-link a { color: #a5b4fc; }
-                .fp-share-link button { flex: none; display: inline-flex; align-items: center; gap: .3rem; border: 1px solid #e5e7eb; border-radius: .45rem; background: none; cursor: pointer; padding: .3rem .55rem; font-size: .72rem; color: inherit; }
+                .fp-share-link button { flex: none; display: inline-flex; align-items: center; gap: .3rem; border: 1px solid #d1d5db; border-radius: .5rem; background: none; cursor: pointer; padding: .45rem .55rem; font-size: .72rem; color: inherit; }
                 .dark .fp-share-link button { border-color: rgb(255 255 255 / .14); }
-                .fp-share-link button svg { width: .8rem; height: .8rem; }
+                .fp-share-link button svg { width: .95rem; height: .95rem; }
                 .fp-share-link button span { display: inline-grid; place-items: center; }
                 .fp-pw { position: relative; display: block; }
                 .fp-pw input { padding-inline-end: 2.2rem; }
                 .fp-pw button { position: absolute; top: 50%; transform: translateY(-50%); inset-inline-end: .45rem; background: none; border: none; cursor: pointer; color: #9ca3af; display: inline-grid; place-items: center; padding: .15rem; }
                 .fp-pw button:hover { color: #2d19ec; }
-                .fp-pw button svg { width: .95rem; height: .95rem; }
-                .fp-float-bar { display: flex; align-items: center; gap: .5rem; margin-top: .7rem; }
+                .fp-pw button svg { width: 1.05rem; height: 1.05rem; }
+                .fp-float-bar { display: flex; align-items: center; gap: .55rem; margin-top: .9rem; }
                 .fp-float-danger { background: none; border: 1px solid #fecaca; color: #dc2626; border-radius: 999px; padding: .35rem .8rem; font-size: .78rem; font-weight: 600; cursor: pointer; }
                 .fp-float-danger:hover { background: #fef2f2; }
                 .dark .fp-float-danger { border-color: rgb(220 38 38 / .4); }
