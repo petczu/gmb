@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Report unavailable</title>
+    <title>{{ $title ?? 'Link unavailable' }}</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#f3f4f6; color:#1f2937; display:flex; min-height:100vh; align-items:center; justify-content:center; margin:0; }
         .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.08); padding:28px; width:380px; max-width:92vw; text-align:center; }
@@ -14,8 +14,8 @@
 <body>
     <div class="card">
         <div style="font-size:1.8rem;">⌛</div>
-        <h1>This link is not available</h1>
-        <p>The sharing window for this report is closed. Please ask the sender for an updated link.</p>
+        <h1>{{ $title ?? 'This link is not available' }}</h1>
+        <p>{{ $body ?? 'The sharing window for this link is closed. Please ask the sender for an updated link.' }}</p>
     </div>
 </body>
 </html>
