@@ -29,7 +29,9 @@
             .pcf-head { display:flex; align-items:center; gap:.55rem; width:100%; background:none; border:none; cursor:pointer; padding:.5rem .55rem; font-size:.83rem; font-weight:500; color:inherit; border-radius:.55rem; text-align:left; }
             .pcf-head:hover { background:rgb(0 0 0 / .045); }
             .dark .pcf-head:hover { background:rgb(255 255 255 / .05); }
-            .pcf-head svg { transition:transform .15s ease; }
+            .pcf-head > svg { width:1rem; height:1rem; flex:none; }
+            .pcf-chev { margin-left:auto; display:inline-grid; place-items:center; transition:transform .15s ease; }
+            .pcf-chev svg { width:.8rem; height:.8rem; opacity:.55; }
             .pcf-body { padding:.05rem .45rem .5rem 1.05rem; display:grid; gap:.1rem; }
             .pcf-row { display:flex; align-items:center; gap:.5rem; padding:.28rem .35rem; font-size:.8rem; cursor:pointer; border-radius:.4rem; }
             .pcf-row:hover { background:rgb(0 0 0 / .045); }
@@ -252,7 +254,7 @@
                                     @svg($section['icon'], ['style' => 'width:1rem; height:1rem; flex:none;'])
                                     <span>{{ $section['title'] }}</span>
                                     @if ($section['active'] > 0)<span class="pc-fcount">{{ $section['active'] }}</span>@endif
-                                    @svg('heroicon-o-chevron-down', ['style' => 'width:.8rem; height:.8rem; margin-left:auto; opacity:.55;', 'x-bind:style' => "sec === '{$section['id']}' ? 'transform: rotate(180deg)' : ''"])
+                                    <span class="pcf-chev" :style="sec === '{{ $section['id'] }}' ? 'transform: rotate(180deg)' : ''">@svg('heroicon-o-chevron-down')</span>
                                 </button>
                                 <div class="pcf-body" x-show="sec === '{{ $section['id'] }}'" x-collapse>
                                     @foreach ($section['options'] as $option)
