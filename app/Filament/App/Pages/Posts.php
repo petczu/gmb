@@ -1280,15 +1280,17 @@ class Posts extends Page implements HasTable
     /** The kebab menu shown in the post dialogs' footers and list rows. */
     private function postMoreMenu(): ActionGroup
     {
+        // mountAction (NOT replaceMountedAction): the child dialog stacks on
+        // top of the post dialog, which stays open and comes back on close.
         return ActionGroup::make([
             Action::make('shareMenu')
                 ->label(__('pages/posts.share'))
                 ->icon(Heroicon::OutlinedShare)
-                ->action(fn () => $this->replaceMountedAction('sharePost')),
+                ->action(fn () => $this->mountAction('sharePost')),
             Action::make('duplicateMenu')
                 ->label(__('pages/posts.duplicate_to'))
                 ->icon(Heroicon::OutlinedDocumentDuplicate)
-                ->action(fn () => $this->replaceMountedAction('duplicateTo')),
+                ->action(fn () => $this->mountAction('duplicateTo')),
         ])
             ->icon(Heroicon::OutlinedEllipsisVertical)
             ->color('gray');
