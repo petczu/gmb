@@ -8,6 +8,7 @@ use App\Models\PostComment;
 use App\Models\PostShare;
 use App\Models\Workspace;
 use App\Services\Reports\ReportBranding;
+use App\Support\Locales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -24,6 +25,8 @@ class PostShareController extends Controller
 {
     public function shared(Request $request, string $token): Response
     {
+        $this->applyLocale($request);
+
         $share = PostShare::query()->where('token', $token)->first();
 
         if ($share === null) {
@@ -111,7 +114,7 @@ class PostShareController extends Controller
         });
 
         if ($created === null) {
-            $request->session()->flash('shared_post_error', 'Comments are unavailable right now.');
+            $request->session()->flash('shared_post_error', __('shared.unavailable'));
         }
 
         return redirect()->route('posts.shared', $token);
@@ -172,6 +175,21 @@ class PostShareController extends Controller
             return Workspace::find($id);
         } catch (Throwable) {
             return null;
+        }
+    }
+
+    /** Guest-picked page language (?lang=xx), remembered for the session. */
+    private function applyLocale(Request $request): void
+    {
+        $requested = (string) $request->query('lang', '');
+
+        if (in_array($requested, Locales::codes(), true)) {
+            $request->session()->put('shared_page_locale', $requested);
+        }
+
+        $locale = (string) $request->session()->get('shared_page_locale', '');
+        if (in_array($locale, Locales::codes(), true)) {
+            app()->setLocale($locale);
         }
     }
 }

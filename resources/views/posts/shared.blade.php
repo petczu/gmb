@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ \App\Support\Locales::direction(app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,12 +11,14 @@
         .top { background:#fff; border-bottom:1px solid #e5e7eb; padding:.7rem 1.2rem; display:flex; align-items:center; gap:.6rem; }
         .top img { height:26px; display:block; }
         .top .nm { font-weight:700; font-size:.95rem; }
-        .wrap { max-width:26rem; margin:0 auto; padding:1.6rem 1rem 3rem; }
-        .cmts { background:#fff; border:1px solid #e5e7eb; border-radius:.9rem; padding:1rem 1.1rem; margin-top:1.2rem; }
+        .top select { margin-left:auto; border:1px solid #d1d5db; border-radius:.5rem; padding:.35rem .6rem; font-size:.82rem; background:#fff; color:inherit; }
+        .wrap { max-width:58rem; margin:0 auto; padding:1.6rem 1rem 3rem; display:grid; grid-template-columns:minmax(0,26rem) minmax(0,1fr); gap:1.4rem; align-items:start; }
+        @media (max-width: 780px) { .wrap { grid-template-columns:1fr; } }
+        .cmts { background:#fff; border:1px solid #e5e7eb; border-radius:.9rem; padding:1rem 1.1rem; }
         .cmts h2 { font-size:.95rem; margin:0 0 .6rem; }
         .cmt { display:flex; gap:.55rem; padding:.5rem 0; border-top:1px solid #f1f2f4; }
         .cmt:first-of-type { border-top:0; }
-        .cmt.reply { margin-left:1.6rem; }
+        .cmt.reply { margin-inline-start:1.6rem; }
         .cmt .av { flex:none; width:1.8rem; height:1.8rem; border-radius:999px; background:#eef2ff; color:{{ $branding['color'] }}; font-size:.75rem; font-weight:700; display:grid; place-items:center; }
         .cmt .who { font-size:.78rem; }
         .cmt .who b { font-size:.8rem; }
@@ -42,14 +44,21 @@
         @else
             <span class="nm">{{ $branding['name'] }}</span>
         @endif
+
+        {{-- Guest language switcher (?lang=xx, remembered per session). --}}
+        <select onchange="location.href = '?lang=' + this.value" aria-label="Language">
+            @foreach (\App\Support\Locales::ALL as $code => $meta)
+                <option value="{{ $code }}" @selected(app()->getLocale() === $code)>{{ $meta['name'] }}</option>
+            @endforeach
+        </select>
     </div>
 
     <div class="wrap">
-        {!! $share->html !!}
+        <div>{!! $share->html !!}</div>
 
         @if ($canComment)
             <div class="cmts">
-                <h2>Comments</h2>
+                <h2>{{ __('shared.comments') }}</h2>
 
                 @forelse ($comments as $comment)
                     <div class="cmt {{ $comment['reply'] ? 'reply' : '' }}">
@@ -60,35 +69,35 @@
                         </span>
                     </div>
                 @empty
-                    <div class="empty">No comments yet. Be the first to leave feedback.</div>
+                    <div class="empty">{{ __('shared.empty') }}</div>
                 @endforelse
 
                 <form class="guest" method="POST" action="{{ route('posts.shared.comment', $share->token) }}">
                     @csrf
                     @if ($guestName === '')
                         {{-- First visit: ask who they are, once. --}}
-                        <div class="glabel">Your name</div>
-                        <input type="text" name="name" required minlength="2" maxlength="60" placeholder="Your name" value="{{ old('name') }}">
-                        <div class="glabel" style="margin-top:.55rem;">Comment</div>
+                        <div class="glabel">{{ __('shared.your_name') }}</div>
+                        <input type="text" name="name" required minlength="2" maxlength="60" placeholder="{{ __('shared.your_name') }}" value="{{ old('name') }}">
+                        <div class="glabel" style="margin-top:.55rem;">{{ __('shared.comment') }}</div>
                     @else
-                        <div class="hello">Commenting as <b>{{ $guestName }}</b></div>
+                        <div class="hello">{{ __('shared.commenting_as') }} <b>{{ $guestName }}</b></div>
                         <input type="hidden" name="name" value="{{ $guestName }}">
                     @endif
-                    <textarea name="body" required maxlength="2000" placeholder="Leave your feedback…">{{ old('body') }}</textarea>
+                    <textarea name="body" required maxlength="2000" placeholder="{{ __('shared.feedback_ph') }}">{{ old('body') }}</textarea>
                     @if (($errors ?? null)?->any())
                         <div class="err">{{ $errors->first() }}</div>
                     @endif
                     @if ($error)
                         <div class="err">{{ $error }}</div>
                     @endif
-                    <div class="bar"><button type="submit" class="send">Post comment</button></div>
+                    <div class="bar"><button type="submit" class="send">{{ __('shared.post') }}</button></div>
                 </form>
             </div>
         @endif
     </div>
 
     @unless ($branding['whiteLabel'])
-        <div class="foot">Shared via <a href="{{ config('app.url') }}" rel="noopener">{{ $branding['name'] }}</a></div>
+        <div class="foot">{{ __('shared.shared_via') }} <a href="{{ config('app.url') }}" rel="noopener">{{ $branding['name'] }}</a></div>
     @endunless
 </body>
 </html>
