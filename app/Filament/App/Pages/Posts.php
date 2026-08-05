@@ -883,6 +883,8 @@ class Posts extends Page implements HasTable
             : [...$ids, $labelId];
 
         $post->forceFill(['label_ids' => $ids])->save();
+
+        ActivityLogger::log('post.labels_updated', ['label' => PostLabel::find($labelId)?->name], $post);
     }
 
     /** Create a label from the popover and assign it to the open post. */
@@ -978,7 +980,9 @@ class Posts extends Page implements HasTable
     public function viewPostAction(): Action
     {
         return Action::make('viewPost')
-            ->modalHeading(fn (): string => __('pages/posts.type_'.(Post::find($this->viewingPostId)?->type ?? 'update')))
+            // The heading slot carries the labels control (reference-style);
+            // the type name stays as the screen-reader title.
+            ->modalHeading(fn (): HtmlString => $this->labelsHeadingHtml(__('pages/posts.type_'.(Post::find($this->viewingPostId)?->type ?? 'update'))))
             // Two columns: the Google-style preview and a Planable-style
             // feedback panel (labels, comments, activity) on the right.
             ->modalWidth(Width::FiveExtraLarge)
@@ -1128,7 +1132,7 @@ class Posts extends Page implements HasTable
     public function editDraftAction(): Action
     {
         return Action::make('editDraft')
-            ->modalHeading(__('pages/posts.draft_heading'))
+            ->modalHeading(fn (): HtmlString => $this->labelsHeadingHtml(__('pages/posts.draft_heading')))
             ->modalSubmitActionLabel(__('pages/posts.submit'))
             // Wider than the create dialog: three columns (form | preview |
             // feedback panel), the same collaboration surface as the view
@@ -1259,24 +1263,16 @@ class Posts extends Page implements HasTable
             return '';
         }
 
-        // Assigned labels as chips + a manage shortcut.
-        $chips = PostLabel::query()->whereIn('id', $post->label_ids ?? [])->get()
-            ->map(function (PostLabel $label): string {
-                [$bg, $accent] = PostLabel::COLORS[$label->color] ?? PostLabel::COLORS['blue'];
-
-                return '<span class="fp-chip" style="background:'.$bg.'; color:'.$accent.';">'.e($label->name).'</span>';
-            })->implode('');
-
-        // Members as toggleable mention pills (checkbox-backed, no roundtrip
-        // until the comment is posted).
+        // Members the author can @-mention (everyone but themselves), embedded
+        // for the Alpine autocomplete that opens on typing "@".
         $selfId = (int) auth()->id();
-        $mentionPills = '';
+        $members = [];
         foreach ($this->workspaceMembers() as $id => $name) {
-            if ((int) $id === $selfId) {
-                continue;
+            if ((int) $id !== $selfId) {
+                $members[] = ['id' => (int) $id, 'name' => (string) $name];
             }
-            $mentionPills .= '<label class="fp-pill"><input type="checkbox" wire:model="commentMentions" value="'.e((string) $id).'"><span>@'.e((string) $name).'</span></label>';
         }
+        $membersJson = htmlspecialchars((string) json_encode($members), ENT_QUOTES);
 
         $fileChips = '';
         foreach ($this->commentFiles as $file) {
@@ -1285,17 +1281,21 @@ class Posts extends Page implements HasTable
 
         $count = PostComment::query()->where('post_id', $postId)->count();
 
+        // The @-mention autocomplete: watch the caret for an "@fragment", offer
+        // matching members, insert "@Name " and defer-sync the picked ids.
+        $mention = 'x-data="{ open: false, active: 0, q: \'\', start: 0, members: '.$membersJson.','
+            .' get items() { return this.members.filter(m => m.name.toLowerCase().includes(this.q)).slice(0, 6) },'
+            .' name(id) { const m = this.members.find(x => x.id === Number(id)); return m ? m.name : \'\' },'
+            .' scan() { const ta = this.$refs.ta; const upto = ta.value.slice(0, ta.selectionStart); const m = upto.match(/@([^\s@]{0,30})$/u);'
+            .' if (m) { this.q = m[1].toLowerCase(); this.start = upto.length - m[1].length; this.active = 0; this.open = this.items.length > 0 } else { this.open = false } },'
+            .' pick(m) { if (! m) { return } const ta = this.$refs.ta; const before = ta.value.slice(0, this.start); const after = ta.value.slice(ta.selectionStart);'
+            .' ta.value = before + m.name + \' \' + after; ta.dispatchEvent(new Event(\'input\', { bubbles: true }));'
+            .' const ids = [...new Set([...(this.$wire.commentMentions || []).map(Number), m.id])]; this.$wire.set(\'commentMentions\', ids, false);'
+            .' this.open = false; const p = (before + m.name + \' \').length; this.$nextTick(() => { ta.focus(); ta.setSelectionRange(p, p) }) },'
+            .' drop(id) { this.$wire.set(\'commentMentions\', (this.$wire.commentMentions || []).map(Number).filter(i => i !== Number(id)), false) } }"';
+
         return '<div x-data="{ tab: \'comments\' }" class="fp-panel '.($bordered ? 'fp-bordered' : 'fp-stacked').'">'
             .$this->feedbackPanelCss()
-            // Labels row + Planable-style popover (assign, create, edit, delete
-            // in place — nothing closes).
-            .'<div class="fp-labels">'
-            .($chips !== '' ? $chips : '<span class="fp-muted">'.e(__('pages/posts.labels_none')).'</span>')
-            .'<span style="position:relative;">'
-            .'<button type="button" class="fp-link" wire:click="toggleLabelsPopover">'.e(__('pages/posts.labels_edit')).'</button>'
-            .($this->labelsPopoverOpen ? $this->labelsPopoverHtml($post) : '')
-            .'</span>'
-            .'</div>'
             // Tabs
             .'<div class="fp-tabs">'
             .'<button type="button" @click="tab = \'comments\'" :class="tab === \'comments\' ? \'active\' : \'\'">'.e(__('pages/posts.comments')).($count > 0 ? ' <span class="fp-count">'.$count.'</span>' : '').'</button>'
@@ -1304,9 +1304,28 @@ class Posts extends Page implements HasTable
             // Comments tab: thread + composer card
             .'<div x-show="tab === \'comments\'">'
             .$this->commentsHtml($postId)
-            .'<div class="fp-composer">'
-            .'<textarea wire:model="commentBody" rows="3" placeholder="'.e(__('pages/posts.comment_placeholder')).'"></textarea>'
-            .($mentionPills !== '' ? '<div class="fp-pills">'.$mentionPills.'</div>' : '')
+            .'<div class="fp-composer" '.$mention.'>'
+            .'<textarea x-ref="ta" wire:model="commentBody" rows="3" placeholder="'.e(__('pages/posts.comment_placeholder')).'"'
+            .' @input="scan()" @click="scan()"'
+            .' @keydown.down="if (open) { $event.preventDefault(); active = Math.min(active + 1, items.length - 1) }"'
+            .' @keydown.up="if (open) { $event.preventDefault(); active = Math.max(active - 1, 0) }"'
+            .' @keydown.enter="if (open) { $event.preventDefault(); pick(items[active]) }"'
+            .' @keydown.escape="open = false"'
+            .'></textarea>'
+            // Suggestion dropdown, anchored to the composer card.
+            .'<div class="fp-mention-pop" x-show="open" x-cloak @click.outside="open = false">'
+            .'<template x-for="(m, i) in items" :key="m.id">'
+            .'<button type="button" class="fp-mention-item" :class="i === active ? \'active\' : \'\'" @mouseenter="active = i" @click="pick(m)">'
+            .'<span class="fp-avatar" x-text="m.name.charAt(0).toUpperCase()"></span><span x-text="m.name"></span>'
+            .'</button>'
+            .'</template>'
+            .'</div>'
+            // Picked mentions as removable chips.
+            .'<div class="fp-picked" x-show="($wire.commentMentions || []).length" x-cloak>'
+            .'<template x-for="id in ($wire.commentMentions || [])" :key="id">'
+            .'<span class="fp-file">@<span x-text="name(id)"></span> <button type="button" class="fp-link" @click="drop(id)">✕</button></span>'
+            .'</template>'
+            .'</div>'
             .($fileChips !== '' ? '<div class="fp-files">'.$fileChips.' <button type="button" class="fp-link" wire:click="$set(\'commentFiles\', [])">✕</button></div>' : '')
             .'<div class="fp-composer-bar">'
             .'<label class="fp-attach" title="'.e(__('pages/posts.comment_attachments')).'">'
@@ -1324,6 +1343,41 @@ class Posts extends Page implements HasTable
             // Activity tab
             .'<div x-show="tab === \'activity\'" x-cloak>'.($this->activityFeedHtml($postId) ?: '<div class="fp-muted" style="padding:.4rem 0;">—</div>').'</div>'
             .'</div>';
+    }
+
+    /**
+     * The labels control that replaces the dialog heading (reference-style):
+     * assigned chips + an Edit trigger with the in-place popover. The original
+     * title stays for screen readers only.
+     */
+    private function labelsHeadingHtml(string $srTitle): HtmlString
+    {
+        $post = Post::find($this->viewingPostId);
+        if ($post === null) {
+            return new HtmlString(e($srTitle));
+        }
+
+        $chips = PostLabel::query()->whereIn('id', $post->label_ids ?? [])->get()
+            ->map(function (PostLabel $label): string {
+                [$bg, $accent] = PostLabel::COLORS[$label->color] ?? PostLabel::COLORS['blue'];
+
+                return '<span class="fp-chip" style="background:'.$bg.'; color:'.$accent.';">'.e($label->name).'</span>';
+            })->implode('');
+
+        return new HtmlString(
+            $this->feedbackPanelCss()
+            .'<span class="fp-sr">'.e($srTitle).'</span>'
+            .'<div class="fp-labels" style="margin-bottom:0; font-weight:400;">'
+            .$chips
+            .'<span style="position:relative;">'
+            .'<button type="button" class="fp-labels-btn" wire:click="toggleLabelsPopover">'
+            .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"/></svg>'
+            .e(__('pages/posts.labels_assign'))
+            .'</button>'
+            .($this->labelsPopoverOpen ? $this->labelsPopoverHtml($post) : '')
+            .'</span>'
+            .'</div>'
+        );
     }
 
     /** The "Add labels" popover: check to assign, pencil to edit, trash to
@@ -1396,6 +1450,11 @@ class Posts extends Page implements HasTable
                 .dark .fp-link { color: #a5b4fc; }
                 .fp-labels { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-bottom: .8rem; }
                 .fp-chip { font-size: .68rem; font-weight: 700; letter-spacing: .02em; padding: .18rem .55rem; border-radius: 999px; }
+                .fp-labels-btn { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 500; color: #374151; background: none; border: 1.5px dashed #d1d5db; border-radius: .55rem; padding: .32rem .7rem; cursor: pointer; transition: all .12s ease; }
+                .fp-labels-btn:hover { border-color: #2d19ec; color: #2d19ec; }
+                .fp-labels-btn svg { width: .95rem; height: .95rem; }
+                .dark .fp-labels-btn { color: #d4d4d8; border-color: rgb(255 255 255 / .22); }
+                .dark .fp-labels-btn:hover { border-color: #a5b4fc; color: #a5b4fc; }
                 .fp-tabs { display: flex; gap: .2rem; border-bottom: 1px solid #eceef2; margin-bottom: .7rem; }
                 .dark .fp-tabs { border-color: rgb(255 255 255 / .08); }
                 .fp-tabs button { background: none; border: none; cursor: pointer; padding: .4rem .65rem; font-size: .84rem; font-weight: 600; color: #6b7280; border-bottom: 2px solid transparent; margin-bottom: -1px; }
@@ -1420,17 +1479,18 @@ class Posts extends Page implements HasTable
                 .dark .fp-comment-body { color: #d4d4d8; }
                 .fp-file { display: inline-flex; align-items: center; gap: .25rem; margin: .25rem .25rem 0 0; padding: .15rem .5rem; border: 1px solid #e5e7eb; border-radius: 999px; font-size: .72rem; color: #2d19ec; text-decoration: none; }
                 .dark .fp-file { border-color: rgb(255 255 255 / .12); color: #a5b4fc; }
-                .fp-composer { border: 1px solid #e5e7eb; border-radius: .75rem; background: #fff; overflow: hidden; }
+                .fp-composer { position: relative; border: 1px solid #e5e7eb; border-radius: .75rem; background: #fff; }
                 .dark .fp-composer { border-color: rgb(255 255 255 / .12); background: rgb(255 255 255 / .04); }
                 .fp-composer:focus-within { border-color: #2d19ec66; }
                 .fp-composer textarea { display: block; width: 100%; border: none; outline: none; background: transparent; resize: vertical; padding: .6rem .75rem .3rem; font-size: .85rem; color: inherit; }
-                .fp-pills { display: flex; flex-wrap: wrap; gap: .3rem; padding: .25rem .6rem .1rem; }
-                .fp-pill input { position: absolute; opacity: 0; pointer-events: none; }
-                .fp-pill span { display: inline-block; font-size: .7rem; font-weight: 600; padding: .18rem .55rem; border-radius: 999px; border: 1px solid #e5e7eb; color: #6b7280; cursor: pointer; transition: all .12s ease; }
-                .fp-pill:hover span { border-color: #2d19ec66; color: #2d19ec; }
-                .fp-pill:has(input:checked) span { background: #eef2ff; border-color: #2d19ec; color: #2d19ec; }
-                .dark .fp-pill span { border-color: rgb(255 255 255 / .14); color: #a1a1aa; }
-                .dark .fp-pill:has(input:checked) span { background: rgb(99 102 241 / .2); border-color: #a5b4fc; color: #a5b4fc; }
+                .fp-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+                .fp-mention-pop { position: absolute; left: .75rem; right: .75rem; z-index: 40; background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; box-shadow: 0 12px 32px -8px rgb(0 0 0 / .18); padding: .3rem; max-height: 12rem; overflow: auto; }
+                .dark .fp-mention-pop { background: #1b1b21; border-color: rgb(255 255 255 / .12); }
+                .fp-mention-item { display: flex; align-items: center; gap: .5rem; width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: .35rem .5rem; border-radius: .45rem; font-size: .82rem; color: inherit; }
+                .fp-mention-item.active { background: #eef2ff; }
+                .dark .fp-mention-item.active { background: rgb(99 102 241 / .18); }
+                .fp-mention-item .fp-avatar { width: 1.5rem; height: 1.5rem; font-size: .68rem; }
+                .fp-picked { padding: .1rem .6rem 0; }
                 .fp-files { padding: .2rem .6rem 0; }
                 .fp-composer-bar { display: flex; align-items: center; justify-content: space-between; padding: .4rem .5rem .5rem .6rem; }
                 .fp-attach { display: inline-flex; align-items: center; gap: .3rem; cursor: pointer; color: #9ca3af; padding: .3rem; border-radius: .4rem; }
@@ -1490,17 +1550,21 @@ class Posts extends Page implements HasTable
                 $label = (string) $entry->action; // graceful fallback for an unmapped action
             }
 
-            $who = e((string) ($entry->user_name ?? __('pages/posts.activity_system')));
+            $whoRaw = (string) ($entry->user_name ?? __('pages/posts.activity_system'));
+            $who = e($whoRaw);
             $when = e($entry->created_at?->diffForHumans() ?? '');
 
-            return '<li style="display:flex; gap:.55rem; align-items:flex-start; padding:.35rem 0;">'
-                .'<span style="flex:none; margin-top:.4rem; width:.4rem; height:.4rem; border-radius:999px; background:#c7c9d1;"></span>'
-                .'<span style="min-width:0;"><span style="font-weight:600;">'.$who.'</span> '.e($label)
-                .'<span style="display:block; font-size:.72rem; color:#9ca3af;">'.$when.'</span></span>'
-                .'</li>';
+            // Same avatar + name layout as the comment thread, so both feeds read alike.
+            return '<div class="fp-comment">'
+                .'<span class="fp-avatar">'.e(mb_strtoupper(mb_substr($whoRaw, 0, 1))).'</span>'
+                .'<span class="fp-comment-main">'
+                .'<span class="fp-comment-head"><strong>'.$who.'</strong> '.e($label).'</span>'
+                .'<span class="fp-comment-head"><span>'.$when.'</span></span>'
+                .'</span>'
+                .'</div>';
         })->implode('');
 
-        return '<ul style="list-style:none; margin:0; padding:0;">'.$rows.'</ul>';
+        return '<div class="fp-thread">'.$rows.'</div>';
     }
 
     /** @param  array<int, int|string>  $locationIds */

@@ -53,7 +53,7 @@ return [
     'labels_assign_title' => 'Labels hinzufügen',
     'labels_create_placeholder' => 'Neues Label…',
     'comment_post' => 'Kommentar senden',
-    'comment_placeholder' => 'Schreib etwas…',
+    'comment_placeholder' => 'Schreib etwas… Mit @ erwähnst du Teammitglieder.',
     'comment_mention' => 'Personen benachrichtigen',
     'comment_mention_placeholder' => 'Teammitglieder zum Benachrichtigen wählen',
     'comment_mention_hint' => 'Teammitglieder zum Benachrichtigen wählen (In-App + E-Mail). Cmd/Strg-Klick für mehrere.',
@@ -108,6 +108,7 @@ return [
     'activity_publish_failed' => 'konnte diesen Beitrag nicht veröffentlichen',
     'activity_duplicated' => 'hat diesen Beitrag als Entwurf dupliziert',
     'activity_deleted' => 'hat diesen Beitrag entfernt',
+    'activity_labels_updated' => 'hat die Labels geändert',
     'activity_reverted' => 'hat diesen Beitrag zurück in einen Entwurf verschoben',
 
     // Kalenderansicht

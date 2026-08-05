@@ -53,7 +53,7 @@ return [
     'labels_assign_title' => 'Add labels',
     'labels_create_placeholder' => 'New label…',
     'comment_post' => 'Post comment',
-    'comment_placeholder' => 'Say something…',
+    'comment_placeholder' => 'Say something… Type @ to mention a teammate.',
     'comment_mention' => 'Notify people',
     'comment_mention_placeholder' => 'Pick teammates to notify',
     'comment_mention_hint' => 'Select teammates to notify (in-app + email). Cmd/Ctrl-click for several.',
@@ -108,6 +108,7 @@ return [
     'activity_publish_failed' => 'could not publish this post',
     'activity_duplicated' => 'duplicated this post as a draft',
     'activity_deleted' => 'removed this post',
+    'activity_labels_updated' => 'changed the labels',
     'activity_reverted' => 'moved this post back to draft',
 
     // Calendar view
