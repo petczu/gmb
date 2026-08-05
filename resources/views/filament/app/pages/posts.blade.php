@@ -392,26 +392,4 @@
         @endif
     @endif
 
-    {{-- The prefix calendar icon should read as clickable (it opens the picker). --}}
-    <style>
-        .fi-fo-date-time-picker .fi-input-wrp-prefix,
-        .fi-fo-date-time-picker .fi-input-wrp-icon,
-        .fi-fo-date-time-picker .fi-input-wrp-prefix svg { cursor: pointer; }
-    </style>
-
-    {{-- The date-time-picker's calendar prefix icon lives on the OUTER field
-         wrapper, outside the picker's own clickable trigger, so clicking it did
-         nothing. Forward such clicks to the picker trigger so the icon opens
-         the calendar. Document-level (delegated) so it also covers the composer
-         modal, which mounts after load. --}}
-    <script>
-        document.addEventListener('click', function (event) {
-            const picker = event.target.closest('.fi-fo-date-time-picker');
-            if (! picker) { return; }
-            // A click already on the trigger/input opens it natively.
-            if (event.target.closest('.fi-fo-date-time-picker-trigger, input')) { return; }
-            const trigger = picker.querySelector('.fi-fo-date-time-picker-trigger, .fi-fo-date-time-picker-display-text-input');
-            if (trigger) { trigger.focus(); trigger.click(); }
-        });
-    </script>
 </x-filament-panels::page>

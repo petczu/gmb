@@ -23,7 +23,11 @@ use App\Services\Reviews\ReviewProviderFactory;
 use App\Services\Reviews\ZernioProvider;
 use App\Support\FavoritePages;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\TimePicker;
 use Filament\Support\Facades\FilamentView;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Filament\View\PanelsRenderHook;
@@ -128,6 +132,36 @@ class AppServiceProvider extends ServiceProvider
         Table::configureUsing(function (Table $table): void {
             $table->paginated(fn (HasTable $livewire): bool => $livewire->getFilteredTableQuery()->count() > 10);
         });
+
+        // Consistent date/time fields site-wide: a leading calendar (or clock)
+        // icon. A per-field ->prefixIcon() still overrides this. The icon is
+        // made click-to-open by the render hook below.
+        DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->prefixIcon(Heroicon::OutlinedCalendar));
+        DatePicker::configureUsing(fn (DatePicker $picker) => $picker->prefixIcon(Heroicon::OutlinedCalendar));
+        TimePicker::configureUsing(fn (TimePicker $picker) => $picker->prefixIcon(Heroicon::OutlinedClock));
+
+        // The picker's prefix icon sits on the outer field wrapper, outside the
+        // component's own clickable trigger, so clicking it did nothing. Forward
+        // such clicks to the trigger (delegated, so it also covers modals) and
+        // show a pointer cursor. Global so every date/time field behaves alike.
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            fn (): HtmlString => new HtmlString(<<<'HTML'
+                <style>
+                    .fi-fo-date-time-picker .fi-input-wrp-prefix,
+                    .fi-fo-date-time-picker .fi-input-wrp-prefix svg { cursor: pointer; }
+                </style>
+                <script>
+                    document.addEventListener('click', function (event) {
+                        const picker = event.target.closest('.fi-fo-date-time-picker');
+                        if (! picker) { return; }
+                        if (event.target.closest('.fi-fo-date-time-picker-trigger, input')) { return; }
+                        const trigger = picker.querySelector('.fi-fo-date-time-picker-trigger, .fi-fo-date-time-picker-display-text-input');
+                        if (trigger) { trigger.focus(); trigger.click(); }
+                    });
+                </script>
+                HTML),
+        );
 
         // Cashier: the Workspace (stancl tenant) is the billable; subscription
         // models are pinned to the central connection.
