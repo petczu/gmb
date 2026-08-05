@@ -200,4 +200,7 @@ return [
     'filter_author' => 'الكاتب',
     'filter_clear' => 'مسح عوامل التصفية',
     'filter_by' => 'تصفية حسب:',
+    'filter_media' => 'الوسائط',
+    'filter_media_with' => 'بصورة أو فيديو',
+    'filter_media_without' => 'بدون وسائط',
 ];

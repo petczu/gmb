@@ -612,9 +612,12 @@ class Posts extends Page implements HasTable
     /** @var list<string> */
     public array $filterAuthors = [];
 
+    /** @var list<string> 'with' | 'without' (photo/video attached) */
+    public array $filterMedia = [];
+
     public function toggleArrayFilter(string $key, string $value): void
     {
-        if (! in_array($key, ['filterTypes', 'filterStatuses', 'filterLabels', 'filterAuthors'], true)) {
+        if (! in_array($key, ['filterTypes', 'filterStatuses', 'filterLabels', 'filterAuthors', 'filterMedia'], true)) {
             return;
         }
 
@@ -630,6 +633,7 @@ class Posts extends Page implements HasTable
         $this->filterStatuses = [];
         $this->filterLabels = [];
         $this->filterAuthors = [];
+        $this->filterMedia = [];
         $this->hiddenLocations = [];
         $this->hiddenNoteTags = [];
         session(['posts_hidden_note_tags' => []]);
@@ -639,6 +643,7 @@ class Posts extends Page implements HasTable
     {
         return count($this->filterTypes) + count($this->filterStatuses)
             + count($this->filterLabels) + count($this->filterAuthors)
+            + count($this->filterMedia)
             + count($this->hiddenLocations) + count($this->hiddenNoteTags);
     }
 
@@ -667,6 +672,12 @@ class Posts extends Page implements HasTable
                         $sub->orWhereJsonContains('label_ids', $labelId);
                     }
                 });
+            })
+            // Media: only when exactly one side is picked (both = everything).
+            ->when(count($this->filterMedia) === 1, function (Builder $qq): Builder {
+                return in_array('with', $this->filterMedia, true)
+                    ? $qq->where(fn (Builder $sub) => $sub->whereNotNull('image_url')->orWhereNotNull('video_url'))
+                    : $qq->whereNull('image_url')->whereNull('video_url');
             });
     }
 

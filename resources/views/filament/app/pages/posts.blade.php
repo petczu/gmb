@@ -188,7 +188,8 @@
                     $fbAuthors = $this->authorOptions();
                     $fbLabels = $this->labelFilterOptions();
                     $fbGroups = [
-                        ['key' => 'filterTypes', 'title' => __('pages/posts.col_type'), 'selected' => array_map('strval', $this->filterTypes), 'options' => collect(\App\Models\Post::TYPES)->mapWithKeys(fn ($t) => [$t => __('pages/posts.type_'.$t)])->all()],
+                        ['key' => 'filterTypes', 'title' => __('pages/posts.col_type'), 'selected' => array_map('strval', $this->filterTypes), 'options' => collect(['update', 'offer', 'event'])->mapWithKeys(fn ($t) => [$t => __('pages/posts.type_'.$t)])->all()],
+                        ['key' => 'filterMedia', 'title' => __('pages/posts.filter_media'), 'selected' => array_map('strval', $this->filterMedia), 'options' => ['with' => __('pages/posts.filter_media_with'), 'without' => __('pages/posts.filter_media_without')]],
                         ['key' => 'filterStatuses', 'title' => __('pages/posts.col_status'), 'selected' => array_map('strval', $this->filterStatuses), 'options' => collect(['draft', 'scheduled', 'in_progress', 'published', 'failed'])->mapWithKeys(fn ($s) => [$s => __('pages/posts.status_'.$s)])->all()],
                     ];
                     if ($fbLabels !== []) {
@@ -200,7 +201,7 @@
                 @endphp
                 @php
                     // Per-option counts, Planable-style, from one slim query.
-                    $fpAll = \App\Models\Post::query()->get(['type', 'status', 'created_by_name', 'location_ids', 'label_ids']);
+                    $fpAll = \App\Models\Post::query()->get(['type', 'status', 'created_by_name', 'location_ids', 'label_ids', 'image_url', 'video_url']);
                     $fpTypeCounts = $fpAll->countBy('type');
                     $fpStatusCounts = $fpAll->countBy('status');
                     $fpAuthorCounts = $fpAll->countBy('created_by_name');
@@ -214,10 +215,12 @@
                             'active' => count($this->hiddenLocations),
                             'options' => collect($fbLocations)->map(fn ($name, $id) => ['value' => (int) $id, 'label' => $name, 'count' => $fpLocCounts((int) $id), 'checked' => ! in_array((int) $id, $this->hiddenLocations, true)])->values()->all()];
                     }
-                    $sectionIcons = ['filterTypes' => 'heroicon-o-photo', 'filterStatuses' => 'heroicon-o-clock', 'filterLabels' => 'heroicon-o-tag', 'filterAuthors' => 'heroicon-o-user'];
+                    $fpMediaWith = $fpAll->filter(fn ($p) => filled($p->image_url) || filled($p->video_url))->count();
+                    $sectionIcons = ['filterTypes' => 'heroicon-o-rectangle-stack', 'filterMedia' => 'heroicon-o-photo', 'filterStatuses' => 'heroicon-o-clock', 'filterLabels' => 'heroicon-o-tag', 'filterAuthors' => 'heroicon-o-user'];
                     foreach ($fbGroups as $group) {
                         $counts = match ($group['key']) {
                             'filterTypes' => fn ($v) => (int) ($fpTypeCounts[$v] ?? 0),
+                            'filterMedia' => fn ($v) => $v === 'with' ? $fpMediaWith : $fpAll->count() - $fpMediaWith,
                             'filterStatuses' => fn ($v) => (int) ($fpStatusCounts[$v] ?? 0),
                             'filterAuthors' => fn ($v) => (int) ($fpAuthorCounts[$v] ?? 0),
                             'filterLabels' => fn ($v) => $fpLabelCounts((int) $v),

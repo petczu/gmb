@@ -202,4 +202,7 @@ return [
     'filter_author' => 'Autor',
     'filter_clear' => 'Filter zurücksetzen',
     'filter_by' => 'Filtern nach:',
+    'filter_media' => 'Medien',
+    'filter_media_with' => 'Mit Foto oder Video',
+    'filter_media_without' => 'Ohne Medien',
 ];
