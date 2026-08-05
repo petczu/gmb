@@ -206,7 +206,7 @@ return [
     'filter_media_photo' => 'Foto',
     'filter_media_video' => 'Video',
     'share' => 'Teilen',
-    'duplicate_to' => 'Duplizieren nach…',
+    'duplicate_to' => 'Duplizieren',
     'share_heading' => 'Diesen Post teilen',
     'share_desc' => 'Jeder mit dem Link kann den Post ansehen. Passwort oder Zeitfenster hinzufügen, falls nötig.',
     'share_save' => 'Speichern',

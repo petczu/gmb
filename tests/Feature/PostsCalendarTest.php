@@ -546,6 +546,37 @@ class PostsCalendarTest extends TestCase
         $this->assertSame(1, Post::count());
     }
 
+    public function test_share_stacks_on_top_of_the_open_post_dialog(): void
+    {
+        Schema::connection('mysql')->create('post_shares', function ($table): void {
+            $table->increments('id');
+            $table->string('token', 64)->unique();
+            $table->string('workspace_id');
+            $table->unsignedBigInteger('post_id');
+            $table->string('title')->nullable();
+            $table->text('html');
+            $table->string('password')->nullable();
+            $table->dateTime('access_from')->nullable();
+            $table->dateTime('access_until')->nullable();
+            $table->timestamps();
+        });
+        session(['current_workspace_id' => 'ws-1']);
+
+        $location = $this->location();
+        $post = Post::create([
+            'type' => 'update', 'caption' => 'Stack', 'location_ids' => [$location->id],
+            'source_ids' => [], 'status' => 'published', 'scheduled_at' => now(),
+        ]);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $post->id);
+        $component->call('mountAction', 'viewPost');
+        $component->call('mountAction', 'sharePost');
+
+        $mounted = array_map(fn ($a) => $a->getName(), $component->instance()->getMountedActions());
+        $this->assertSame(['viewPost', 'sharePost'], $mounted);
+    }
+
     public function test_the_list_edit_action_opens_the_draft_composer(): void
     {
         $location = $this->location();

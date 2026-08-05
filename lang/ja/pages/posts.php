@@ -204,7 +204,7 @@ return [
     'filter_media_photo' => '写真',
     'filter_media_video' => '動画',
     'share' => '共有',
-    'duplicate_to' => '複製先…',
+    'duplicate_to' => '複製',
     'share_heading' => 'この投稿を共有',
     'share_desc' => 'リンクを知っている人は誰でも投稿を見られます。必要ならパスワードや公開期間を設定してください。',
     'share_save' => '保存',

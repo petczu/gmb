@@ -204,7 +204,7 @@ return [
     'filter_media_photo' => 'Foto',
     'filter_media_video' => 'Video',
     'share' => 'Delen',
-    'duplicate_to' => 'Dupliceren naar…',
+    'duplicate_to' => 'Dupliceren',
     'share_heading' => 'Deze post delen',
     'share_desc' => 'Iedereen met de link kan de post bekijken. Voeg een wachtwoord of toegangsperiode toe indien nodig.',
     'share_save' => 'Opslaan',

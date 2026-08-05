@@ -204,7 +204,7 @@ return [
     'filter_media_photo' => 'صورة',
     'filter_media_video' => 'فيديو',
     'share' => 'مشاركة',
-    'duplicate_to' => 'تكرار إلى…',
+    'duplicate_to' => 'تكرار',
     'share_heading' => 'مشاركة هذا المنشور',
     'share_desc' => 'يمكن لأي شخص لديه الرابط رؤية المنشور. أضف كلمة مرور أو فترة وصول إذا لزم الأمر.',
     'share_save' => 'حفظ',

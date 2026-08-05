@@ -1491,6 +1491,9 @@ class Posts extends Page implements HasTable
             // The heading slot carries the labels control (reference-style);
             // the type name stays as the screen-reader title.
             ->modalHeading(fn (): HtmlString => $this->labelsHeadingHtml(__('pages/posts.type_'.(Post::find($this->viewingPostId)?->type ?? 'update'))))
+            // Registered so the heading kebab can mount them STACKED on top of
+            // this dialog (nested mountAction only resolves registered children).
+            ->registerModalActions([$this->sharePostAction(), $this->duplicateToAction()])
             // Two columns: the Google-style preview and a Planable-style
             // feedback panel (labels, comments, activity) on the right.
             ->modalWidth(Width::FiveExtraLarge)
@@ -1641,6 +1644,7 @@ class Posts extends Page implements HasTable
     {
         return Action::make('editDraft')
             ->modalHeading(fn (): HtmlString => $this->labelsHeadingHtml(__('pages/posts.draft_heading')))
+            ->registerModalActions([$this->sharePostAction(), $this->duplicateToAction()])
             ->modalSubmitActionLabel(__('pages/posts.submit'))
             // Wider than the create dialog: three columns (form | preview |
             // feedback panel), the same collaboration surface as the view

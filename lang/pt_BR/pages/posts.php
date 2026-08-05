@@ -204,7 +204,7 @@ return [
     'filter_media_photo' => 'Foto',
     'filter_media_video' => 'Vídeo',
     'share' => 'Compartilhar',
-    'duplicate_to' => 'Duplicar para…',
+    'duplicate_to' => 'Duplicar',
     'share_heading' => 'Compartilhar esta publicação',
     'share_desc' => 'Qualquer pessoa com o link pode ver a publicação. Adicione senha ou período de acesso se precisar.',
     'share_save' => 'Salvar',

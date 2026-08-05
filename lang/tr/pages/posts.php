@@ -204,7 +204,7 @@ return [
     'filter_media_photo' => 'Fotoğraf',
     'filter_media_video' => 'Video',
     'share' => 'Paylaş',
-    'duplicate_to' => 'Şuraya çoğalt…',
+    'duplicate_to' => 'Çoğalt',
     'share_heading' => 'Bu gönderiyi paylaş',
     'share_desc' => 'Bağlantıya sahip herkes gönderiyi görebilir. Gerekirse parola veya erişim aralığı ekleyin.',
     'share_save' => 'Kaydet',

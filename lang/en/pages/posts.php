@@ -206,7 +206,7 @@ return [
     'filter_media_photo' => 'Photo',
     'filter_media_video' => 'Video',
     'share' => 'Share',
-    'duplicate_to' => 'Duplicate to…',
+    'duplicate_to' => 'Duplicate',
     'share_heading' => 'Share this post',
     'share_desc' => 'Anyone with the link can view the post. Add a password or an access window if you need limits.',
     'share_save' => 'Save',
