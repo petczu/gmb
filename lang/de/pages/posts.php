@@ -76,7 +76,7 @@ return [
     'field_video' => 'Video',
     'field_video_helper' => 'Optional. MP4 per Drag-and-drop ablegen oder vom Computer auswählen, bis 75 MB. Wird statt des Bildes verwendet.',
     'field_media' => 'Bild oder Video',
-    'field_media_helper' => 'Per Drag-and-drop ablegen oder vom Computer auswählen. Bild (JPG, PNG) oder Video (MP4), bis 25 MB.',
+    'field_media_helper' => 'Per Drag-and-drop ablegen oder vom Computer auswählen. Bild (JPG, PNG) oder Video (MP4), bis 100 MB.',
     'field_photo_category' => 'Foto-Kategorie',
     'field_title' => 'Titel',
     'field_starts' => 'Beginn',

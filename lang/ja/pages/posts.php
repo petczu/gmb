@@ -42,7 +42,7 @@ return [
     'field_video' => '動画',
     'field_video_helper' => '任意。MP4をドラッグ＆ドロップするか、パソコンから選択してください（75MBまで）。画像の代わりに使用されます。',
     'field_media' => '画像または動画',
-    'field_media_helper' => 'ドラッグ＆ドロップするか、パソコンから選択してください。画像（JPG、PNG）または動画（MP4）、25MBまで。',
+    'field_media_helper' => 'ドラッグ＆ドロップするか、パソコンから選択してください。画像（JPG、PNG）または動画（MP4）、100MBまで。',
     'field_photo_category' => '写真カテゴリ',
     'field_title' => 'タイトル',
     'field_starts' => '開始',

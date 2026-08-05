@@ -19,6 +19,11 @@
             .pc-toggle button.active { background:#2d19ec; color:#fff; }
 
             .pc-grid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); border:1px solid rgb(0 0 0 / .08); border-radius:.75rem; background:#fff; }
+            /* Phones: keep readable day cells and scroll the grid sideways. */
+            @media (max-width:700px) {
+                .pc-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -.5rem; padding:0 .5rem; }
+                .pc-scroll .pc-grid { min-width:56rem; }
+            }
             .dark .pc-grid { background:#18181b; border-color: rgb(255 255 255 / .1); }
             /* Weekday header row sticks to the top so it stays visible while scrolling. */
             .pc-dow { position:sticky; top:0; z-index:5; padding:.5rem .6rem; font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#6b7280; border-bottom:1px solid rgb(0 0 0 / .08); background:#f3f4f6; }
@@ -272,6 +277,9 @@
                 @endforeach
             </datalist>
 
+            {{-- On phones the 7-column grid scrolls horizontally instead of
+                 squeezing the day cells into unreadable slivers. --}}
+            <div class="pc-scroll">
             <div class="pc-grid {{ $isWeekView ? 'week' : '' }}">
                 @for ($i = 0; $i < 7; $i++)
                     {{-- With a Monday-start week, columns 6 and 7 are Sat/Sun. --}}
@@ -413,6 +421,7 @@
                     @endforeach
                 @endforeach
             </div>
+            </div>{{-- /pc-scroll --}}
 
             {{-- HasTable pages get their action modals from the table markup;
                  in calendar mode the table isn't rendered, so provide the

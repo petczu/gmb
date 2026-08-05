@@ -125,8 +125,13 @@ class AppServiceProvider extends ServiceProvider
 
         // Livewire temp uploads must use a CENTRAL disk — stancl suffixes the
         // local/public disks per tenant, which breaks file uploads inside the
-        // app panel (stream_copy_to_stream null source).
-        config(['livewire.temporary_file_upload.disk' => 'livewire-tmp']);
+        // app panel (stream_copy_to_stream null source). The default 12 MB
+        // temp-upload rule would also reject post videos (up to 100 MB) long
+        // before the field's own maxSize runs.
+        config([
+            'livewire.temporary_file_upload.disk' => 'livewire-tmp',
+            'livewire.temporary_file_upload.rules' => ['required', 'file', 'max:102400'],
+        ]);
 
         // Hide the pagination footer when everything fits on one page (≤10 rows).
         Table::configureUsing(function (Table $table): void {

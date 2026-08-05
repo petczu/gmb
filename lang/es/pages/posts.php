@@ -42,7 +42,7 @@ return [
     'field_video' => 'Video',
     'field_video_helper' => 'Opcional. Arrastra un MP4 o elígelo desde tu ordenador, hasta 75 MB. Se usa en lugar de la imagen.',
     'field_media' => 'Imagen o vídeo',
-    'field_media_helper' => 'Arrastra y suelta o elige desde tu ordenador. Imagen (JPG, PNG) o vídeo (MP4), hasta 25 MB.',
+    'field_media_helper' => 'Arrastra y suelta o elige desde tu ordenador. Imagen (JPG, PNG) o vídeo (MP4), hasta 100 MB.',
     'field_photo_category' => 'Categoría de la foto',
     'field_title' => 'Título',
     'field_starts' => 'Empieza',

@@ -42,7 +42,7 @@ return [
     'field_video' => 'Vidéo',
     'field_video_helper' => 'Facultatif. Glissez-déposez un MP4 ou choisissez-en un depuis votre ordinateur, jusqu’à 75 Mo. Utilisé à la place de l’image.',
     'field_media' => 'Image ou vidéo',
-    'field_media_helper' => 'Glissez-déposez ou choisissez depuis votre ordinateur. Image (JPG, PNG) ou vidéo (MP4), jusqu’à 25 Mo.',
+    'field_media_helper' => 'Glissez-déposez ou choisissez depuis votre ordinateur. Image (JPG, PNG) ou vidéo (MP4), jusqu’à 100 Mo.',
     'field_photo_category' => 'Catégorie de photo',
     'field_title' => 'Titre',
     'field_starts' => 'Début',

@@ -42,7 +42,7 @@ return [
     'field_video' => 'Wideo',
     'field_video_helper' => 'Opcjonalnie. Przeciągnij plik MP4 lub wybierz go z komputera, do 75 MB. Używany zamiast obrazu.',
     'field_media' => 'Obraz lub wideo',
-    'field_media_helper' => 'Przeciągnij i upuść lub wybierz z komputera. Obraz (JPG, PNG) lub wideo (MP4), do 25 MB.',
+    'field_media_helper' => 'Przeciągnij i upuść lub wybierz z komputera. Obraz (JPG, PNG) lub wideo (MP4), do 100 MB.',
     'field_photo_category' => 'Kategoria zdjęcia',
     'field_title' => 'Tytuł',
     'field_starts' => 'Początek',

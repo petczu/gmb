@@ -76,7 +76,7 @@ return [
     'field_video' => 'Video',
     'field_video_helper' => 'Optional. Drag and drop an MP4 or choose one from your computer, up to 75 MB. Used instead of the image.',
     'field_media' => 'Image or video',
-    'field_media_helper' => 'Drag and drop or choose from your computer. Image (JPG, PNG) or video (MP4), up to 25 MB.',
+    'field_media_helper' => 'Drag and drop or choose from your computer. Image (JPG, PNG) or video (MP4), up to 100 MB.',
     'field_photo_category' => 'Photo category',
     'field_title' => 'Title',
     'field_starts' => 'Starts',

@@ -42,7 +42,7 @@ return [
     'field_video' => 'Video',
     'field_video_helper' => 'Facoltativo. Trascina un MP4 o scegline uno dal tuo computer, fino a 75 MB. Usato al posto dell’immagine.',
     'field_media' => 'Immagine o video',
-    'field_media_helper' => 'Trascina o scegli dal tuo computer. Immagine (JPG, PNG) o video (MP4), fino a 25 MB.',
+    'field_media_helper' => 'Trascina o scegli dal tuo computer. Immagine (JPG, PNG) o video (MP4), fino a 100 MB.',
     'field_photo_category' => 'Categoria della foto',
     'field_title' => 'Titolo',
     'field_starts' => 'Inizio',

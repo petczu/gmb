@@ -145,7 +145,7 @@ class Posts extends Page implements HasTable
                     ->multiple()
                     ->disk('uploads')
                     ->directory('post-comments')
-                    ->maxSize(25000)
+                    ->maxSize(102400)
                     ->maxFiles(5),
             ])
             ->action(function (array $data): void {
@@ -1594,15 +1594,19 @@ class Posts extends Page implements HasTable
             [$bg, $accent] = PostLabel::COLORS[$label->color] ?? PostLabel::COLORS['blue'];
             $id = (int) $label->getKey();
 
-            // Row flips to an inline editor while being edited.
+            // Row flips to an inline editor while being edited: name on top,
+            // then color dots left + save/cancel/delete right.
             if ($this->editingLabelId === $id) {
-                return '<div class="fp-pop-row fp-pop-edit">'
+                return '<div class="fp-pop-edit">'
                     .'<input type="text" wire:model="editingLabelName" wire:keydown.enter="saveEditedLabel" />'
+                    .'<div class="fp-pop-tools">'
                     .$this->colorDotsHtml('editingLabelColor', $this->editingLabelColor)
                     .'<span class="fp-pop-row-actions">'
-                    .'<button type="button" class="fp-link" wire:click="saveEditedLabel">'.$this->icon('o-check').'</button>'
-                    .'<button type="button" class="fp-link fp-danger" wire:click="deleteLabel('.$id.')">'.$this->icon('o-trash').'</button>'
+                    .'<button type="button" class="fp-pop-act fp-pop-act-primary" wire:click="saveEditedLabel" title="'.e(__('pages/posts.comment_save')).'">'.$this->icon('o-check').'</button>'
+                    .'<button type="button" class="fp-pop-act" wire:click="$set(\'editingLabelId\', null)" title="'.e(__('pages/posts.comment_cancel')).'">'.$this->icon('o-x-mark').'</button>'
+                    .'<button type="button" class="fp-pop-act fp-danger" wire:click="deleteLabel('.$id.')" title="'.e(__('pages/posts.comment_delete')).'">'.$this->icon('o-trash').'</button>'
                     .'</span>'
+                    .'</div>'
                     .'</div>';
             }
 
@@ -1621,19 +1625,29 @@ class Posts extends Page implements HasTable
             .'<div class="fp-pop-title">'.e(__('pages/posts.labels_assign_title')).'</div>'
             .($rows !== '' ? $rows : '<div class="fp-muted" style="padding:.3rem 0 .5rem;">'.e(__('pages/posts.labels_none')).'</div>')
             .'<div class="fp-pop-create">'
+            .'<div class="fp-pop-create-row">'
             .'<input type="text" wire:model="newLabelName" wire:keydown.enter="createLabelInline" placeholder="'.e(__('pages/posts.labels_create_placeholder')).'" />'
+            .'<button type="button" class="fp-pop-act fp-pop-act-primary" wire:click="createLabelInline" title="'.e(__('pages/posts.labels_add')).'">'.$this->icon('o-plus').'</button>'
+            .'</div>'
             .$this->colorDotsHtml('newLabelColor', $this->newLabelColor)
-            .'<button type="button" class="fp-send fp-pop-add" wire:click="createLabelInline">+</button>'
             .'</div>'
             .'</div>';
     }
+
+    /** Dot colors distinct enough to tell apart (the chip accents make yellow
+     *  and orange near-identical). */
+    private const DOT_COLORS = [
+        'yellow' => '#eab308', 'orange' => '#f97316', 'red' => '#ef4444',
+        'pink' => '#ec4899', 'purple' => '#a855f7', 'blue' => '#3b82f6',
+        'teal' => '#14b8a6', 'green' => '#22c55e', 'gray' => '#71717a',
+    ];
 
     /** A row of clickable color dots bound to a Livewire property. */
     private function colorDotsHtml(string $property, string $selected): string
     {
         $dots = '';
-        foreach (PostLabel::COLORS as $key => [$bg, $accent]) {
-            $dots .= '<button type="button" class="fp-dot'.($key === $selected ? ' active' : '').'" style="background:'.$accent.';" wire:click="$set(\''.$property.'\', \''.$key.'\')" title="'.e(__('pages/posts.color_'.$key)).'"></button>';
+        foreach (array_keys(PostLabel::COLORS) as $key) {
+            $dots .= '<button type="button" class="fp-dot'.($key === $selected ? ' active' : '').'" style="--dot:'.(self::DOT_COLORS[$key] ?? '#3b82f6').';" wire:click="$set(\''.$property.'\', \''.$key.'\')" title="'.e(__('pages/posts.color_'.$key)).'"></button>';
         }
 
         return '<span class="fp-dots">'.$dots.'</span>';
@@ -1679,6 +1693,8 @@ class Posts extends Page implements HasTable
                 .fp-panel { font-size: .85rem; }
                 .fp-bordered { border-left: 1px solid #eceef2; padding-left: 1.4rem; min-height: 20rem; }
                 .fp-stacked { border-top: 1px solid #eceef2; padding-top: 1rem; }
+                /* Stacked single-column layout on small screens: no divider line. */
+                @media (max-width: 1023px) { .fp-bordered { border-left: none; padding-left: 0; min-height: 0; } }
                 .dark .fp-bordered { border-color: rgb(255 255 255 / .08); }
                 .dark .fp-stacked { border-color: rgb(255 255 255 / .08); }
                 .fp-muted { color: #9ca3af; font-size: .78rem; }
@@ -1795,18 +1811,31 @@ class Posts extends Page implements HasTable
                 .fp-pop-gear:hover { color: #2d19ec; background: #eef2ff; }
                 .dark .fp-pop-gear:hover { color: #a5b4fc; background: rgb(99 102 241 / .15); }
                 .fp-pop-gear svg { width: .85rem; height: .85rem; }
-                .fp-pop-edit { flex-wrap: wrap; }
-                .fp-pop-edit input[type="text"], .fp-pop-create input[type="text"] { flex: 1 1 6rem; min-width: 0; border: 1px solid #e5e7eb; border-radius: .45rem; padding: .3rem .5rem; font-size: .78rem; background: transparent; color: inherit; }
+                .fp-pop-edit { display: grid; gap: .45rem; padding: .35rem 0 .5rem; }
+                .fp-pop-edit input[type="text"], .fp-pop-create input[type="text"] { width: 100%; min-width: 0; border: 1px solid #e5e7eb; border-radius: .45rem; padding: .32rem .55rem; font-size: .78rem; background: transparent; color: inherit; }
                 .dark .fp-pop-edit input[type="text"], .dark .fp-pop-create input[type="text"] { border-color: rgb(255 255 255 / .14); }
-                .fp-pop-row-actions { display: inline-flex; gap: .1rem; flex: none; }
+                /* Dots left, actions right, one tidy row. */
+                .fp-pop-tools { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+                .fp-pop-row-actions { display: inline-flex; gap: .15rem; flex: none; }
+                .fp-pop-act { display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: .45rem; border: 1px solid #e5e7eb; background: none; color: #6b7280; cursor: pointer; }
+                .fp-pop-act svg { width: .85rem; height: .85rem; }
+                .fp-pop-act:hover { background: #f4f5f7; }
+                .fp-pop-act-primary { background: #2d19ec; border-color: #2d19ec; color: #fff; }
+                .fp-pop-act-primary:hover { background: #2413c9; }
+                .fp-pop-act.fp-danger { color: #dc2626; }
+                .dark .fp-pop-act { border-color: rgb(255 255 255 / .14); color: #a1a1aa; }
+                .dark .fp-pop-act:hover { background: rgb(255 255 255 / .06); }
                 .fp-danger { color: #dc2626; }
-                .fp-pop-create { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; padding-top: .6rem; border-top: 1px solid #f1f2f4; }
+                .fp-pop-create { display: grid; gap: .45rem; margin-top: .5rem; padding-top: .6rem; border-top: 1px solid #f1f2f4; }
                 .dark .fp-pop-create { border-color: rgb(255 255 255 / .08); }
-                .fp-pop-add { padding: .25rem .6rem; flex: none; }
-                .fp-dots { display: inline-flex; gap: .22rem; flex: none; }
-                .fp-dot { width: .85rem; height: .85rem; border-radius: 999px; border: 2px solid transparent; cursor: pointer; padding: 0; }
-                .fp-dot.active { border-color: #111; transform: scale(1.15); }
-                .dark .fp-dot.active { border-color: #fff; }
+                .fp-pop-create-row { display: flex; align-items: center; gap: .4rem; }
+                .fp-pop-create-row input { flex: 1; }
+                .fp-dots { display: inline-flex; gap: .35rem; flex: none; }
+                .fp-dot { width: .8rem; height: .8rem; border-radius: 999px; background: var(--dot); border: none; cursor: pointer; padding: 0; transition: transform .1s ease; }
+                .fp-dot:hover { transform: scale(1.2); }
+                /* Selection ring offset from the dot, readable in both themes. */
+                .fp-dot.active { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--dot); }
+                .dark .fp-dot.active { box-shadow: 0 0 0 2px #1b1b21, 0 0 0 3.5px var(--dot); }
             </style>
             HTML;
     }
@@ -1954,26 +1983,13 @@ class Posts extends Page implements HasTable
                     ]),
             ])
             ->recordActions([
+                // Same routing as a calendar card: drafts open the editable
+                // composer (edit/delete live there), the rest the view dialog.
                 Action::make('view')
-                    ->label(__('pages/posts.view'))
-                    ->icon(Heroicon::OutlinedEye)
+                    ->label(fn (Post $record): string => $record->status === 'draft' ? __('pages/posts.edit') : __('pages/posts.view'))
+                    ->icon(fn (Post $record) => $record->status === 'draft' ? Heroicon::OutlinedPencilSquare : Heroicon::OutlinedEye)
                     ->color('gray')
-                    ->modalHeading(fn (Post $record): string => __('pages/posts.type_'.$record->type))
-                    ->modalWidth(Width::Medium)
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel(__('pages/posts.close'))
-                    ->schema(fn (Post $record): array => [
-                        Placeholder::make('post_details')
-                            ->hiddenLabel()
-                            ->content(new HtmlString($this->postDetailsHtml($record->id))),
-                    ])
-                    ->extraModalFooterActions(fn (Post $record): array => [
-                        Action::make('duplicateDraft')
-                            ->label(__('pages/posts.duplicate_draft'))
-                            ->icon(Heroicon::OutlinedDocumentDuplicate)
-                            ->action(fn () => $this->duplicateAsDraft($record->id))
-                            ->cancelParentActions(),
-                    ]),
+                    ->action(fn (Post $record) => $this->showPost($record->id)),
 
                 Action::make('delete')
                     ->label(__('pages/posts.delete'))
@@ -2068,7 +2084,7 @@ class Posts extends Page implements HasTable
                 ->fetchFileInformation(false)
                 ->disk('uploads')
                 ->directory('posts')
-                ->maxSize(25000)
+                ->maxSize(102400)
                 ->live()
                 ->helperText(__('pages/posts.field_media_helper')),
 

@@ -42,7 +42,7 @@ return [
     'field_video' => 'Video',
     'field_video_helper' => 'Optioneel. Sleep een MP4 hierheen of kies er een van je computer, tot 75 MB. Wordt gebruikt in plaats van de afbeelding.',
     'field_media' => 'Afbeelding of video',
-    'field_media_helper' => 'Sleep hierheen of kies van je computer. Afbeelding (JPG, PNG) of video (MP4), tot 25 MB.',
+    'field_media_helper' => 'Sleep hierheen of kies van je computer. Afbeelding (JPG, PNG) of video (MP4), tot 100 MB.',
     'field_photo_category' => 'Fotocategorie',
     'field_title' => 'Titel',
     'field_starts' => 'Start',

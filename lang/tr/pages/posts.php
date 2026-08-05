@@ -42,7 +42,7 @@ return [
     'field_video' => 'Video',
     'field_video_helper' => 'İsteğe bağlı. Bir MP4 sürükleyip bırakın veya bilgisayarınızdan seçin, en fazla 75 MB. Görsel yerine kullanılır.',
     'field_media' => 'Görsel veya video',
-    'field_media_helper' => 'Sürükleyip bırakın veya bilgisayarınızdan seçin. Görsel (JPG, PNG) veya video (MP4), en fazla 25 MB.',
+    'field_media_helper' => 'Sürükleyip bırakın veya bilgisayarınızdan seçin. Görsel (JPG, PNG) veya video (MP4), en fazla 100 MB.',
     'field_photo_category' => 'Fotoğraf kategorisi',
     'field_title' => 'Başlık',
     'field_starts' => 'Başlangıç',
