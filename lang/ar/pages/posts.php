@@ -212,7 +212,7 @@ return [
     'share_copy' => 'نسخ',
     'share_copied' => 'تم النسخ!',
     'share_password' => 'كلمة المرور (اختياري)',
-    'share_password_help' => 'اتركها فارغة للاحتفاظ بكلمة المرور الحالية، أو أنشئ واحدة جديدة.',
+    'share_password_help' => 'اتركه فارغًا لعدم التغيير',
     'share_generate' => 'إنشاء',
     'share_from' => 'متاح من',
     'share_until' => 'متاح حتى',

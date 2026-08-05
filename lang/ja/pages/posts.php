@@ -212,7 +212,7 @@ return [
     'share_copy' => 'コピー',
     'share_copied' => 'コピーしました！',
     'share_password' => 'パスワード（任意）',
-    'share_password_help' => '現在のパスワードを保持するには空のまま、または新しく生成してください。',
+    'share_password_help' => '空欄なら変更なし',
     'share_generate' => '生成',
     'share_from' => '公開開始日',
     'share_until' => '公開終了日',

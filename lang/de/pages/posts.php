@@ -214,7 +214,7 @@ return [
     'share_copy' => 'Kopieren',
     'share_copied' => 'Kopiert!',
     'share_password' => 'Passwort (optional)',
-    'share_password_help' => 'Leer lassen, um das aktuelle Passwort zu behalten, oder ein neues generieren.',
+    'share_password_help' => 'Leer lassen, um nichts zu ändern',
     'share_generate' => 'Generieren',
     'share_from' => 'Verfügbar ab',
     'share_until' => 'Verfügbar bis',

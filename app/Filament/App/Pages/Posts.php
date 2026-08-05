@@ -2007,20 +2007,17 @@ class Posts extends Page implements HasTable
         $share = $this->postShare();
         $url = $share !== null ? route('posts.shared', $share->token) : '';
 
-        // navigator.clipboard needs a secure context (gmb.test is plain http),
-        // so fall back to the hidden-textarea trick when it's unavailable.
-        $copyJs = 'const t = '.Js::from($url).';'
-            .' if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(t) }'
-            .' else { const el = document.createElement(\'textarea\'); el.value = t; el.style.position = \'fixed\'; el.style.opacity = \'0\'; document.body.appendChild(el); el.select(); document.execCommand(\'copy\'); el.remove(); }'
-            .' copied = true; setTimeout(() => copied = false, 1500)';
-
         return '<div class="fp-pop fp-panel-float" x-data="{ copied: false, showPw: false }" @click.outside="$wire.set(\'sharePanelOpen\', false)">'
             .'<div class="fp-pop-title">'.e(__('pages/posts.share_heading')).'</div>'
             .'<div class="fp-float-label">'.e(__('pages/posts.share_link')).'</div>'
             .'<div class="fp-share-link">'
-            .'<a href="'.e($url).'" target="_blank" rel="noopener">'.e($url).'</a>'
-            // Icon-only copy; flips to a green check while "copied".
-            .'<button type="button" title="'.e(__('pages/posts.share_copy')).'" @click="'.e($copyJs, false).'">'
+            .'<input type="text" readonly x-ref="lnk" class="fp-float-input" value="'.e($url).'" @focus="$el.select()">'
+            .'<a href="'.e($url).'" target="_blank" rel="noopener" title="'.e(__('pages/posts.view')).'">'.$this->icon('o-arrow-top-right-on-square').'</a>'
+            // Icon-only copy; selects the visible input so the fallback
+            // execCommand path works on plain-http hosts too.
+            .'<button type="button" title="'.e(__('pages/posts.share_copy')).'" @click="$refs.lnk.select(); $refs.lnk.setSelectionRange(0, 99999);'
+            .' if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText($refs.lnk.value) } else { document.execCommand(\'copy\') }'
+            .' copied = true; setTimeout(() => copied = false, 1500)">'
             .'<span x-show="! copied">'.$this->icon('o-clipboard').'</span>'
             .'<span x-show="copied" x-cloak style="color:#16a34a;">'.$this->icon('o-check').'</span>'
             .'</button>'
@@ -2030,16 +2027,17 @@ class Posts extends Page implements HasTable
             .'<button type="button" class="fp-link" wire:click="generateSharePanelPassword">'.e(__('pages/posts.share_generate')).'</button>'
             .'</div>'
             .'<span class="fp-pw">'
-            .'<input :type="showPw ? \'text\' : \'password\'" class="fp-float-input" wire:model="sharePassword" placeholder="••••••••" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true">'
+            .'<input :type="showPw ? \'text\' : \'password\'" class="fp-float-input" wire:model="sharePassword" placeholder="'.e(__('pages/posts.share_password_help')).'" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true">'
             .'<button type="button" @click="showPw = ! showPw">'
             .'<span x-show="! showPw">'.$this->icon('o-eye').'</span>'
             .'<span x-show="showPw" x-cloak>'.$this->icon('o-eye-slash').'</span>'
             .'</button>'
             .'</span>'
-            .'<div class="fp-muted" style="margin-top:.3rem;">'.e(__('pages/posts.share_password_help')).'</div>'
             .'<div class="fp-float-grid">'
-            .'<span><span class="fp-float-label">'.e(__('pages/posts.share_from')).'</span><input type="datetime-local" class="fp-float-input" wire:model="shareFrom"></span>'
-            .'<span><span class="fp-float-label">'.e(__('pages/posts.share_until')).'</span><input type="datetime-local" class="fp-float-input" wire:model="shareUntil"></span>'
+            .'<span><span class="fp-float-label">'.e(__('pages/posts.share_from')).'</span>'
+            .'<span class="fp-date" @click="const i = $el.querySelector(\'input\'); i.focus(); try { i.showPicker() } catch (e) {}">'.$this->icon('o-calendar').'<input type="datetime-local" wire:model="shareFrom"></span></span>'
+            .'<span><span class="fp-float-label">'.e(__('pages/posts.share_until')).'</span>'
+            .'<span class="fp-date" @click="const i = $el.querySelector(\'input\'); i.focus(); try { i.showPicker() } catch (e) {}">'.$this->icon('o-calendar').'<input type="datetime-local" wire:model="shareUntil"></span></span>'
             .'</div>'
             .'<div class="fp-float-bar">'
             .'<button type="button" class="fp-send" wire:click="saveSharePanel">'.e(__('pages/posts.share_save')).'</button>'
@@ -2350,11 +2348,22 @@ class Posts extends Page implements HasTable
                 /* Native select: custom chevron, evenly inset from the edge. */
                 select.fp-float-input { appearance: none; -webkit-appearance: none; padding-inline-end: 2.3rem; background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .7rem center; background-size: .85rem; }
                 .fp-share-link { display: flex; align-items: center; gap: .4rem; }
-                .fp-share-link a { flex: 1; min-width: 0; font-size: .8rem; line-height: 1.45; color: #2d19ec; word-break: break-all; }
                 .dark .fp-share-link a { color: #a5b4fc; }
                 .fp-share-link button { flex: none; display: inline-flex; align-items: center; gap: .3rem; border: 1px solid #d1d5db; border-radius: .5rem; background: none; cursor: pointer; padding: .45rem .55rem; font-size: .72rem; color: inherit; }
                 .dark .fp-share-link button { border-color: rgb(255 255 255 / .14); }
                 .fp-share-link button svg { width: .95rem; height: .95rem; }
+                .fp-share-link input { flex: 1; min-width: 0; font-size: .78rem; color: #2d19ec; }
+                .dark .fp-share-link input { color: #a5b4fc; }
+                .fp-share-link a { flex: none; display: inline-grid; place-items: center; color: #9ca3af; padding: .3rem; }
+                .fp-share-link a:hover { color: #2d19ec; }
+                .fp-share-link a svg { width: .95rem; height: .95rem; }
+                .fp-float-grid input, .fp-float-grid .fp-date { min-width: 0; }
+                .fp-date { display: flex; align-items: center; gap: .45rem; border: 1px solid #d1d5db; border-radius: .5rem; padding: .5rem .65rem; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .04); cursor: pointer; }
+                .fp-date:focus-within { border-color: #2d19ec; box-shadow: 0 0 0 1px #2d19ec; }
+                .dark .fp-date { background: rgb(255 255 255 / .05); border-color: rgb(255 255 255 / .14); }
+                .fp-date > svg { width: 1rem; height: 1rem; color: #9ca3af; flex: none; }
+                .fp-date input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: .82rem; font-family: inherit; color: inherit; padding: 0; }
+                .fp-date input::-webkit-calendar-picker-indicator { display: none; }
                 .fp-share-link button span { display: inline-grid; place-items: center; }
                 .fp-pw { position: relative; display: block; }
                 .fp-pw input { padding-inline-end: 2.2rem; }

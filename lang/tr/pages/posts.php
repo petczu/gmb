@@ -212,7 +212,7 @@ return [
     'share_copy' => 'Kopyala',
     'share_copied' => 'Kopyalandı!',
     'share_password' => 'Parola (isteğe bağlı)',
-    'share_password_help' => 'Mevcut parolayı korumak için boş bırakın veya yeni bir tane oluşturun.',
+    'share_password_help' => 'Boş = değişmez',
     'share_generate' => 'Oluştur',
     'share_from' => 'Şu tarihten itibaren',
     'share_until' => 'Şu tarihe kadar',

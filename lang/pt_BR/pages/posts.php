@@ -212,7 +212,7 @@ return [
     'share_copy' => 'Copiar',
     'share_copied' => 'Copiado!',
     'share_password' => 'Senha (opcional)',
-    'share_password_help' => 'Deixe vazio para manter a senha atual ou gere uma nova.',
+    'share_password_help' => 'Vazio = sem alterações',
     'share_generate' => 'Gerar',
     'share_from' => 'Disponível de',
     'share_until' => 'Disponível até',

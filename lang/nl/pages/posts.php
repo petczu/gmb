@@ -212,7 +212,7 @@ return [
     'share_copy' => 'Kopiëren',
     'share_copied' => 'Gekopieerd!',
     'share_password' => 'Wachtwoord (optioneel)',
-    'share_password_help' => 'Laat leeg om het huidige wachtwoord te behouden of genereer een nieuw.',
+    'share_password_help' => 'Leeg = ongewijzigd',
     'share_generate' => 'Genereren',
     'share_from' => 'Beschikbaar vanaf',
     'share_until' => 'Beschikbaar tot',

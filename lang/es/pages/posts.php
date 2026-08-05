@@ -212,7 +212,7 @@ return [
     'share_copy' => 'Copiar',
     'share_copied' => '¡Copiado!',
     'share_password' => 'Contraseña (opcional)',
-    'share_password_help' => 'Déjala vacía para mantener la actual o genera una nueva.',
+    'share_password_help' => 'Vacío = sin cambios',
     'share_generate' => 'Generar',
     'share_from' => 'Disponible desde',
     'share_until' => 'Disponible hasta',
