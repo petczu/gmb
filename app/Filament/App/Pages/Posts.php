@@ -22,7 +22,9 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -107,7 +109,83 @@ class Posts extends Page implements HasTable
                         ->color('gray'),
                 ])
                 ->action(fn (array $data, array $arguments) => $this->publish($data, draft: (bool) ($arguments['draft'] ?? false))),
+
+            $this->manageLabelsAction(),
         ];
+    }
+
+    /** Top-level label manager: create, rename, recolor and delete the
+     *  workspace's post labels in one reliable (non-nested) dialog. */
+    public function manageLabelsAction(): Action
+    {
+        return Action::make('manageLabels')
+            ->label(__('pages/posts.labels_manage'))
+            ->icon(Heroicon::OutlinedTag)
+            ->color('gray')
+            ->visible(fn (): bool => $this->isConfigured())
+            ->modalHeading(__('pages/posts.labels_manage'))
+            ->modalSubmitActionLabel(__('common.save'))
+            ->fillForm(fn (): array => [
+                'labels' => PostLabel::query()->orderBy('name')->get()
+                    ->map(fn (PostLabel $l): array => ['id' => $l->id, 'name' => $l->name, 'color' => $l->color])
+                    ->all(),
+            ])
+            ->schema([
+                Repeater::make('labels')
+                    ->hiddenLabel()
+                    ->addActionLabel(__('pages/posts.labels_add'))
+                    ->reorderable(false)
+                    ->schema([
+                        Hidden::make('id'),
+                        TextInput::make('name')
+                            ->hiddenLabel()
+                            ->placeholder(__('pages/posts.label_name'))
+                            ->required()
+                            ->maxLength(60),
+                        Select::make('color')
+                            ->hiddenLabel()
+                            ->options(collect(PostLabel::COLORS)->keys()->mapWithKeys(
+                                fn (string $c): array => [$c => __('pages/posts.color_'.$c)],
+                            )->all())
+                            ->default('blue')
+                            ->required(),
+                    ])
+                    ->columns(2)
+                    ->grid(1),
+            ])
+            ->action(fn (array $data) => $this->syncLabels($data['labels'] ?? []));
+    }
+
+    /**
+     * Reconcile the label set from the manager: update existing rows, create
+     * new ones, and delete any that were removed.
+     *
+     * @param  array<int, array{id?: int|null, name?: string, color?: string}>  $rows
+     */
+    protected function syncLabels(array $rows): void
+    {
+        $keptIds = [];
+
+        foreach ($rows as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $attributes = ['name' => $name, 'color' => (string) ($row['color'] ?? 'blue')];
+            $id = $row['id'] ?? null;
+
+            if ($id !== null && $id !== '') {
+                PostLabel::query()->whereKey($id)->update($attributes);
+                $keptIds[] = (int) $id;
+            } else {
+                $keptIds[] = PostLabel::create($attributes)->getKey();
+            }
+        }
+
+        PostLabel::query()->whereNotIn('id', $keptIds ?: [0])->delete();
+
+        Notification::make()->title(__('pages/posts.labels_saved'))->success()->send();
     }
 
     /** The composer form next to a live Google-style preview of the post. */
@@ -1089,26 +1167,13 @@ class Posts extends Page implements HasTable
                 ->required(),
 
             // Colored labels for internal organization (never sent to Google).
-            // New ones can be created inline from the field.
+            // Managed via the "Labels" button in the page header.
             Select::make('label_ids')
                 ->label(__('pages/posts.field_labels'))
                 ->multiple()
                 ->options(fn (): array => PostLabel::query()->orderBy('name')->pluck('name', 'id')->all())
-                ->createOptionForm([
-                    TextInput::make('name')
-                        ->label(__('pages/posts.label_name'))
-                        ->required()
-                        ->maxLength(60),
-                    Select::make('color')
-                        ->label(__('pages/posts.label_color'))
-                        ->options(collect(PostLabel::COLORS)->keys()->mapWithKeys(
-                            fn (string $c): array => [$c => __('pages/posts.color_'.$c)],
-                        )->all())
-                        ->default('blue')
-                        ->required()
-                        ->native(false),
-                ])
-                ->createOptionUsing(fn (array $data): int => PostLabel::create($data)->getKey()),
+                ->placeholder(__('pages/posts.labels_none'))
+                ->helperText(__('pages/posts.labels_manage_hint')),
 
             // Offer/Event carry a headline: keep it above the body text, with a
             // counter + hard 58-char cap (Google truncates longer titles).

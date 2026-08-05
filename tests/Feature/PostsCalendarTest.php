@@ -340,6 +340,27 @@ class PostsCalendarTest extends TestCase
         $this->assertSame(2, Post::query()->count());
     }
 
+    public function test_the_label_manager_creates_renames_and_deletes(): void
+    {
+        $keep = PostLabel::create(['name' => 'Old name', 'color' => 'yellow']);
+        $gone = PostLabel::create(['name' => 'Delete me', 'color' => 'red']);
+
+        // Exercise the sync logic directly (the Filament action just forwards
+        // the repeater rows to it).
+        $page = new Posts;
+        (new \ReflectionMethod($page, 'syncLabels'))->invoke($page, [
+            ['id' => $keep->id, 'name' => 'New name', 'color' => 'green'],
+            ['id' => null, 'name' => 'Fresh', 'color' => 'blue'],
+        ]);
+
+        $keep->refresh();
+        $this->assertSame('New name', $keep->name);
+        $this->assertSame('green', $keep->color);
+        $this->assertNull(PostLabel::find($gone->id)); // removed row deleted
+        $this->assertTrue(PostLabel::query()->where('name', 'Fresh')->exists());
+        $this->assertSame(2, PostLabel::count());
+    }
+
     public function test_a_draft_saves_its_assigned_labels(): void
     {
         $location = $this->location();
