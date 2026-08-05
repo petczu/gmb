@@ -223,5 +223,12 @@ class AppServiceProvider extends ServiceProvider
                 </script>
                 HTML),
         );
+
+        // Live connection indicator (offline / back-online toast). Global so it
+        // covers both panels; the view is self-contained (Alpine + scoped CSS).
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            fn (): HtmlString => new HtmlString(view('filament.connection-status')->render()),
+        );
     }
 }
