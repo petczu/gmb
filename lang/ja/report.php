@@ -142,4 +142,12 @@ return [
     'competitors_insight_reviews_behind' => ':count社の競合が、あなたより多くの総レビュー数を保有しています。',
     'competitors_insight_growth_lead' => 'この期間、あなたが最も多くの新しいレビューを獲得しました（+:count）。',
     'competitors_insight_growth_behind' => 'この期間、:nameは+:top件の新しいレビューを獲得し、あなたの+:ownと比較されます。',
+    'block_posts' => 'Google投稿',
+    'posts_title' => 'Google投稿',
+    'posts_published' => '公開された投稿',
+    'posts_prev' => '前期間：:count',
+    'posts_media' => '写真・動画あり',
+    'posts_media_sub' => '公開投稿のうち',
+    'posts_top_type' => '最も多いタイプ',
+    'posts_recent_title' => '最新の投稿',
 ];

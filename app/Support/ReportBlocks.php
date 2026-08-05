@@ -23,6 +23,7 @@ class ReportBlocks
         'cadence',
         'themes',
         'responses',
+        'posts',
         'distribution',
         'volume',
         'competitors',
@@ -57,7 +58,7 @@ class ReportBlocks
     public static function presets(): array
     {
         return [
-            'standard' => ['glance', 'performance', 'summary', 'topics', 'distribution', 'volume', 'highlights', 'recommendations'],
+            'standard' => ['glance', 'performance', 'summary', 'topics', 'posts', 'distribution', 'volume', 'highlights', 'recommendations'],
             'full' => self::ORDER,
             'bonus' => ['glance', 'summary', 'staff', 'cadence', 'recommendations', 'methodology'],
             'compliance' => ['glance', 'summary', 'cadence', 'methodology'],

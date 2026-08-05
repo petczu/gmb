@@ -144,4 +144,12 @@ return [
     'competitors_insight_reviews_behind' => ':count competitor(s) have more total reviews than you.',
     'competitors_insight_growth_lead' => 'You added the most new reviews this period (+:count).',
     'competitors_insight_growth_behind' => ':name added +:top new reviews vs your +:own this period.',
+    'block_posts' => 'Google posts',
+    'posts_title' => 'Google posts',
+    'posts_published' => 'Published posts',
+    'posts_prev' => 'previous period: :count',
+    'posts_media' => 'With photo or video',
+    'posts_media_sub' => 'of the published posts',
+    'posts_top_type' => 'Most used type',
+    'posts_recent_title' => 'Latest posts',
 ];

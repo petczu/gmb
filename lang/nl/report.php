@@ -140,4 +140,12 @@ return [
     'competitors_insight_reviews_behind' => ':count concurrent(en) hebben in totaal meer reviews dan jij.',
     'competitors_insight_growth_lead' => 'Je hebt deze periode de meeste nieuwe reviews verzameld (+:count).',
     'competitors_insight_growth_behind' => ':name verzamelde +:top nieuwe reviews tegenover jouw +:own deze periode.',
+    'block_posts' => 'Google-posts',
+    'posts_title' => 'Google-posts',
+    'posts_published' => 'Gepubliceerde posts',
+    'posts_prev' => 'vorige periode: :count',
+    'posts_media' => 'Met foto of video',
+    'posts_media_sub' => 'van de gepubliceerde posts',
+    'posts_top_type' => 'Meest gebruikte type',
+    'posts_recent_title' => 'Nieuwste posts',
 ];

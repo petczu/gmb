@@ -142,4 +142,12 @@ return [
     'preset_full' => 'Vollständig',
     'preset_bonus' => 'Mitarbeiter und Prämien',
     'preset_compliance' => 'Sammel-Compliance',
+    'block_posts' => 'Google-Posts',
+    'posts_title' => 'Google-Posts',
+    'posts_published' => 'Veröffentlichte Posts',
+    'posts_prev' => 'Vorzeitraum: :count',
+    'posts_media' => 'Mit Foto oder Video',
+    'posts_media_sub' => 'der veröffentlichten Posts',
+    'posts_top_type' => 'Häufigster Typ',
+    'posts_recent_title' => 'Neueste Posts',
 ];

@@ -144,4 +144,12 @@ return [
     'preset_full' => 'Completo',
     'preset_bonus' => 'Equipe e bônus',
     'preset_compliance' => 'Conformidade da coleta',
+    'block_posts' => 'Publicações do Google',
+    'posts_title' => 'Publicações do Google',
+    'posts_published' => 'Publicações publicadas',
+    'posts_prev' => 'período anterior: :count',
+    'posts_media' => 'Com foto ou vídeo',
+    'posts_media_sub' => 'das publicações',
+    'posts_top_type' => 'Tipo mais usado',
+    'posts_recent_title' => 'Publicações recentes',
 ];

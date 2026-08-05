@@ -142,4 +142,12 @@ return [
     'competitors_insight_reviews_behind' => ':count konkurent(ów) ma więcej łącznych opinii niż Ty.',
     'competitors_insight_growth_lead' => 'W tym okresie zebrałeś najwięcej nowych opinii (+:count).',
     'competitors_insight_growth_behind' => ':name zebrał +:top nowych opinii wobec Twoich +:own w tym okresie.',
+    'block_posts' => 'Posty Google',
+    'posts_title' => 'Posty Google',
+    'posts_published' => 'Opublikowane posty',
+    'posts_prev' => 'poprzedni okres: :count',
+    'posts_media' => 'Ze zdjęciem lub wideo',
+    'posts_media_sub' => 'opublikowanych postów',
+    'posts_top_type' => 'Najczęstszy typ',
+    'posts_recent_title' => 'Najnowsze posty',
 ];

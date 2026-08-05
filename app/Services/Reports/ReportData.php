@@ -6,6 +6,7 @@ namespace App\Services\Reports;
 
 use App\Models\Competitor;
 use App\Models\Location;
+use App\Models\Post;
 use App\Models\Review;
 use App\Services\Competitors\CompetitorGeo;
 use App\Services\Competitors\CompetitorTrends;
@@ -13,6 +14,7 @@ use App\Services\Listings\ListingPerformance;
 use App\Support\DashboardPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Pure-metrics computation for the Monthly Performance Report. No AI, no
@@ -99,10 +101,63 @@ class ReportData
             'busiestDay' => $busiest->keys()->first(),
             'busiestCount' => (int) ($busiest->first() ?? 0),
             'competitors' => $this->competitors($period),
+            'posts' => $this->posts($period),
             'performance' => $this->performance($period),
             'highlightsPositive' => $this->highlights($period, [5, 4], 3),
             'highlightsCritical' => $this->highlights($period, [1, 2], 3),
             'reviewSnippets' => $this->snippets($period, 40),
+        ];
+    }
+
+    /**
+     * Google-post activity in the window: published count (with a previous-
+     * period comparison), media share, per-type breakdown and the latest
+     * posts. Empty array when the workspace has never published a post → the
+     * block is skipped entirely.
+     *
+     * @return array{total: int, prev: int, withMedia: int, byType: array<string, int>, recent: list<array{date: string, type: string, caption: string, hasMedia: bool}>}|array{}
+     */
+    protected function posts(DashboardPeriod $period): array
+    {
+        // Published only — drafts and failures are internal. The calendar date
+        // (scheduled_at, set for imported posts too) falls back to created_at.
+        $published = Post::query()->where('status', 'published')->get();
+
+        if ($published->isEmpty()) {
+            return [];
+        }
+
+        $matches = function (Post $post, $from, $to) use ($period): bool {
+            $when = $post->scheduled_at ?? $post->created_at;
+            if ($when === null || ! $when->betweenIncluded($from, $to)) {
+                return false;
+            }
+
+            return $period->locationIds === []
+                || array_intersect(array_map('intval', $post->location_ids ?? []), $period->locationIds) !== [];
+        };
+
+        $current = $published->filter(fn (Post $p): bool => $matches($p, $period->start, $period->end))->values();
+        $prev = $published->filter(fn (Post $p): bool => $matches($p, $period->prevStart, $period->prevEnd))->count();
+
+        $byType = $current->countBy('type')->sortDesc()->all();
+
+        return [
+            'total' => $current->count(),
+            'prev' => $prev,
+            'withMedia' => $current->filter(fn (Post $p): bool => filled($p->image_url) || filled($p->video_url))->count(),
+            'byType' => $byType,
+            'recent' => $current
+                ->sortByDesc(fn (Post $p) => $p->scheduled_at ?? $p->created_at)
+                ->take(4)
+                ->map(fn (Post $p): array => [
+                    'date' => ($p->scheduled_at ?? $p->created_at)->translatedFormat('M j'),
+                    'type' => (string) $p->type,
+                    'caption' => Str::limit(trim((string) ($p->title ?: $p->caption)), 110),
+                    'hasMedia' => filled($p->image_url) || filled($p->video_url),
+                ])
+                ->values()
+                ->all(),
         ];
     }
 

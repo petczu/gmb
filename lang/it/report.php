@@ -142,4 +142,12 @@ return [
     'preset_full' => 'Completo',
     'preset_bonus' => 'Personale e bonus',
     'preset_compliance' => 'Conformità della raccolta',
+    'block_posts' => 'Post Google',
+    'posts_title' => 'Post Google',
+    'posts_published' => 'Post pubblicati',
+    'posts_prev' => 'periodo precedente: :count',
+    'posts_media' => 'Con foto o video',
+    'posts_media_sub' => 'dei post pubblicati',
+    'posts_top_type' => 'Tipo più usato',
+    'posts_recent_title' => 'Ultimi post',
 ];

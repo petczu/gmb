@@ -302,6 +302,44 @@
         </div>
     @endif
 
+    @if($has('posts') && ! empty($data['posts']))
+        @php $posts = $data['posts']; $topType = array_key_first($posts['byType']); @endphp
+        <h2>{{ __('report.posts_title') }}</h2>
+        <div class="statgrid">
+            <div class="kpi">
+                <div class="label">{{ __('report.posts_published') }}</div>
+                <div class="value">{{ $posts['total'] }}</div>
+                <div class="sub">{{ __('report.posts_prev', ['count' => $posts['prev']]) }}</div>
+            </div>
+            <div class="kpi">
+                <div class="label">{{ __('report.posts_media') }}</div>
+                <div class="value">{{ $posts['withMedia'] }}</div>
+                <div class="sub">{{ __('report.posts_media_sub') }}</div>
+            </div>
+            <div class="kpi">
+                <div class="label">{{ __('report.posts_top_type') }}</div>
+                <div class="value" style="font-size:18px;">{{ $topType !== null ? __('pages/posts.type_'.$topType) : '—' }}</div>
+                <div class="sub">{{ $topType !== null ? $posts['byType'][$topType].' × ' : '' }}</div>
+            </div>
+        </div>
+
+        @if($posts['recent'] !== [])
+            <div class="card">
+                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                    <tbody>
+                        @foreach($posts['recent'] as $row)
+                            <tr style="border-top:1px solid #eef0f4;">
+                                <td style="padding:6px 8px; color:#6b7280; white-space:nowrap;">{{ $row['date'] }}</td>
+                                <td style="padding:6px 8px; white-space:nowrap;"><span style="background:#eef2ff; color:#2d19ec; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:600;">{{ __('pages/posts.type_'.$row['type']) }}</span></td>
+                                <td style="padding:6px 8px;">{{ $row['caption'] !== '' ? $row['caption'] : '—' }}{{ $row['hasMedia'] ? ' 📷' : '' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    @endif
+
     @if($has('distribution') || $has('volume'))
         <div class="grid2">
             @if($has('distribution'))

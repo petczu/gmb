@@ -141,4 +141,12 @@ return [
     'competitors_insight_reviews_behind' => ':count rakibin sizden daha fazla toplam yorumu var.',
     'competitors_insight_growth_lead' => 'Bu dönemde en fazla yeni yorumu siz eklediniz (+:count).',
     'competitors_insight_growth_behind' => ':name bu dönemde +:top yeni yorum ekledi, sizinki +:own.',
+    'block_posts' => 'Google gönderileri',
+    'posts_title' => 'Google gönderileri',
+    'posts_published' => 'Yayımlanan gönderiler',
+    'posts_prev' => 'önceki dönem: :count',
+    'posts_media' => 'Fotoğraflı veya videolu',
+    'posts_media_sub' => 'yayımlanan gönderilerin',
+    'posts_top_type' => 'En çok kullanılan tür',
+    'posts_recent_title' => 'Son gönderiler',
 ];

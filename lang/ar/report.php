@@ -141,4 +141,12 @@ return [
     'competitors_insight_reviews_behind' => ':count من المنافسين لديهم تقييمات إجمالية أكثر منك.',
     'competitors_insight_growth_lead' => 'أضفت أكبر عدد من التقييمات الجديدة هذه الفترة (+:count).',
     'competitors_insight_growth_behind' => 'أضاف :name +:top تقييم جديد مقابل +:own لديك هذه الفترة.',
+    'block_posts' => 'منشورات Google',
+    'posts_title' => 'منشورات Google',
+    'posts_published' => 'المنشورات المنشورة',
+    'posts_prev' => 'الفترة السابقة: :count',
+    'posts_media' => 'بصورة أو فيديو',
+    'posts_media_sub' => 'من المنشورات المنشورة',
+    'posts_top_type' => 'النوع الأكثر استخدامًا',
+    'posts_recent_title' => 'أحدث المنشورات',
 ];
