@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Protected report</title>
+    <title>Protected content</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#f3f4f6; color:#1f2937; display:flex; min-height:100vh; align-items:center; justify-content:center; margin:0; }
         .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.08); padding:28px; width:360px; max-width:92vw; text-align:center; }
@@ -15,13 +15,13 @@
     </style>
 </head>
 <body>
-    <form class="card" method="POST" action="{{ route('reports.shared.unlock', $token) }}">
+    <form class="card" method="POST" action="{{ $action ?? route('reports.shared.unlock', $token) }}">
         @csrf
         <div style="font-size:1.8rem;">🔒</div>
-        <h1>This report is password protected</h1>
+        <h1>{{ $heading ?? 'This content is password protected' }}</h1>
         <p>Enter the password to view it.</p>
         <input type="password" name="password" placeholder="Password" autofocus required>
-        <button type="submit">View report</button>
+        <button type="submit">View</button>
         @if (!empty($error))
             <div class="err">{{ $error }}</div>
         @endif

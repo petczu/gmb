@@ -12,6 +12,7 @@ use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostLabel;
 use App\Models\PostNote;
+use App\Models\PostShare;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
@@ -22,6 +23,8 @@ use App\Services\Zernio\ZernioRestClient;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
@@ -46,9 +49,11 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Js;
 use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
@@ -1271,6 +1276,231 @@ class Posts extends Page implements HasTable
             .'</div>';
     }
 
+    // ── Share & duplicate (the "…" menu) ────────────────────────────────────
+
+    /** The kebab menu shown in the post dialogs' footers and list rows. */
+    private function postMoreMenu(): ActionGroup
+    {
+        return ActionGroup::make([
+            Action::make('shareMenu')
+                ->label(__('pages/posts.share'))
+                ->icon(Heroicon::OutlinedShare)
+                ->action(fn () => $this->replaceMountedAction('sharePost')),
+            Action::make('duplicateMenu')
+                ->label(__('pages/posts.duplicate_to'))
+                ->icon(Heroicon::OutlinedDocumentDuplicate)
+                ->action(fn () => $this->replaceMountedAction('duplicateTo')),
+        ])
+            ->icon(Heroicon::OutlinedEllipsisVertical)
+            ->color('gray');
+    }
+
+    private function postShare(): ?PostShare
+    {
+        return PostShare::query()
+            ->where('workspace_id', (string) session('current_workspace_id'))
+            ->where('post_id', $this->viewingPostId)
+            ->first();
+    }
+
+    /** Get-or-create the post's single share link (no password, no window). */
+    private function ensurePostShare(): ?PostShare
+    {
+        $post = Post::find($this->viewingPostId);
+        if ($post === null) {
+            return null;
+        }
+
+        return PostShare::firstOrCreate(
+            ['workspace_id' => (string) session('current_workspace_id'), 'post_id' => $post->id],
+            [
+                'token' => Str::random(48),
+                'title' => (string) ($post->title ?: Str::limit((string) $post->caption, 60)),
+                'html' => $this->shareHtmlFor($post),
+            ],
+        );
+    }
+
+    /** Standalone public page for a shared post (snapshot, like report shares). */
+    private function shareHtmlFor(Post $post): string
+    {
+        $business = e($this->businessNameLabel($post->location_ids ?? []));
+
+        return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+            .'<meta name="viewport" content="width=device-width, initial-scale=1">'
+            .'<title>'.$business.'</title>'
+            .'<style>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#f3f4f6; color:#1f2937; margin:0; padding:2rem 1rem; display:flex; justify-content:center; } .wrap { width:100%; max-width:26rem; }</style>'
+            .'</head><body><div class="wrap">'
+            .$this->postDetailsHtml($post->id)
+            .'</div></body></html>';
+    }
+
+    public function sharePostAction(): Action
+    {
+        return Action::make('sharePost')
+            ->modalHeading(__('pages/posts.share_heading'))
+            ->modalDescription(__('pages/posts.share_desc'))
+            ->modalWidth(Width::Medium)
+            ->modalSubmitActionLabel(__('pages/posts.share_save'))
+            // Get-or-create as the modal opens so the link shows right away.
+            ->fillForm(function (): array {
+                $share = $this->ensurePostShare();
+
+                return [
+                    'access_from' => $share?->access_from?->toDateString(),
+                    'access_until' => $share?->access_until?->toDateString(),
+                ];
+            })
+            ->schema(fn (): array => [
+                Placeholder::make('current_link')
+                    ->label(__('pages/posts.share_link'))
+                    ->content(function (): HtmlString {
+                        $share = $this->ensurePostShare();
+                        $url = e($share !== null ? route('posts.shared', $share->token) : '');
+
+                        return new HtmlString(
+                            '<div x-data="{ copied: false }" style="display:flex; align-items:center; gap:8px;">'
+                            .'<a href="'.$url.'" target="_blank" style="color:#2d19ec; word-break:break-all; flex:1; font-size:13px;">'.$url.'</a>'
+                            .'<button type="button" @click="navigator.clipboard.writeText(\''.$url.'\'); copied = true; setTimeout(() => copied = false, 1500)"'
+                            .' style="flex:none; display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border:1px solid #e5e7eb; border-radius:8px; background:transparent; cursor:pointer; font-size:12px; white-space:nowrap; color:inherit;">'
+                            .svg('heroicon-o-clipboard')->toHtml()
+                            .'<span x-text="copied ? '.Js::from(__('pages/posts.share_copied')).' : '.Js::from(__('pages/posts.share_copy')).'">'.e(__('pages/posts.share_copy')).'</span>'
+                            .'</button></div>'
+                            .'<style>.fi-modal a + button svg { width: 14px; height: 14px; }</style>'
+                        );
+                    }),
+
+                TextInput::make('password')
+                    ->label(__('pages/posts.share_password'))
+                    ->password()
+                    ->revealable()
+                    ->autocomplete('new-password')
+                    ->extraInputAttributes(['data-lpignore' => 'true', 'data-1p-ignore' => 'true'])
+                    ->helperText(__('pages/posts.share_password_help'))
+                    ->hintAction(
+                        Action::make('generateSharePassword')
+                            ->label(__('pages/posts.share_generate'))
+                            ->icon(Heroicon::OutlinedSparkles)
+                            ->action(fn ($set) => $set('password', Str::password(12, symbols: false))),
+                    ),
+
+                Grid::make(2)->schema([
+                    DatePicker::make('access_from')->label(__('pages/posts.share_from')),
+                    DatePicker::make('access_until')->label(__('pages/posts.share_until'))->afterOrEqual('access_from'),
+                ]),
+            ])
+            ->extraModalFooterActions(fn (): array => [
+                Action::make('revokeShare')
+                    ->label(__('pages/posts.share_revoke'))
+                    ->icon(Heroicon::OutlinedTrash)
+                    ->color('danger')
+                    ->visible(fn (): bool => $this->postShare() !== null)
+                    ->action(function (): void {
+                        $this->postShare()?->delete();
+                        Notification::make()->title(__('pages/posts.share_revoked'))->success()->send();
+                    })
+                    ->cancelParentActions(),
+            ])
+            ->action(function (array $data): void {
+                $post = Post::find($this->viewingPostId);
+                $existing = $this->postShare();
+                if ($post === null) {
+                    return;
+                }
+
+                PostShare::updateOrCreate(
+                    ['workspace_id' => (string) session('current_workspace_id'), 'post_id' => $post->id],
+                    [
+                        'token' => $existing?->token ?? Str::random(48),
+                        'title' => (string) ($post->title ?: Str::limit((string) $post->caption, 60)),
+                        // Refresh the snapshot so the link shows the post as it is now.
+                        'html' => $this->shareHtmlFor($post),
+                        'password' => filled($data['password'] ?? null) ? Hash::make($data['password']) : $existing?->password,
+                        'access_from' => $data['access_from'] ?? null,
+                        'access_until' => $data['access_until'] ?? null,
+                    ],
+                );
+
+                ActivityLogger::log('post.shared', [], $post);
+                Notification::make()->title(__('pages/posts.share_saved'))->success()->send();
+            });
+    }
+
+    /** Copy the open post into this or another workspace as a fresh draft. */
+    public function duplicateToAction(): Action
+    {
+        return Action::make('duplicateTo')
+            ->modalHeading(__('pages/posts.duplicate_to_heading'))
+            ->modalDescription(__('pages/posts.duplicate_to_desc'))
+            ->modalWidth(Width::Medium)
+            ->modalSubmitActionLabel(__('pages/posts.duplicate_to_submit'))
+            ->schema([
+                Select::make('workspace_id')
+                    ->label(__('pages/posts.duplicate_to_workspace'))
+                    ->options(fn (): array => auth()->user()?->workspaces()->orderBy('name')->pluck('name', 'tenants.id')->all() ?? [])
+                    ->default(fn (): ?string => (string) session('current_workspace_id'))
+                    ->required()
+                    ->selectablePlaceholder(false),
+            ])
+            ->action(fn (array $data) => $this->duplicatePostTo((string) $data['workspace_id']));
+    }
+
+    /** Duplicate into the picked workspace (cross-tenant when it's another one). */
+    public function duplicatePostTo(string $workspaceId): void
+    {
+        $post = Post::find($this->viewingPostId);
+        $target = auth()->user()?->workspaces()->whereKey($workspaceId)->first();
+
+        if ($post === null || ! $target instanceof Workspace) {
+            return;
+        }
+
+        if ((string) $target->getKey() === (string) session('current_workspace_id')) {
+            $this->duplicateAsDraft($post->id);
+
+            return;
+        }
+
+        // Copy the content only: locations, source ids and labels are
+        // workspace-local, so the copy starts unassigned in the target.
+        $attributes = [
+            'type' => in_array($post->type, ['update', 'offer', 'event', 'photo'], true) ? $post->type : 'update',
+            'caption' => $post->caption,
+            'title' => $post->title,
+            'image_url' => $post->image_url,
+            'video_url' => $post->video_url,
+            'cta_type' => $post->cta_type,
+            'cta_url' => $post->cta_url,
+            'photo_category' => $post->photo_category,
+            'starts_at' => $post->starts_at,
+            'ends_at' => $post->ends_at,
+            'voucher_code' => $post->voucher_code,
+            'redeem_url' => $post->redeem_url,
+            'terms_url' => $post->terms_url,
+            'location_ids' => [],
+            'source_ids' => [],
+            'status' => 'draft',
+            'origin' => 'app',
+            'created_by' => auth()->id(),
+            'created_by_name' => auth()->user()?->name,
+        ];
+
+        $previous = tenant();
+
+        try {
+            tenancy()->initialize($target);
+            $copy = Post::create($attributes);
+            ActivityLogger::log('post.duplicated', ['from_workspace' => (string) $previous?->getKey()], $copy);
+        } finally {
+            $previous instanceof Workspace ? tenancy()->initialize($previous) : tenancy()->end();
+        }
+
+        Notification::make()
+            ->title(__('pages/posts.duplicate_to_done', ['workspace' => $target->name]))
+            ->success()
+            ->send();
+    }
+
     /** Details modal for a calendar card. */
     public function viewPostAction(): Action
     {
@@ -1304,6 +1534,7 @@ class Posts extends Page implements HasTable
                         ->icon(Heroicon::OutlinedPencilSquare)
                         ->action(fn () => $this->revertToDraftAndEdit())
                     : null,
+                $this->postMoreMenu(),
                 Action::make('duplicateDraft')
                     ->label(__('pages/posts.duplicate_draft'))
                     ->icon(Heroicon::OutlinedDocumentDuplicate)
@@ -1439,6 +1670,7 @@ class Posts extends Page implements HasTable
                 $action->makeModalSubmitAction('saveDraft', arguments: ['draft' => true])
                     ->label(__('pages/posts.save_draft'))
                     ->color('gray'),
+                $this->postMoreMenu(),
                 Action::make('deleteDraft')
                     ->label(__('pages/posts.draft_delete'))
                     ->icon(Heroicon::OutlinedTrash)
@@ -2091,6 +2323,25 @@ class Posts extends Page implements HasTable
                         $this->resetCommentComposer();
                         $this->replaceMountedAction($record->status === 'draft' ? 'editDraft' : 'viewPost');
                     }),
+
+                ActionGroup::make([
+                    Action::make('shareRow')
+                        ->label(__('pages/posts.share'))
+                        ->icon(Heroicon::OutlinedShare)
+                        ->action(function (Post $record): void {
+                            $this->viewingPostId = $record->id;
+                            $this->replaceMountedAction('sharePost');
+                        }),
+                    Action::make('duplicateRow')
+                        ->label(__('pages/posts.duplicate_to'))
+                        ->icon(Heroicon::OutlinedDocumentDuplicate)
+                        ->action(function (Post $record): void {
+                            $this->viewingPostId = $record->id;
+                            $this->replaceMountedAction('duplicateTo');
+                        }),
+                ])
+                    ->icon(Heroicon::OutlinedEllipsisVertical)
+                    ->color('gray'),
 
                 Action::make('delete')
                     ->label(__('pages/posts.delete'))

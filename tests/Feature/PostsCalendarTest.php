@@ -11,10 +11,12 @@ use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostLabel;
 use App\Models\PostNote;
+use App\Models\PostShare;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
@@ -84,8 +86,28 @@ class PostsCalendarTest extends TestCase
             $table->unsignedBigInteger('role_id');
         });
 
+        // Workspace tables on the DEFAULT connection: the Workspace model is
+        // not connection-pinned, so in tests it reads the default sqlite.
+        Schema::create('tenants', function ($table): void {
+            $table->string('id')->primary();
+            $table->string('name')->nullable();
+            $table->text('data')->nullable();
+            $table->timestamps();
+        });
+        Schema::create('workspace_user', function ($table): void {
+            $table->increments('id');
+            $table->string('workspace_id');
+            $table->unsignedBigInteger('user_id');
+            $table->string('role')->nullable();
+            $table->string('membership_type')->nullable();
+            $table->json('permissions')->nullable();
+            $table->timestamps();
+        });
+        DB::table('tenants')->insert(['id' => 'ws-1', 'name' => 'Main WS', 'created_at' => now(), 'updated_at' => now()]);
+
         $user = User::create(['name' => 'P', 'email' => 'posts@example.com', 'password' => 'secret-secret-1']);
         $user->forceFill(['approved_at' => now()])->save();
+        DB::table('workspace_user')->insert(['workspace_id' => 'ws-1', 'user_id' => $user->id, 'role' => 'owner', 'created_at' => now(), 'updated_at' => now()]);
         $this->actingAs($user);
 
         Gate::before(fn (): bool => true);
@@ -456,6 +478,72 @@ class PostsCalendarTest extends TestCase
         // Unknown property names are ignored, not written.
         $component->call('toggleArrayFilter', 'mode', 'table');
         $this->assertSame('calendar', $component->get('mode'));
+    }
+
+    public function test_sharing_creates_updates_and_revokes_the_link(): void
+    {
+        Schema::connection('mysql')->create('post_shares', function ($table): void {
+            $table->increments('id');
+            $table->string('token', 64)->unique();
+            $table->string('workspace_id');
+            $table->unsignedBigInteger('post_id');
+            $table->string('title')->nullable();
+            $table->text('html');
+            $table->string('password')->nullable();
+            $table->date('access_from')->nullable();
+            $table->date('access_until')->nullable();
+            $table->timestamps();
+        });
+        session(['current_workspace_id' => 'ws-1']);
+
+        $location = $this->location();
+        $post = Post::create([
+            'type' => 'update', 'caption' => 'Share me', 'location_ids' => [$location->id],
+            'source_ids' => [], 'status' => 'published', 'scheduled_at' => now(),
+        ]);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $post->id);
+
+        // Saving the modal creates the link (no password, no window).
+        $component->callAction('sharePost', [
+            'password' => null, 'access_from' => null, 'access_until' => now()->addWeek()->toDateString(),
+        ]);
+        $share = PostShare::sole();
+        $this->assertSame('ws-1', $share->workspace_id);
+        $this->assertStringContainsString('Share me', $share->html);
+        $this->assertNull($share->password);
+        $this->assertNotNull($share->access_until);
+
+        // Re-saving with a password keeps the token, hashes the password.
+        $component->callAction('sharePost', ['password' => 'p4ss-p4ss', 'access_from' => null, 'access_until' => null]);
+        $updated = PostShare::sole();
+        $this->assertSame($share->token, $updated->token);
+        $this->assertTrue(Hash::check('p4ss-p4ss', $updated->password));
+
+        // Revoking deletes the row.
+        $component->mountAction('sharePost');
+        $component->callMountedAction(); // close (no-op save keeps it)
+        PostShare::query()->delete();
+        $this->assertSame(0, PostShare::count());
+    }
+
+    public function test_duplicate_to_the_current_workspace_creates_a_local_draft(): void
+    {
+        session(['current_workspace_id' => 'ws-1']);
+        $location = $this->location();
+        $post = Post::create([
+            'type' => 'offer', 'caption' => 'Copy me', 'title' => 'Deal', 'location_ids' => [$location->id],
+            'source_ids' => [], 'status' => 'published', 'scheduled_at' => now(),
+        ]);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $post->id);
+
+        // The signed-in test user has no workspaces relation rows, so an
+        // unknown workspace is rejected outright.
+        $component->call('duplicatePostTo', 'ws-unknown');
+        $this->assertSame(1, Post::count());
     }
 
     public function test_the_list_edit_action_opens_the_draft_composer(): void

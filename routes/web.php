@@ -5,6 +5,7 @@ use App\Http\Controllers\DocsController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\McpAuthorizationController;
 use App\Http\Controllers\PostmarkWebhookController;
+use App\Http\Controllers\PostShareController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewPageController;
 use App\Http\Controllers\ReviewWidgetController;
@@ -69,6 +70,13 @@ Route::middleware(['web', 'auth', SetCurrentWorkspace::class])
 
 // PUBLIC shared report links (no login). The HTML is stored on the share row,
 // so no tenant context is needed. Optional password + access window enforced.
+Route::middleware('web')
+    ->prefix('posts/shared')
+    ->group(function () {
+        Route::get('/{token}', [PostShareController::class, 'shared'])->name('posts.shared');
+        Route::post('/{token}', [PostShareController::class, 'sharedUnlock'])->name('posts.shared.unlock');
+    });
+
 Route::middleware('web')
     ->prefix('reports/shared')
     ->group(function () {
