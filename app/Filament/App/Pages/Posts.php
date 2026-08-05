@@ -9,11 +9,14 @@ use App\Models\ExternalCalendar;
 use App\Models\ExternalCalendarEvent;
 use App\Models\Location;
 use App\Models\Post;
+use App\Models\PostComment;
 use App\Models\PostLabel;
 use App\Models\PostNote;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
 use App\Services\Posts\IcsCalendarSync;
+use App\Services\Posts\PostCommentNotifier;
 use App\Services\Posts\PostPublisher;
 use App\Services\Zernio\ZernioRestClient;
 use BackedEnum;
@@ -110,6 +113,101 @@ class Posts extends Page implements HasTable
                 ])
                 ->action(fn (array $data, array $arguments) => $this->publish($data, draft: (bool) ($arguments['draft'] ?? false))),
         ];
+    }
+
+    /** Comments dialog for the current post: the thread plus an inline form to
+     *  add a comment with attachments and @-mentions of workspace members.
+     *  Mounted from the post dialogs (a top-level, non-nested modal). */
+    public function commentsAction(): Action
+    {
+        return Action::make('comments')
+            ->modalHeading(__('pages/posts.comments'))
+            ->modalSubmitActionLabel(__('pages/posts.comment_post'))
+            ->modalWidth(Width::TwoExtraLarge)
+            ->schema([
+                Placeholder::make('comment_thread')
+                    ->hiddenLabel()
+                    ->content(fn (): HtmlString => new HtmlString($this->commentsHtml((int) $this->viewingPostId))),
+                Textarea::make('body')
+                    ->hiddenLabel()
+                    ->placeholder(__('pages/posts.comment_placeholder'))
+                    ->required()
+                    ->rows(3),
+                Select::make('mentions')
+                    ->label(__('pages/posts.comment_mention'))
+                    ->multiple()
+                    ->options(fn (): array => $this->workspaceMembers())
+                    ->placeholder(__('pages/posts.comment_mention_placeholder')),
+                FileUpload::make('attachments')
+                    ->label(__('pages/posts.comment_attachments'))
+                    ->multiple()
+                    ->disk('uploads')
+                    ->directory('post-comments')
+                    ->maxSize(25000)
+                    ->maxFiles(5),
+            ])
+            ->action(function (array $data): void {
+                $post = Post::find($this->viewingPostId);
+                if ($post === null) {
+                    return;
+                }
+
+                $comment = PostComment::create([
+                    'post_id' => $post->id,
+                    'user_id' => auth()->id(),
+                    'user_name' => auth()->user()?->name,
+                    'body' => (string) $data['body'],
+                    'attachments' => array_values($data['attachments'] ?? []),
+                    'mentioned_user_ids' => array_values(array_map('intval', $data['mentions'] ?? [])),
+                ]);
+
+                app(PostCommentNotifier::class)->notifyMentioned($post, $comment);
+                ActivityLogger::log('post.commented', [], $post);
+
+                // Reopen so the thread shows the new comment.
+                $this->replaceMountedAction('comments');
+            });
+    }
+
+    /** Workspace members available to @-mention, id => name. */
+    private function workspaceMembers(): array
+    {
+        $workspace = tenant();
+
+        return $workspace instanceof Workspace
+            ? $workspace->users()->orderBy('name')->pluck('name', 'users.id')->all()
+            : [];
+    }
+
+    /** Rendered comment thread for a post (author, body, attachments, time). */
+    private function commentsHtml(int $postId): string
+    {
+        $comments = PostComment::query()->where('post_id', $postId)->orderBy('created_at')->get();
+
+        if ($comments->isEmpty()) {
+            return '<div style="color:#9ca3af; font-size:.85rem; padding:.4rem 0 .8rem;">'.e(__('pages/posts.comments_empty')).'</div>';
+        }
+
+        $rows = $comments->map(function (PostComment $c): string {
+            $who = e((string) ($c->user_name ?? __('pages/posts.activity_system')));
+            $when = e($c->created_at?->diffForHumans() ?? '');
+            $body = nl2br(e((string) $c->body));
+
+            $attachments = '';
+            foreach ($c->attachments ?? [] as $path) {
+                $url = e(url(Storage::disk('uploads')->url((string) $path)));
+                $name = e(basename((string) $path));
+                $attachments .= '<a href="'.$url.'" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:.25rem; margin:.3rem .3rem 0 0; padding:.15rem .45rem; border:1px solid #e5e7eb; border-radius:.35rem; font-size:.72rem; color:#2d19ec; text-decoration:none;">📎 '.$name.'</a>';
+            }
+
+            return '<div style="padding:.6rem 0; border-bottom:1px solid #f1f2f4;">'
+                .'<div style="font-size:.8rem;"><span style="font-weight:600;">'.$who.'</span> <span style="color:#9ca3af;">· '.$when.'</span></div>'
+                .'<div style="font-size:.85rem; margin-top:.2rem; color:#374151;">'.$body.'</div>'
+                .($attachments !== '' ? '<div>'.$attachments.'</div>' : '')
+                .'</div>';
+        })->implode('');
+
+        return '<div style="max-height:16rem; overflow:auto; margin-bottom:.4rem;">'.$rows.'</div>';
     }
 
     /** Assign labels to the currently-viewed post (a top-level dialog, so it's
@@ -738,6 +836,12 @@ class Posts extends Page implements HasTable
                         ->icon(Heroicon::OutlinedPencilSquare)
                         ->action(fn () => $this->revertToDraftAndEdit())
                     : null,
+                Action::make('comments')
+                    ->label(__('pages/posts.comments'))
+                    ->icon(Heroicon::OutlinedChatBubbleLeftRight)
+                    ->color('gray')
+                    ->badge(fn (): ?int => ($n = PostComment::query()->where('post_id', $this->viewingPostId)->count()) > 0 ? $n : null)
+                    ->action(fn () => $this->replaceMountedAction('comments')),
                 Action::make('assignLabels')
                     ->label(__('pages/posts.labels_assign'))
                     ->icon(Heroicon::OutlinedTag)
@@ -875,6 +979,11 @@ class Posts extends Page implements HasTable
                 $action->makeModalSubmitAction('saveDraft', arguments: ['draft' => true])
                     ->label(__('pages/posts.save_draft'))
                     ->color('gray'),
+                Action::make('comments')
+                    ->label(__('pages/posts.comments'))
+                    ->icon(Heroicon::OutlinedChatBubbleLeftRight)
+                    ->color('gray')
+                    ->action(fn () => $this->replaceMountedAction('comments')),
                 Action::make('assignLabels')
                     ->label(__('pages/posts.labels_assign'))
                     ->icon(Heroicon::OutlinedTag)

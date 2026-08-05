@@ -8,6 +8,7 @@ use App\Filament\App\Pages\Posts;
 use App\Models\ExternalCalendar;
 use App\Models\Location;
 use App\Models\Post;
+use App\Models\PostComment;
 use App\Models\PostLabel;
 use App\Models\PostNote;
 use App\Models\User;
@@ -163,14 +164,36 @@ class PostsCalendarTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('post_comments', function ($table): void {
+            $table->increments('id');
+            $table->unsignedBigInteger('post_id')->index();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('user_name')->nullable();
+            $table->text('body');
+            $table->json('attachments')->nullable();
+            $table->json('mentioned_user_ids')->nullable();
+            $table->timestamps();
+        });
+
+        // Central notifications table for the in-app bell (mentions).
+        Schema::connection('mysql')->create('notifications', function ($table): void {
+            $table->uuid('id')->primary();
+            $table->string('type');
+            $table->morphs('notifiable');
+            $table->text('data');
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
+        });
+
         Filament::setCurrentPanel(Filament::getPanel('app'));
     }
 
     protected function tearDown(): void
     {
-        foreach (['post_labels', 'external_calendar_events', 'external_calendars', 'post_notes', 'posts', 'locations'] as $table) {
+        foreach (['post_comments', 'post_labels', 'external_calendar_events', 'external_calendars', 'post_notes', 'posts', 'locations'] as $table) {
             Schema::dropIfExists($table);
         }
+        Schema::connection('mysql')->dropIfExists('notifications');
         parent::tearDown();
     }
 
@@ -359,6 +382,39 @@ class PostsCalendarTest extends TestCase
         $this->assertNull(PostLabel::find($gone->id)); // removed row deleted
         $this->assertTrue(PostLabel::query()->where('name', 'Fresh')->exists());
         $this->assertSame(2, PostLabel::count());
+    }
+
+    public function test_a_comment_with_mentions_is_posted_to_a_post(): void
+    {
+        $location = $this->location();
+        $post = Post::create([
+            'type' => 'update',
+            'caption' => 'Post',
+            'location_ids' => [$location->id],
+            'source_ids' => [],
+            'status' => 'draft',
+        ]);
+
+        // Posting through the action creates the comment on the post. (Mentions
+        // are validated against the current workspace members, which need a real
+        // tenant, so the mention persistence is covered at the model level below.)
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $post->id);
+        $component->callAction('comments', [
+            'body' => 'Looks great, ship it',
+            'mentions' => [],
+            'attachments' => [],
+        ]);
+
+        $comment = PostComment::query()->sole();
+        $this->assertSame($post->id, $comment->post_id);
+        $this->assertSame('Looks great, ship it', $comment->body);
+
+        // Mentions round-trip as an int array.
+        $mentioned = PostComment::create([
+            'post_id' => $post->id, 'body' => 'ping', 'mentioned_user_ids' => [42, 43],
+        ]);
+        $this->assertSame([42, 43], $mentioned->refresh()->mentioned_user_ids);
     }
 
     public function test_labels_are_assigned_to_a_post_via_the_assign_action(): void

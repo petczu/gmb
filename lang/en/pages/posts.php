@@ -45,6 +45,17 @@ return [
     'labels_manage_hint' => 'Create and manage labels with the "Labels" button above.',
     'labels_add' => 'Add label',
     'labels_saved' => 'Labels saved',
+
+    // Comments
+    'comments' => 'Comments',
+    'comments_empty' => 'No comments yet. Start the conversation.',
+    'comment_post' => 'Post comment',
+    'comment_placeholder' => 'Say something…',
+    'comment_mention' => 'Notify people',
+    'comment_mention_placeholder' => 'Pick teammates to notify',
+    'comment_attachments' => 'Attachments',
+    'comment_mention_title' => ':name mentioned you on a post',
+    'activity_commented' => 'commented on this post',
     'field_caption' => 'Text',
     'field_image' => 'Image',
     'field_image_helper' => 'Drag and drop an image or choose one from your computer. JPG or PNG, up to 4 MB.',

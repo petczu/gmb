@@ -45,6 +45,17 @@ return [
     'labels_manage_hint' => 'Labels über die Schaltfläche „Labels“ oben anlegen und verwalten.',
     'labels_add' => 'Label hinzufügen',
     'labels_saved' => 'Labels gespeichert',
+
+    // Comments
+    'comments' => 'Kommentare',
+    'comments_empty' => 'Noch keine Kommentare. Starte die Unterhaltung.',
+    'comment_post' => 'Kommentar senden',
+    'comment_placeholder' => 'Schreib etwas…',
+    'comment_mention' => 'Personen benachrichtigen',
+    'comment_mention_placeholder' => 'Teammitglieder zum Benachrichtigen wählen',
+    'comment_attachments' => 'Anhänge',
+    'comment_mention_title' => ':name hat dich in einem Beitrag erwähnt',
+    'activity_commented' => 'hat diesen Beitrag kommentiert',
     'field_caption' => 'Text',
     'field_image' => 'Bild',
     'field_image_helper' => 'Bild per Drag-and-drop ablegen oder vom Computer auswählen. JPG oder PNG, bis 4 MB.',
