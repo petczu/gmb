@@ -2344,6 +2344,8 @@ class Posts extends Page implements HasTable
                 .fp-float-input { width: 100%; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: .45rem; padding: .38rem .55rem; font-size: .8rem; background: transparent; color: inherit; }
                 .dark .fp-float-input { border-color: rgb(255 255 255 / .14); }
                 .fp-float-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+                /* Native select: custom chevron, evenly inset from the edge. */
+                select.fp-float-input { appearance: none; -webkit-appearance: none; padding-inline-end: 2.1rem; background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .7rem center; background-size: .85rem; }
                 .fp-share-link { display: flex; align-items: center; gap: .4rem; }
                 .fp-share-link a { flex: 1; min-width: 0; font-size: .74rem; color: #2d19ec; word-break: break-all; }
                 .dark .fp-share-link a { color: #a5b4fc; }
