@@ -133,12 +133,15 @@ class AppServiceProvider extends ServiceProvider
             $table->paginated(fn (HasTable $livewire): bool => $livewire->getFilteredTableQuery()->count() > 10);
         });
 
-        // Consistent date/time fields site-wide: a leading calendar (or clock)
-        // icon. A per-field ->prefixIcon() still overrides this. The icon is
-        // made click-to-open by the render hook below.
-        DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->prefixIcon(Heroicon::OutlinedCalendar));
-        DatePicker::configureUsing(fn (DatePicker $picker) => $picker->prefixIcon(Heroicon::OutlinedCalendar));
-        TimePicker::configureUsing(fn (TimePicker $picker) => $picker->prefixIcon(Heroicon::OutlinedClock));
+        // Consistent date/time fields site-wide: the JS picker (never the raw
+        // browser input, which carries its own right-side indicator) with a
+        // single leading calendar/clock icon that opens it (see render hook
+        // below). A per-field ->prefixIcon()/->native() still overrides. No
+        // field sets native(true), so forcing the JS widget changes nothing but
+        // the two inconsistent native ones.
+        DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->native(false)->prefixIcon(Heroicon::OutlinedCalendar));
+        DatePicker::configureUsing(fn (DatePicker $picker) => $picker->native(false)->prefixIcon(Heroicon::OutlinedCalendar));
+        TimePicker::configureUsing(fn (TimePicker $picker) => $picker->native(false)->prefixIcon(Heroicon::OutlinedClock));
 
         // The picker's prefix icon sits on the outer field wrapper, outside the
         // component's own clickable trigger, so clicking it did nothing. Forward
