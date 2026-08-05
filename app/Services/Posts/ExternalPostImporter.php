@@ -196,6 +196,10 @@ class ExternalPostImporter
 
                 $stored += $this->store($this->locationForCid($url, $cidMap) ?? $fallback, [
                     'platform_post_id' => (string) ($platform['platformPostId'] ?? ($post['_id'] ?? '')),
+                    // Zernio's own post id — matches external_ids on a post WE sent,
+                    // so a scheduled post Zernio just published reconciles onto our
+                    // own row instead of spawning an imported duplicate.
+                    'zernio_post_id' => (string) ($post['_id'] ?? ''),
                     'content' => (string) ($post['content'] ?? ''),
                     'image_url' => $mediaItems[0]['url'] ?? null,
                     'url' => $url,
@@ -208,6 +212,43 @@ class ExternalPostImporter
         } while ($page <= $pages && $page <= self::MAX_PAGES);
 
         return ['stored' => $stored, 'seen' => $seen];
+    }
+
+    /**
+     * Reconcile an external post onto the post WE sent, matched by Zernio's
+     * post id (stored in external_ids). Tags the Google-native id and flips a
+     * still-"scheduled"/"in_progress" row to published. Returns true when a own
+     * post was matched (so no imported duplicate should be created).
+     */
+    private function reconcileOwnPost(string $zernioPostId, string $platformPostId): bool
+    {
+        if ($zernioPostId === '') {
+            return false;
+        }
+
+        // Only posts sent through us carry external_ids; that set is small.
+        $own = Post::query()
+            ->where('origin', '!=', 'imported')
+            ->whereNotNull('external_ids')
+            ->get()
+            ->first(fn (Post $post): bool => in_array($zernioPostId, $post->external_ids ?? [], true));
+
+        if ($own === null) {
+            return false;
+        }
+
+        $updates = [];
+        if ($platformPostId !== '' && $own->platform_post_id !== $platformPostId) {
+            $updates['platform_post_id'] = $platformPostId;
+        }
+        if (in_array($own->status, ['scheduled', 'in_progress'], true)) {
+            $updates['status'] = 'published';
+        }
+        if ($updates !== []) {
+            $own->forceFill($updates)->save();
+        }
+
+        return true;
     }
 
     /**
@@ -229,7 +270,7 @@ class ExternalPostImporter
      * Google-native id so both backfill and webhook delivery are idempotent.
      * Shared by the listing walk and the post.external.created webhook.
      *
-     * @param  array{platform_post_id?: string, content?: ?string, image_url?: ?string, url?: ?string, published_at?: ?string}  $data
+     * @param  array{platform_post_id?: string, zernio_post_id?: string, content?: ?string, image_url?: ?string, url?: ?string, published_at?: ?string}  $data
      */
     public function store(Location $location, array $data): bool
     {
@@ -246,6 +287,15 @@ class ExternalPostImporter
                 $existing->forceFill(['location_ids' => [$location->id]])->save();
             }
 
+            return false;
+        }
+
+        // A post WE sent (scheduled or published through us) carries Zernio's
+        // post id in external_ids. When Zernio later exposes it as an external
+        // post, reconcile it onto our own row — tag the Google-native id and
+        // flip a still-"scheduled" row to published — instead of creating a
+        // duplicate imported copy.
+        if ($this->reconcileOwnPost(trim((string) ($data['zernio_post_id'] ?? '')), $platformPostId)) {
             return false;
         }
 

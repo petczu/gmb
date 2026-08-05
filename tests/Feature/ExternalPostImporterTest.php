@@ -51,6 +51,7 @@ class ExternalPostImporterTest extends TestCase
             $table->string('status', 20)->default('draft');
             $table->string('origin', 20)->default('app');
             $table->string('platform_post_id')->nullable();
+            $table->json('external_ids')->nullable();
             $table->string('created_by_name')->nullable();
             $table->timestamps();
         });
@@ -116,6 +117,32 @@ class ExternalPostImporterTest extends TestCase
 
         $this->assertSame(0, $second['imported']);
         $this->assertSame(1, Post::count());
+    }
+
+    public function test_a_scheduled_post_we_sent_reconciles_instead_of_duplicating(): void
+    {
+        Location::create(['name' => 'Marina', 'zernio_account_id' => 'acc-1']);
+        $this->fakeZernio(); // external post _id = zernio-1, platformPostId = g-123
+
+        // A post WE scheduled through Zernio carries its Zernio id in external_ids.
+        $own = Post::create([
+            'type' => 'update',
+            'caption' => 'Ours',
+            'location_ids' => [1],
+            'source_ids' => [],
+            'status' => 'scheduled',
+            'origin' => 'app',
+            'external_ids' => ['zernio-1'],
+        ]);
+
+        $result = app(ExternalPostImporter::class)->import();
+
+        // No imported duplicate; our own row flips to published and gets tagged.
+        $this->assertSame(0, $result['imported']);
+        $this->assertSame(1, Post::count());
+        $own->refresh();
+        $this->assertSame('published', $own->status);
+        $this->assertSame('g-123', $own->platform_post_id);
     }
 
     public function test_it_attributes_shared_account_posts_by_cid(): void
