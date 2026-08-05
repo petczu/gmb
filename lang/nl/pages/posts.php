@@ -70,7 +70,7 @@ return [
     'scheduled_ok' => 'Bericht gepland',
 
     'delete' => 'Verwijderen',
-    'delete_desc' => 'Dit verwijdert alleen het item uit deze lijst, het verwijdert het bericht niet van Google.',
+    'delete_desc' => 'De post wordt uit deze lijst verwijderd. Als hij via de app is gepubliceerd, wordt hij ook van Google verwijderd.',
     'deleted' => 'Item verwijderd',
 
     // Calendar view

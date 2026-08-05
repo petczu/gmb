@@ -1679,10 +1679,32 @@ class Posts extends Page implements HasTable
                     $this->cancelScheduledOnZernio($post);
                 }
 
+                // A published post also lives on Google; unpublish it there,
+                // or the external import would just bring it back next sync.
+                if ($post->status === 'published') {
+                    $this->unpublishOnZernio($post);
+                }
+
                 ActivityLogger::log('post.deleted', ['type' => $post->type, 'status' => $post->status], $post);
                 $post->delete();
                 Notification::make()->title(__('pages/posts.deleted'))->success()->send();
             });
+    }
+
+    /** Best-effort removal of a published post's live Google copies. */
+    private function unpublishOnZernio(Post $post): void
+    {
+        foreach ($post->external_ids ?? [] as $externalId) {
+            if (! is_string($externalId) || $externalId === '') {
+                continue;
+            }
+
+            try {
+                app(ZernioRestClient::class)->unpublishPost($externalId);
+            } catch (\Throwable $e) {
+                Log::warning('Unpublish post on Zernio failed', ['post' => $post->id, 'external_id' => $externalId, 'error' => $e->getMessage()]);
+            }
+        }
     }
 
     /** Best-effort cancel of a post's Zernio-side scheduled copies. */

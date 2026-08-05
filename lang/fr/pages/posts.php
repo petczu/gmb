@@ -70,7 +70,7 @@ return [
     'scheduled_ok' => 'Post programmé',
 
     'delete' => 'Retirer',
-    'delete_desc' => 'Cela retire uniquement l’entrée de cette liste, cela ne supprime pas le post de Google.',
+    'delete_desc' => 'Le post sera retiré de cette liste. S\'il a été publié via l\'application, il sera aussi supprimé de Google.',
     'deleted' => 'Entrée retirée',
 
     // Calendar view

@@ -70,7 +70,7 @@ return [
     'scheduled_ok' => 'Post agendado',
 
     'delete' => 'Remover',
-    'delete_desc' => 'Isso apenas remove a entrada desta lista, não exclui o post do Google.',
+    'delete_desc' => 'A publicação será removida desta lista. Se foi publicada pelo aplicativo, também será excluída do Google.',
     'deleted' => 'Entrada removida',
 
     // Calendar view

@@ -44,6 +44,21 @@ class ZernioRestClient
     }
 
     /**
+     * Unpublish a post: deletes the live copy from the platform (Google
+     * Business Profile). Zernio keeps its own record as cancelled. Only works
+     * on posts that went out through Zernio, not on external/imported ones.
+     *
+     * @throws RequestException
+     */
+    public function unpublishPost(string $postId): void
+    {
+        $this->request()
+            ->withHeaders(['x-request-id' => (string) Str::uuid()])
+            ->post('/posts/'.rawurlencode($postId).'/unpublish', ['platform' => 'googlebusiness'])
+            ->throw();
+    }
+
+    /**
      * Delete (cancel) a post by its Zernio id. Used to cancel a still-scheduled
      * post before we drop or revert it on our side.
      *

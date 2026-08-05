@@ -70,7 +70,7 @@ return [
     'scheduled_ok' => 'Post programmato',
 
     'delete' => 'Rimuovi',
-    'delete_desc' => 'Questo rimuove solo la voce da questo elenco, non elimina il post da Google.',
+    'delete_desc' => 'Il post verrà rimosso da questo elenco. Se è stato pubblicato tramite l\'app, verrà eliminato anche da Google.',
     'deleted' => 'Voce rimossa',
 
     // Calendar view

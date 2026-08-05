@@ -835,6 +835,33 @@ class PostsCalendarTest extends TestCase
             && str_contains($request->url(), '/posts/zp-1'));
     }
 
+    public function test_deleting_a_published_post_unpublishes_it_on_google(): void
+    {
+        Http::fake(['zernio.test/api/v1/posts/*' => Http::response(['success' => true], 200)]);
+        $location = $this->location();
+
+        $published = Post::create([
+            'type' => 'update',
+            'caption' => 'Live on Google',
+            'location_ids' => [$location->id],
+            'source_ids' => [$location->external_id],
+            'status' => 'published',
+            'origin' => 'app',
+            'external_ids' => ['zp-9'],
+        ]);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $published->id);
+        $component->callAction('deletePost');
+
+        $this->assertNull(Post::find($published->id));
+        // The live Google copy is removed too, or the next external sync
+        // would just re-import the post.
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_contains($request->url(), '/posts/zp-9/unpublish')
+            && $request['platform'] === 'googlebusiness');
+    }
+
     public function test_a_draft_can_be_published_later(): void
     {
         Http::fake([

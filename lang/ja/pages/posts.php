@@ -70,7 +70,7 @@ return [
     'scheduled_ok' => '投稿を予約しました',
 
     'delete' => '削除',
-    'delete_desc' => 'これはこのリストから項目を削除するだけで、Googleから投稿を削除するものではありません。',
+    'delete_desc' => 'この投稿はリストから削除されます。アプリから公開された場合は、Google からも削除されます。',
     'deleted' => '項目を削除しました',
 
     // Calendar view

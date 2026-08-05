@@ -104,7 +104,7 @@ return [
     'scheduled_ok' => 'Post scheduled',
 
     'delete' => 'Remove',
-    'delete_desc' => 'This only removes the entry from this list, it does not delete the post from Google.',
+    'delete_desc' => 'The post will be removed from this list. If it was published through the app, it will also be deleted from Google.',
     'deleted' => 'Entry removed',
 
     // Activity feed (per post)

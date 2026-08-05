@@ -70,7 +70,7 @@ return [
     'scheduled_ok' => 'Publicación programada',
 
     'delete' => 'Eliminar',
-    'delete_desc' => 'Esto solo quita la entrada de esta lista, no elimina la publicación de Google.',
+    'delete_desc' => 'La publicación se eliminará de esta lista. Si se publicó a través de la aplicación, también se eliminará de Google.',
     'deleted' => 'Entrada eliminada',
 
     // Calendar view

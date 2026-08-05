@@ -70,7 +70,7 @@ return [
     'scheduled_ok' => 'Gönderi zamanlandı',
 
     'delete' => 'Kaldır',
-    'delete_desc' => 'Bu yalnızca girdiyi bu listeden kaldırır, gönderiyi Google\'dan silmez.',
+    'delete_desc' => 'Gönderi bu listeden kaldırılacak. Uygulama üzerinden yayınlandıysa Google\'dan da silinecek.',
     'deleted' => 'Girdi kaldırıldı',
 
     // Calendar view

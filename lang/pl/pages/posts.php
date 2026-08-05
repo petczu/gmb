@@ -70,7 +70,7 @@ return [
     'scheduled_ok' => 'Post zaplanowany',
 
     'delete' => 'Usuń',
-    'delete_desc' => 'To usuwa tylko wpis z tej listy, nie usuwa postu z Google.',
+    'delete_desc' => 'Post zostanie usunięty z tej listy. Jeśli został opublikowany przez aplikację, zostanie też usunięty z Google.',
     'deleted' => 'Wpis usunięty',
 
     // Calendar view
