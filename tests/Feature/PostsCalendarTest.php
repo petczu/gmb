@@ -455,6 +455,45 @@ class PostsCalendarTest extends TestCase
         $this->assertSame(1, PostComment::count());
     }
 
+    public function test_the_labels_popover_toggles_creates_edits_and_deletes(): void
+    {
+        $location = $this->location();
+        $post = Post::create([
+            'type' => 'update', 'caption' => 'P', 'location_ids' => [$location->id],
+            'source_ids' => [], 'status' => 'draft',
+        ]);
+        $label = PostLabel::create(['name' => 'Pending', 'color' => 'red']);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $post->id);
+
+        // Assign + unassign without closing anything.
+        $component->call('togglePostLabel', $label->id);
+        $this->assertSame([$label->id], $post->refresh()->label_ids);
+        $component->call('togglePostLabel', $label->id);
+        $this->assertSame([], $post->refresh()->label_ids);
+
+        // Inline create assigns immediately.
+        $component->set('newLabelName', 'For review');
+        $component->set('newLabelColor', 'yellow');
+        $component->call('createLabelInline');
+        $created = PostLabel::query()->where('name', 'For review')->sole();
+        $this->assertSame('yellow', $created->color);
+        $this->assertSame([$created->id], $post->refresh()->label_ids);
+
+        // Inline edit.
+        $component->call('startEditLabel', $created->id);
+        $component->set('editingLabelName', 'Reviewed');
+        $component->set('editingLabelColor', 'green');
+        $component->call('saveEditedLabel');
+        $this->assertSame(['Reviewed', 'green'], [$created->refresh()->name, $created->color]);
+
+        // Delete detaches from the open post.
+        $component->call('deleteLabel', $created->id);
+        $this->assertNull(PostLabel::find($created->id));
+        $this->assertSame([], $post->refresh()->label_ids);
+    }
+
     public function test_labels_are_assigned_to_a_post_via_the_assign_action(): void
     {
         $location = $this->location();

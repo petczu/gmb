@@ -48,7 +48,10 @@ return [
 
     // Comments
     'comments' => 'Kommentare',
-    'comments_empty' => 'Noch keine Kommentare. Starte die Unterhaltung.',
+    'comments_empty_title' => 'Noch keine Kommentare',
+    'comments_empty' => 'Starte die Unterhaltung mit dem ersten Kommentar.',
+    'labels_assign_title' => 'Labels hinzufügen',
+    'labels_create_placeholder' => 'Neues Label…',
     'comment_post' => 'Kommentar senden',
     'comment_placeholder' => 'Schreib etwas…',
     'comment_mention' => 'Personen benachrichtigen',

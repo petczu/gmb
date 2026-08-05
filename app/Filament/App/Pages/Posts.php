@@ -187,11 +187,14 @@ class Posts extends Page implements HasTable
         $comments = PostComment::query()->where('post_id', $postId)->orderBy('created_at')->get();
 
         if ($comments->isEmpty()) {
-            return '<div style="color:#9ca3af; font-size:.85rem; padding:.4rem 0 .8rem;">'.e(__('pages/posts.comments_empty')).'</div>';
+            return '<div class="fp-empty">'
+                .'<div class="fp-empty-title">'.e(__('pages/posts.comments_empty_title')).'</div>'
+                .'<div class="fp-empty-body">'.e(__('pages/posts.comments_empty')).'</div>'
+                .'</div>';
         }
 
         $rows = $comments->map(function (PostComment $c): string {
-            $who = e((string) ($c->user_name ?? __('pages/posts.activity_system')));
+            $who = (string) ($c->user_name ?? __('pages/posts.activity_system'));
             $when = e($c->created_at?->diffForHumans() ?? '');
             $body = nl2br(e((string) $c->body));
 
@@ -199,17 +202,20 @@ class Posts extends Page implements HasTable
             foreach ($c->attachments ?? [] as $path) {
                 $url = e(url(Storage::disk('uploads')->url((string) $path)));
                 $name = e(basename((string) $path));
-                $attachments .= '<a href="'.$url.'" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:.25rem; margin:.3rem .3rem 0 0; padding:.15rem .45rem; border:1px solid #e5e7eb; border-radius:.35rem; font-size:.72rem; color:#2d19ec; text-decoration:none;">📎 '.$name.'</a>';
+                $attachments .= '<a href="'.$url.'" target="_blank" rel="noopener" class="fp-file">📎 '.$name.'</a>';
             }
 
-            return '<div style="padding:.6rem 0; border-bottom:1px solid #f1f2f4;">'
-                .'<div style="font-size:.8rem;"><span style="font-weight:600;">'.$who.'</span> <span style="color:#9ca3af;">· '.$when.'</span></div>'
-                .'<div style="font-size:.85rem; margin-top:.2rem; color:#374151;">'.$body.'</div>'
-                .($attachments !== '' ? '<div>'.$attachments.'</div>' : '')
+            return '<div class="fp-comment">'
+                .'<span class="fp-avatar">'.e(mb_strtoupper(mb_substr($who, 0, 1))).'</span>'
+                .'<span class="fp-comment-main">'
+                .'<span class="fp-comment-head"><strong>'.e($who).'</strong> <span>'.$when.'</span></span>'
+                .'<span class="fp-comment-body">'.$body.'</span>'
+                .($attachments !== '' ? '<span>'.$attachments.'</span>' : '')
+                .'</span>'
                 .'</div>';
         })->implode('');
 
-        return '<div style="max-height:16rem; overflow:auto; margin-bottom:.4rem;">'.$rows.'</div>';
+        return '<div class="fp-thread">'.$rows.'</div>';
     }
 
     /** Assign labels to the currently-viewed post (a top-level dialog, so it's
@@ -840,6 +846,96 @@ class Posts extends Page implements HasTable
         $this->commentFiles = [];
     }
 
+    // ── Labels popover (inside the feedback panel) ──────────────────────────
+    // Server-side state so the popover survives the Livewire re-render that
+    // every toggle triggers (an Alpine-only popover would snap shut).
+
+    public bool $labelsPopoverOpen = false;
+
+    public ?int $editingLabelId = null;
+
+    public string $editingLabelName = '';
+
+    public string $editingLabelColor = 'blue';
+
+    public string $newLabelName = '';
+
+    public string $newLabelColor = 'blue';
+
+    public function toggleLabelsPopover(): void
+    {
+        $this->labelsPopoverOpen = ! $this->labelsPopoverOpen;
+        $this->editingLabelId = null;
+        $this->newLabelName = '';
+    }
+
+    /** Assign/unassign a label on the open post without closing anything. */
+    public function togglePostLabel(int $labelId): void
+    {
+        $post = Post::find($this->viewingPostId);
+        if ($post === null || PostLabel::find($labelId) === null) {
+            return;
+        }
+
+        $ids = array_map('intval', $post->label_ids ?? []);
+        $ids = in_array($labelId, $ids, true)
+            ? array_values(array_diff($ids, [$labelId]))
+            : [...$ids, $labelId];
+
+        $post->forceFill(['label_ids' => $ids])->save();
+    }
+
+    /** Create a label from the popover and assign it to the open post. */
+    public function createLabelInline(): void
+    {
+        $name = trim($this->newLabelName);
+        if ($name === '') {
+            return;
+        }
+
+        $label = PostLabel::create(['name' => $name, 'color' => $this->newLabelColor]);
+        $this->newLabelName = '';
+        $this->togglePostLabel((int) $label->getKey());
+    }
+
+    public function startEditLabel(int $labelId): void
+    {
+        $label = PostLabel::find($labelId);
+        if ($label === null) {
+            return;
+        }
+
+        $this->editingLabelId = $labelId;
+        $this->editingLabelName = $label->name;
+        $this->editingLabelColor = $label->color;
+    }
+
+    public function saveEditedLabel(): void
+    {
+        $name = trim($this->editingLabelName);
+        if ($this->editingLabelId === null || $name === '') {
+            return;
+        }
+
+        PostLabel::query()->whereKey($this->editingLabelId)
+            ->update(['name' => $name, 'color' => $this->editingLabelColor]);
+        $this->editingLabelId = null;
+    }
+
+    public function deleteLabel(int $labelId): void
+    {
+        PostLabel::query()->whereKey($labelId)->delete();
+
+        // Detach from the open post right away (other posts are filtered on
+        // render, stale ids there are harmless).
+        $post = Post::find($this->viewingPostId);
+        if ($post !== null && in_array($labelId, array_map('intval', $post->label_ids ?? []), true)) {
+            $post->forceFill(['label_ids' => array_values(array_diff(array_map('intval', $post->label_ids), [$labelId]))])->save();
+        }
+
+        $this->editingLabelId = null;
+    }
+
     /** Post a comment from the feedback panel (right column of the view dialog). */
     public function addComment(): void
     {
@@ -1163,53 +1259,214 @@ class Posts extends Page implements HasTable
             return '';
         }
 
-        $frame = $bordered ? 'border-left:1px solid #eceef2; padding-left:1.4rem; min-height:20rem;' : 'border-top:1px solid #eceef2; padding-top:1rem;';
-
         // Assigned labels as chips + a manage shortcut.
-        $labelMap = PostLabel::query()->whereIn('id', $post->label_ids ?? [])->get();
-        $chips = $labelMap->map(function (PostLabel $label): string {
-            [$bg, $accent] = PostLabel::COLORS[$label->color] ?? PostLabel::COLORS['blue'];
+        $chips = PostLabel::query()->whereIn('id', $post->label_ids ?? [])->get()
+            ->map(function (PostLabel $label): string {
+                [$bg, $accent] = PostLabel::COLORS[$label->color] ?? PostLabel::COLORS['blue'];
 
-            return '<span style="font-size:.68rem; font-weight:700; letter-spacing:.02em; padding:.15rem .5rem; border-radius:999px; background:'.$bg.'; color:'.$accent.';">'.e($label->name).'</span>';
-        })->implode(' ');
+                return '<span class="fp-chip" style="background:'.$bg.'; color:'.$accent.';">'.e($label->name).'</span>';
+            })->implode('');
 
-        $members = '';
+        // Members as toggleable mention pills (checkbox-backed, no roundtrip
+        // until the comment is posted).
+        $selfId = (int) auth()->id();
+        $mentionPills = '';
         foreach ($this->workspaceMembers() as $id => $name) {
-            $members .= '<option value="'.e((string) $id).'">'.e((string) $name).'</option>';
+            if ((int) $id === $selfId) {
+                continue;
+            }
+            $mentionPills .= '<label class="fp-pill"><input type="checkbox" wire:model="commentMentions" value="'.e((string) $id).'"><span>@'.e((string) $name).'</span></label>';
+        }
+
+        $fileChips = '';
+        foreach ($this->commentFiles as $file) {
+            $fileChips .= '<span class="fp-file">📎 '.e($file->getClientOriginalName()).'</span>';
         }
 
         $count = PostComment::query()->where('post_id', $postId)->count();
 
-        return '<div x-data="{ tab: \'comments\' }" style="'.$frame.'" class="fp-panel">'
-            // Labels row
-            .'<div style="display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-bottom:.8rem;">'
-            .($chips !== '' ? $chips : '<span style="font-size:.75rem; color:#9ca3af;">'.e(__('pages/posts.labels_none')).'</span>')
-            .'<button type="button" wire:click="replaceMountedAction(\'assignLabels\')" style="font-size:.72rem; color:#2d19ec; font-weight:600; background:none; border:none; cursor:pointer; padding:.1rem .25rem;">'.e(__('pages/posts.labels_edit')).'</button>'
+        return '<div x-data="{ tab: \'comments\' }" class="fp-panel '.($bordered ? 'fp-bordered' : 'fp-stacked').'">'
+            .$this->feedbackPanelCss()
+            // Labels row + Planable-style popover (assign, create, edit, delete
+            // in place — nothing closes).
+            .'<div class="fp-labels">'
+            .($chips !== '' ? $chips : '<span class="fp-muted">'.e(__('pages/posts.labels_none')).'</span>')
+            .'<span style="position:relative;">'
+            .'<button type="button" class="fp-link" wire:click="toggleLabelsPopover">'.e(__('pages/posts.labels_edit')).'</button>'
+            .($this->labelsPopoverOpen ? $this->labelsPopoverHtml($post) : '')
+            .'</span>'
             .'</div>'
             // Tabs
-            .'<div style="display:flex; gap:.3rem; border-bottom:1px solid #eceef2; margin-bottom:.6rem;">'
-            .'<button type="button" @click="tab = \'comments\'" :style="tab === \'comments\' ? \'border-bottom:2px solid #2d19ec; color:#111;\' : \'color:#6b7280;\'" style="padding:.35rem .6rem; font-size:.82rem; font-weight:600; background:none; border:none; cursor:pointer;">'.e(__('pages/posts.comments')).($count > 0 ? ' <span style="font-size:.68rem; background:#eef2ff; color:#2d19ec; border-radius:999px; padding:.05rem .4rem;">'.$count.'</span>' : '').'</button>'
-            .'<button type="button" @click="tab = \'activity\'" :style="tab === \'activity\' ? \'border-bottom:2px solid #2d19ec; color:#111;\' : \'color:#6b7280;\'" style="padding:.35rem .6rem; font-size:.82rem; font-weight:600; background:none; border:none; cursor:pointer;">'.e(__('pages/posts.activity_title')).'</button>'
+            .'<div class="fp-tabs">'
+            .'<button type="button" @click="tab = \'comments\'" :class="tab === \'comments\' ? \'active\' : \'\'">'.e(__('pages/posts.comments')).($count > 0 ? ' <span class="fp-count">'.$count.'</span>' : '').'</button>'
+            .'<button type="button" @click="tab = \'activity\'" :class="tab === \'activity\' ? \'active\' : \'\'">'.e(__('pages/posts.activity_title')).'</button>'
             .'</div>'
-            // Comments tab: thread + composer
+            // Comments tab: thread + composer card
             .'<div x-show="tab === \'comments\'">'
             .$this->commentsHtml($postId)
-            .'<div style="margin-top:.6rem; display:grid; gap:.5rem;">'
-            .'<textarea wire:model="commentBody" rows="3" placeholder="'.e(__('pages/posts.comment_placeholder')).'" style="width:100%; border:1px solid #e5e7eb; border-radius:.5rem; padding:.5rem .65rem; font-size:.85rem; resize:vertical;"></textarea>'
-            .'<select wire:model="commentMentions" multiple size="3" style="width:100%; border:1px solid #e5e7eb; border-radius:.5rem; padding:.35rem .5rem; font-size:.8rem; color:#374151;" title="'.e(__('pages/posts.comment_mention_placeholder')).'">'.$members.'</select>'
-            .'<div style="font-size:.7rem; color:#9ca3af; margin-top:-.3rem;">'.e(__('pages/posts.comment_mention_hint')).'</div>'
-            .'<input type="file" wire:model="commentFiles" multiple style="font-size:.75rem; color:#6b7280;" />'
-            .'<div style="display:flex; justify-content:flex-end;">'
-            .'<button type="button" wire:click="addComment" wire:loading.attr="disabled" style="background:#2d19ec; color:#fff; font-size:.82rem; font-weight:600; padding:.45rem 1rem; border:none; border-radius:.5rem; cursor:pointer;">'
-            .'<span wire:loading.remove wire:target="addComment, commentFiles">'.e(__('pages/posts.comment_post')).'</span>'
-            .'<span wire:loading wire:target="addComment, commentFiles">…</span>'
+            .'<div class="fp-composer">'
+            .'<textarea wire:model="commentBody" rows="3" placeholder="'.e(__('pages/posts.comment_placeholder')).'"></textarea>'
+            .($mentionPills !== '' ? '<div class="fp-pills">'.$mentionPills.'</div>' : '')
+            .($fileChips !== '' ? '<div class="fp-files">'.$fileChips.' <button type="button" class="fp-link" wire:click="$set(\'commentFiles\', [])">✕</button></div>' : '')
+            .'<div class="fp-composer-bar">'
+            .'<label class="fp-attach" title="'.e(__('pages/posts.comment_attachments')).'">'
+            .'<input type="file" wire:model="commentFiles" multiple>'
+            .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13"/></svg>'
+            .'<span wire:loading wire:target="commentFiles" class="fp-uploading">…</span>'
+            .'</label>'
+            .'<button type="button" class="fp-send" wire:click="addComment" wire:loading.attr="disabled" wire:target="addComment, commentFiles">'
+            .'<span wire:loading.remove wire:target="addComment">'.e(__('pages/posts.comment_post')).'</span>'
+            .'<span wire:loading wire:target="addComment">…</span>'
             .'</button>'
             .'</div>'
             .'</div>'
             .'</div>'
             // Activity tab
-            .'<div x-show="tab === \'activity\'" x-cloak>'.($this->activityFeedHtml($postId) ?: '<div style="color:#9ca3af; font-size:.85rem; padding:.4rem 0;">—</div>').'</div>'
+            .'<div x-show="tab === \'activity\'" x-cloak>'.($this->activityFeedHtml($postId) ?: '<div class="fp-muted" style="padding:.4rem 0;">—</div>').'</div>'
             .'</div>';
+    }
+
+    /** The "Add labels" popover: check to assign, pencil to edit, trash to
+     *  delete, plus inline create with a color dot picker. */
+    private function labelsPopoverHtml(Post $post): string
+    {
+        $assigned = array_map('intval', $post->label_ids ?? []);
+
+        $rows = PostLabel::query()->orderBy('name')->get()->map(function (PostLabel $label) use ($assigned): string {
+            [$bg, $accent] = PostLabel::COLORS[$label->color] ?? PostLabel::COLORS['blue'];
+            $id = (int) $label->getKey();
+
+            // Row flips to an inline editor while being edited.
+            if ($this->editingLabelId === $id) {
+                return '<div class="fp-pop-row fp-pop-edit">'
+                    .'<input type="text" wire:model="editingLabelName" wire:keydown.enter="saveEditedLabel" />'
+                    .$this->colorDotsHtml('editingLabelColor', $this->editingLabelColor)
+                    .'<span class="fp-pop-row-actions">'
+                    .'<button type="button" class="fp-link" wire:click="saveEditedLabel">✓</button>'
+                    .'<button type="button" class="fp-link fp-danger" wire:click="deleteLabel('.$id.')">🗑</button>'
+                    .'</span>'
+                    .'</div>';
+            }
+
+            return '<div class="fp-pop-row">'
+                .'<label class="fp-pop-check">'
+                .'<input type="checkbox" wire:click="togglePostLabel('.$id.')" '.(in_array($id, $assigned, true) ? 'checked' : '').'>'
+                .'<span class="fp-chip" style="background:'.$bg.'; color:'.$accent.';">'.e($label->name).'</span>'
+                .'</label>'
+                .'<button type="button" class="fp-pop-gear" wire:click="startEditLabel('.$id.')" title="'.e(__('pages/posts.labels_edit')).'">'
+                .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897l12.682-12.682Z"/></svg>'
+                .'</button>'
+                .'</div>';
+        })->implode('');
+
+        return '<div class="fp-pop" x-data @click.outside="$wire.set(\'labelsPopoverOpen\', false)">'
+            .'<div class="fp-pop-title">'.e(__('pages/posts.labels_assign_title')).'</div>'
+            .($rows !== '' ? $rows : '<div class="fp-muted" style="padding:.3rem 0 .5rem;">'.e(__('pages/posts.labels_none')).'</div>')
+            .'<div class="fp-pop-create">'
+            .'<input type="text" wire:model="newLabelName" wire:keydown.enter="createLabelInline" placeholder="'.e(__('pages/posts.labels_create_placeholder')).'" />'
+            .$this->colorDotsHtml('newLabelColor', $this->newLabelColor)
+            .'<button type="button" class="fp-send fp-pop-add" wire:click="createLabelInline">+</button>'
+            .'</div>'
+            .'</div>';
+    }
+
+    /** A row of clickable color dots bound to a Livewire property. */
+    private function colorDotsHtml(string $property, string $selected): string
+    {
+        $dots = '';
+        foreach (PostLabel::COLORS as $key => [$bg, $accent]) {
+            $dots .= '<button type="button" class="fp-dot'.($key === $selected ? ' active' : '').'" style="background:'.$accent.';" wire:click="$set(\''.$property.'\', \''.$key.'\')" title="'.e(__('pages/posts.color_'.$key)).'"></button>';
+        }
+
+        return '<span class="fp-dots">'.$dots.'</span>';
+    }
+
+    /** Scoped styles for the feedback panel (light + dark). Emitted once per panel. */
+    private function feedbackPanelCss(): string
+    {
+        return <<<'HTML'
+            <style>
+                .fp-panel { font-size: .85rem; }
+                .fp-bordered { border-left: 1px solid #eceef2; padding-left: 1.4rem; min-height: 20rem; }
+                .fp-stacked { border-top: 1px solid #eceef2; padding-top: 1rem; }
+                .dark .fp-bordered { border-color: rgb(255 255 255 / .08); }
+                .dark .fp-stacked { border-color: rgb(255 255 255 / .08); }
+                .fp-muted { color: #9ca3af; font-size: .78rem; }
+                .fp-link { background: none; border: none; cursor: pointer; color: #2d19ec; font-size: .74rem; font-weight: 600; padding: .1rem .25rem; }
+                .dark .fp-link { color: #a5b4fc; }
+                .fp-labels { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-bottom: .8rem; }
+                .fp-chip { font-size: .68rem; font-weight: 700; letter-spacing: .02em; padding: .18rem .55rem; border-radius: 999px; }
+                .fp-tabs { display: flex; gap: .2rem; border-bottom: 1px solid #eceef2; margin-bottom: .7rem; }
+                .dark .fp-tabs { border-color: rgb(255 255 255 / .08); }
+                .fp-tabs button { background: none; border: none; cursor: pointer; padding: .4rem .65rem; font-size: .84rem; font-weight: 600; color: #6b7280; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+                .fp-tabs button.active { color: #2d19ec; border-color: #2d19ec; }
+                .dark .fp-tabs button { color: #a1a1aa; }
+                .dark .fp-tabs button.active { color: #a5b4fc; border-color: #a5b4fc; }
+                .fp-count { font-size: .66rem; background: #eef2ff; color: #2d19ec; border-radius: 999px; padding: .08rem .4rem; }
+                .dark .fp-count { background: rgb(99 102 241 / .2); color: #a5b4fc; }
+                .fp-empty { text-align: center; padding: 1.4rem .5rem 1.6rem; }
+                .fp-empty-title { font-weight: 600; font-size: .9rem; margin-bottom: .2rem; }
+                .fp-empty-body { color: #9ca3af; font-size: .8rem; }
+                .fp-thread { max-height: 16rem; overflow: auto; margin-bottom: .6rem; }
+                .fp-comment { display: flex; gap: .55rem; padding: .55rem 0; }
+                .fp-comment + .fp-comment { border-top: 1px solid #f1f2f4; }
+                .dark .fp-comment + .fp-comment { border-color: rgb(255 255 255 / .06); }
+                .fp-avatar { flex: none; width: 1.9rem; height: 1.9rem; border-radius: 999px; background: #eef2ff; color: #2d19ec; font-size: .8rem; font-weight: 700; display: grid; place-items: center; }
+                .dark .fp-avatar { background: rgb(99 102 241 / .22); color: #a5b4fc; }
+                .fp-comment-main { min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
+                .fp-comment-head { font-size: .8rem; }
+                .fp-comment-head span { color: #9ca3af; font-size: .72rem; }
+                .fp-comment-body { font-size: .85rem; color: #374151; overflow-wrap: anywhere; }
+                .dark .fp-comment-body { color: #d4d4d8; }
+                .fp-file { display: inline-flex; align-items: center; gap: .25rem; margin: .25rem .25rem 0 0; padding: .15rem .5rem; border: 1px solid #e5e7eb; border-radius: 999px; font-size: .72rem; color: #2d19ec; text-decoration: none; }
+                .dark .fp-file { border-color: rgb(255 255 255 / .12); color: #a5b4fc; }
+                .fp-composer { border: 1px solid #e5e7eb; border-radius: .75rem; background: #fff; overflow: hidden; }
+                .dark .fp-composer { border-color: rgb(255 255 255 / .12); background: rgb(255 255 255 / .04); }
+                .fp-composer:focus-within { border-color: #2d19ec66; }
+                .fp-composer textarea { display: block; width: 100%; border: none; outline: none; background: transparent; resize: vertical; padding: .6rem .75rem .3rem; font-size: .85rem; color: inherit; }
+                .fp-pills { display: flex; flex-wrap: wrap; gap: .3rem; padding: .25rem .6rem .1rem; }
+                .fp-pill input { position: absolute; opacity: 0; pointer-events: none; }
+                .fp-pill span { display: inline-block; font-size: .7rem; font-weight: 600; padding: .18rem .55rem; border-radius: 999px; border: 1px solid #e5e7eb; color: #6b7280; cursor: pointer; transition: all .12s ease; }
+                .fp-pill:hover span { border-color: #2d19ec66; color: #2d19ec; }
+                .fp-pill:has(input:checked) span { background: #eef2ff; border-color: #2d19ec; color: #2d19ec; }
+                .dark .fp-pill span { border-color: rgb(255 255 255 / .14); color: #a1a1aa; }
+                .dark .fp-pill:has(input:checked) span { background: rgb(99 102 241 / .2); border-color: #a5b4fc; color: #a5b4fc; }
+                .fp-files { padding: .2rem .6rem 0; }
+                .fp-composer-bar { display: flex; align-items: center; justify-content: space-between; padding: .4rem .5rem .5rem .6rem; }
+                .fp-attach { display: inline-flex; align-items: center; gap: .3rem; cursor: pointer; color: #9ca3af; padding: .3rem; border-radius: .4rem; }
+                .fp-attach:hover { color: #2d19ec; background: #eef2ff; }
+                .dark .fp-attach:hover { color: #a5b4fc; background: rgb(99 102 241 / .15); }
+                .fp-attach input { display: none; }
+                .fp-attach svg { width: 1.1rem; height: 1.1rem; }
+                .fp-uploading { font-size: .75rem; }
+                .fp-send { background: #2d19ec; color: #fff; font-size: .8rem; font-weight: 600; padding: .4rem .95rem; border: none; border-radius: 999px; cursor: pointer; }
+                .fp-send:hover { background: #2413c9; }
+                .fp-send[disabled] { opacity: .6; }
+                /* Labels popover */
+                .fp-pop { position: absolute; top: 1.6rem; left: 0; z-index: 30; width: 17rem; background: #fff; border: 1px solid #e5e7eb; border-radius: .75rem; box-shadow: 0 12px 32px -8px rgb(0 0 0 / .18); padding: .7rem .8rem .8rem; }
+                .dark .fp-pop { background: #1b1b21; border-color: rgb(255 255 255 / .12); box-shadow: 0 12px 32px -8px rgb(0 0 0 / .6); }
+                .fp-pop-title { font-weight: 700; font-size: .82rem; margin-bottom: .45rem; }
+                .fp-pop-row { display: flex; align-items: center; justify-content: space-between; gap: .4rem; padding: .22rem 0; }
+                .fp-pop-check { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; min-width: 0; }
+                .fp-pop-check input { width: .95rem; height: .95rem; accent-color: #2d19ec; cursor: pointer; }
+                .fp-pop-gear { background: none; border: none; cursor: pointer; color: #c2c5cc; padding: .15rem; border-radius: .3rem; flex: none; }
+                .fp-pop-gear:hover { color: #2d19ec; background: #eef2ff; }
+                .dark .fp-pop-gear:hover { color: #a5b4fc; background: rgb(99 102 241 / .15); }
+                .fp-pop-gear svg { width: .85rem; height: .85rem; }
+                .fp-pop-edit { flex-wrap: wrap; }
+                .fp-pop-edit input[type="text"], .fp-pop-create input[type="text"] { flex: 1 1 6rem; min-width: 0; border: 1px solid #e5e7eb; border-radius: .45rem; padding: .3rem .5rem; font-size: .78rem; background: transparent; color: inherit; }
+                .dark .fp-pop-edit input[type="text"], .dark .fp-pop-create input[type="text"] { border-color: rgb(255 255 255 / .14); }
+                .fp-pop-row-actions { display: inline-flex; gap: .1rem; flex: none; }
+                .fp-danger { color: #dc2626; }
+                .fp-pop-create { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; padding-top: .6rem; border-top: 1px solid #f1f2f4; }
+                .dark .fp-pop-create { border-color: rgb(255 255 255 / .08); }
+                .fp-pop-add { padding: .25rem .6rem; flex: none; }
+                .fp-dots { display: inline-flex; gap: .22rem; flex: none; }
+                .fp-dot { width: .85rem; height: .85rem; border-radius: 999px; border: 2px solid transparent; cursor: pointer; padding: 0; }
+                .fp-dot.active { border-color: #111; transform: scale(1.15); }
+                .dark .fp-dot.active { border-color: #fff; }
+            </style>
+            HTML;
     }
 
     /** Compact "who did what, when" feed for one post, from the activity log. */
@@ -1454,6 +1711,10 @@ class Posts extends Page implements HasTable
                 // No client-side image resize here: the resize plugin is
                 // image-only and, on a mixed image/video field, hangs FilePond
                 // on "waiting for size". The 25 MB cap keeps uploads bounded.
+                // Don't fetch stored-file metadata on rehydration either — for
+                // a draft with a large video that re-download left the field
+                // stuck on "Loading / waiting for size".
+                ->fetchFileInformation(false)
                 ->disk('uploads')
                 ->directory('posts')
                 ->maxSize(25000)

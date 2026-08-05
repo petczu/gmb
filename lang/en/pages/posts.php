@@ -48,7 +48,10 @@ return [
 
     // Comments
     'comments' => 'Comments',
-    'comments_empty' => 'No comments yet. Start the conversation.',
+    'comments_empty_title' => 'No comments yet',
+    'comments_empty' => 'Start the conversation by leaving the first comment.',
+    'labels_assign_title' => 'Add labels',
+    'labels_create_placeholder' => 'New label…',
     'comment_post' => 'Post comment',
     'comment_placeholder' => 'Say something…',
     'comment_mention' => 'Notify people',
