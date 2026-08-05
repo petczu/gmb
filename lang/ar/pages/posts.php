@@ -87,7 +87,7 @@ return [
     'add_note' => 'ملاحظة',
 
     // Drafts
-    'save_draft' => 'حفظ المسودة',
+    'save_draft' => 'حفظ',
 
     // Imported Google posts
     'view' => 'عرض',
@@ -95,7 +95,7 @@ return [
     'duplicated_draft' => 'تم إنشاء المسودة',
     'draft_heading' => 'تحرير المسودة',
     'draft_saved' => 'تم حفظ المسودة',
-    'draft_delete' => 'حذف المسودة',
+    'draft_delete' => 'حذف',
     'draft_delete_desc' => 'ستُزال المسودة. لم يُنشر أي شيء على Google.',
     'draft_deleted' => 'تم حذف المسودة',
 

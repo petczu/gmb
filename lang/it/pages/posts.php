@@ -87,7 +87,7 @@ return [
     'add_note' => 'Nota',
 
     // Drafts
-    'save_draft' => 'Salva bozza',
+    'save_draft' => 'Salva',
 
     // Imported Google posts
     'view' => 'Visualizza',
@@ -95,7 +95,7 @@ return [
     'duplicated_draft' => 'Bozza creata',
     'draft_heading' => 'Modifica bozza',
     'draft_saved' => 'Bozza salvata',
-    'draft_delete' => 'Elimina bozza',
+    'draft_delete' => 'Elimina',
     'draft_delete_desc' => 'La bozza verrà rimossa. Non è stato pubblicato nulla su Google.',
     'draft_deleted' => 'Bozza eliminata',
 

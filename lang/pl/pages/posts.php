@@ -87,7 +87,7 @@ return [
     'add_note' => 'Notatka',
 
     // Drafts
-    'save_draft' => 'Zapisz szkic',
+    'save_draft' => 'Zapisz',
 
     // Imported Google posts
     'view' => 'Zobacz',
@@ -95,7 +95,7 @@ return [
     'duplicated_draft' => 'Szkic utworzony',
     'draft_heading' => 'Edytuj szkic',
     'draft_saved' => 'Szkic zapisany',
-    'draft_delete' => 'Usuń szkic',
+    'draft_delete' => 'Usuń',
     'draft_delete_desc' => 'Szkic zostanie usunięty. Nic nie zostało opublikowane w Google.',
     'draft_deleted' => 'Szkic usunięty',
 

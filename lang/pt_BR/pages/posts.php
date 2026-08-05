@@ -87,7 +87,7 @@ return [
     'add_note' => 'Nota',
 
     // Drafts
-    'save_draft' => 'Salvar rascunho',
+    'save_draft' => 'Salvar',
 
     // Imported Google posts
     'view' => 'Ver',
@@ -95,7 +95,7 @@ return [
     'duplicated_draft' => 'Rascunho criado',
     'draft_heading' => 'Editar rascunho',
     'draft_saved' => 'Rascunho salvo',
-    'draft_delete' => 'Excluir rascunho',
+    'draft_delete' => 'Excluir',
     'draft_delete_desc' => 'O rascunho será removido. Nada foi publicado no Google.',
     'draft_deleted' => 'Rascunho excluído',
 

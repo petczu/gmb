@@ -219,7 +219,7 @@ class Posts extends Page implements HasTable
         foreach ($c->attachments ?? [] as $path) {
             $url = e(url(Storage::disk('uploads')->url((string) $path)));
             $name = e(basename((string) $path));
-            $attachments .= '<a href="'.$url.'" target="_blank" rel="noopener" class="fp-file">📎 '.$name.'</a>';
+            $attachments .= '<a href="'.$url.'" target="_blank" rel="noopener" class="fp-file">'.$this->icon('o-paper-clip').' '.$name.'</a>';
         }
 
         // Reaction picker (hover) + grouped chips with reactor names on hover.
@@ -240,21 +240,21 @@ class Posts extends Page implements HasTable
         $actions = '<span class="fp-c-actions" x-data="{ menu: false, react: false }">'
             .'<span style="position:relative;">'
             .'<button type="button" class="fp-c-btn" @click="react = ! react; menu = false" title="'.e(__('pages/posts.comment_react')).'">'
-            .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>'
+            .$this->icon('o-face-smile')
             .'</button>'
             .'<span class="fp-react-pop" x-show="react" x-cloak @click.outside="react = false">'.$picker.'</span>'
             .'</span>'
             .'<button type="button" class="fp-c-btn" wire:click="startReply('.$c->id.')" title="'.e(__('pages/posts.comment_reply')).'">'
-            .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/></svg>'
+            .$this->icon('o-arrow-uturn-left')
             .'</button>'
             .($isMine
                 ? '<span style="position:relative;">'
                 .'<button type="button" class="fp-c-btn" @click="menu = ! menu; react = false">'
-                .'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm6 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm6 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"/></svg>'
+                .$this->icon('o-ellipsis-horizontal')
                 .'</button>'
                 .'<span class="fp-menu" x-show="menu" x-cloak @click.outside="menu = false">'
-                .'<button type="button" wire:click="startEditComment('.$c->id.')" @click="menu = false">✏️ '.e(__('pages/posts.comment_edit')).'</button>'
-                .'<button type="button" class="fp-danger" wire:click="deleteComment('.$c->id.')" wire:confirm="'.e(__('pages/posts.comment_delete_confirm')).'" @click="menu = false">🗑 '.e(__('pages/posts.comment_delete')).'</button>'
+                .'<button type="button" wire:click="startEditComment('.$c->id.')" @click="menu = false">'.$this->icon('o-pencil-square').' '.e(__('pages/posts.comment_edit')).'</button>'
+                .'<button type="button" class="fp-danger" wire:click="deleteComment('.$c->id.')" wire:confirm="'.e(__('pages/posts.comment_delete_confirm')).'" @click="menu = false">'.$this->icon('o-trash').' '.e(__('pages/posts.comment_delete')).'</button>'
                 .'</span>'
                 .'</span>'
                 : '')
@@ -1145,6 +1145,11 @@ class Posts extends Page implements HasTable
             : [...$reactions, ['emoji' => $emoji, 'user_id' => $userId, 'user_name' => (string) auth()->user()?->name]];
 
         $comment->forceFill(['reactions' => $reactions])->save();
+
+        // Only adding a reaction is feed-worthy; removals would just be noise.
+        if ($existing === [] && ($post = Post::find($this->viewingPostId)) !== null) {
+            ActivityLogger::log('post.comment_reacted', ['emoji' => $emoji], $post);
+        }
     }
 
     /** The comment, but only when the signed-in user wrote it. */
@@ -1167,8 +1172,8 @@ class Posts extends Page implements HasTable
         }
 
         return '<div class="fp-reply-banner">'
-            .'<span>↩ '.e(__('pages/posts.comment_replying_to', ['name' => (string) ($parent->user_name ?? '?')])).'</span>'
-            .'<button type="button" class="fp-link" wire:click="cancelReply">✕</button>'
+            .'<span style="display:inline-flex;align-items:center;gap:.3rem;">'.$this->icon('o-arrow-uturn-left').' '.e(__('pages/posts.comment_replying_to', ['name' => (string) ($parent->user_name ?? '?')])).'</span>'
+            .'<button type="button" class="fp-link" wire:click="cancelReply">'.$this->icon('o-x-mark').'</button>'
             .'</div>';
     }
 
@@ -1472,7 +1477,7 @@ class Posts extends Page implements HasTable
 
         $fileChips = '';
         foreach ($this->commentFiles as $file) {
-            $fileChips .= '<span class="fp-file">📎 '.e($file->getClientOriginalName()).'</span>';
+            $fileChips .= '<span class="fp-file">'.$this->icon('o-paper-clip').' '.e($file->getClientOriginalName()).'</span>';
         }
 
         $count = PostComment::query()->where('post_id', $postId)->count();
@@ -1520,14 +1525,14 @@ class Posts extends Page implements HasTable
             // Picked mentions as removable chips.
             .'<div class="fp-picked" x-show="($wire.commentMentions || []).length" x-cloak>'
             .'<template x-for="id in ($wire.commentMentions || [])" :key="id">'
-            .'<span class="fp-file">@<span x-text="name(id)"></span> <button type="button" class="fp-link" @click="drop(id)">✕</button></span>'
+            .'<span class="fp-file">@<span x-text="name(id)"></span> <button type="button" class="fp-link" @click="drop(id)">'.$this->icon('o-x-mark').'</button></span>'
             .'</template>'
             .'</div>'
-            .($fileChips !== '' ? '<div class="fp-files">'.$fileChips.' <button type="button" class="fp-link" wire:click="$set(\'commentFiles\', [])">✕</button></div>' : '')
+            .($fileChips !== '' ? '<div class="fp-files">'.$fileChips.' <button type="button" class="fp-link" wire:click="$set(\'commentFiles\', [])">'.$this->icon('o-x-mark').'</button></div>' : '')
             .'<div class="fp-composer-bar">'
             .'<label class="fp-attach" title="'.e(__('pages/posts.comment_attachments')).'">'
             .'<input type="file" wire:model="commentFiles" multiple>'
-            .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13"/></svg>'
+            .$this->icon('o-paper-clip')
             .'<span wire:loading wire:target="commentFiles" class="fp-uploading">…</span>'
             .'</label>'
             .'<button type="button" class="fp-send" wire:click="addComment" wire:loading.attr="disabled" wire:target="addComment, commentFiles">'
@@ -1568,7 +1573,7 @@ class Posts extends Page implements HasTable
             .$chips
             .'<span style="position:relative;">'
             .'<button type="button" class="fp-labels-btn" wire:click="toggleLabelsPopover">'
-            .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"/></svg>'
+            .$this->icon('o-tag')
             .e(__('pages/posts.labels_assign'))
             .'</button>'
             .($this->labelsPopoverOpen ? $this->labelsPopoverHtml($post) : '')
@@ -1593,8 +1598,8 @@ class Posts extends Page implements HasTable
                     .'<input type="text" wire:model="editingLabelName" wire:keydown.enter="saveEditedLabel" />'
                     .$this->colorDotsHtml('editingLabelColor', $this->editingLabelColor)
                     .'<span class="fp-pop-row-actions">'
-                    .'<button type="button" class="fp-link" wire:click="saveEditedLabel">✓</button>'
-                    .'<button type="button" class="fp-link fp-danger" wire:click="deleteLabel('.$id.')">🗑</button>'
+                    .'<button type="button" class="fp-link" wire:click="saveEditedLabel">'.$this->icon('o-check').'</button>'
+                    .'<button type="button" class="fp-link fp-danger" wire:click="deleteLabel('.$id.')">'.$this->icon('o-trash').'</button>'
                     .'</span>'
                     .'</div>';
             }
@@ -1605,7 +1610,7 @@ class Posts extends Page implements HasTable
                 .'<span class="fp-chip" style="background:'.$bg.'; color:'.$accent.';">'.e($label->name).'</span>'
                 .'</label>'
                 .'<button type="button" class="fp-pop-gear" wire:click="startEditLabel('.$id.')" title="'.e(__('pages/posts.labels_edit')).'">'
-                .'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897l12.682-12.682Z"/></svg>'
+                .$this->icon('o-pencil')
                 .'</button>'
                 .'</div>';
         })->implode('');
@@ -1630,6 +1635,12 @@ class Posts extends Page implements HasTable
         }
 
         return '<span class="fp-dots">'.$dots.'</span>';
+    }
+
+    /** Official Heroicon markup for the hand-built panel HTML (no ad-hoc paths). */
+    private function icon(string $name): string
+    {
+        return svg('heroicon-'.$name)->toHtml();
     }
 
     /** Scoped styles for the feedback panel (light + dark). Emitted once per panel. */
@@ -1679,7 +1690,7 @@ class Posts extends Page implements HasTable
                 .fp-composer { position: relative; border: 1px solid #e5e7eb; border-radius: .75rem; background: #fff; }
                 .dark .fp-composer { border-color: rgb(255 255 255 / .12); background: rgb(255 255 255 / .04); }
                 .fp-composer:focus-within { border-color: #2d19ec66; }
-                .fp-composer textarea { display: block; width: 100%; border: none; outline: none; background: transparent; resize: vertical; padding: .6rem .75rem .3rem; font-size: .85rem; color: inherit; }
+                .fp-composer textarea { display: block; width: 100%; border: none; outline: none; background: transparent; resize: none; padding: .6rem .75rem .3rem; font-size: .85rem; color: inherit; }
                 .fp-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
                 .fp-mention-pop { position: absolute; left: .75rem; right: .75rem; z-index: 40; background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; box-shadow: 0 12px 32px -8px rgb(0 0 0 / .18); padding: .3rem; max-height: 12rem; overflow: auto; }
                 .dark .fp-mention-pop { background: #1b1b21; border-color: rgb(255 255 255 / .12); }
@@ -1717,6 +1728,12 @@ class Posts extends Page implements HasTable
                 .fp-reply-banner { display: flex; align-items: center; justify-content: space-between; font-size: .74rem; color: #6b7280; background: #f4f5f7; border-radius: .5rem .5rem 0 0; padding: .3rem .6rem; margin-bottom: -.35rem; }
                 .dark .fp-reply-banner { background: rgb(255 255 255 / .06); color: #a1a1aa; }
                 .fp-edited { font-size: .68rem; color: #9ca3af; }
+                /* Heroicon sizing for the hand-built panel markup */
+                .fp-file svg { width: .7rem; height: .7rem; flex: none; }
+                .fp-link svg { width: .8rem; height: .8rem; display: inline-block; vertical-align: -.12em; }
+                .fp-menu button { display: flex; align-items: center; gap: .4rem; }
+                .fp-menu button svg { width: .85rem; height: .85rem; flex: none; }
+                .fp-reply-banner svg { width: .8rem; height: .8rem; flex: none; }
                 .fp-c-edit { display: block; }
                 .fp-c-edit textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: .5rem; padding: .4rem .55rem; font-size: .82rem; background: transparent; color: inherit; }
                 .dark .fp-c-edit textarea { border-color: rgb(255 255 255 / .14); }
@@ -1777,6 +1794,11 @@ class Posts extends Page implements HasTable
             $label = __($key);
             if ($label === $key) {
                 $label = (string) $entry->action; // graceful fallback for an unmapped action
+            }
+
+            // Reaction entries carry the emoji itself; show it in the line.
+            if (filled($entry->meta['emoji'] ?? null)) {
+                $label .= ' '.$entry->meta['emoji'];
             }
 
             $whoRaw = (string) ($entry->user_name ?? __('pages/posts.activity_system'));

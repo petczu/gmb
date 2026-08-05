@@ -134,7 +134,7 @@ return [
     'add_note' => 'Notiz',
 
     // Entwürfe
-    'save_draft' => 'Als Entwurf speichern',
+    'save_draft' => 'Speichern',
 
     // Importierte Google-Beiträge
     'view' => 'Ansehen',
@@ -143,7 +143,7 @@ return [
     'duplicated_draft' => 'Entwurf erstellt',
     'draft_heading' => 'Entwurf bearbeiten',
     'draft_saved' => 'Entwurf gespeichert',
-    'draft_delete' => 'Entwurf löschen',
+    'draft_delete' => 'Löschen',
     'draft_delete_desc' => 'Der Entwurf wird entfernt. Es wurde nichts auf Google veröffentlicht.',
     'draft_deleted' => 'Entwurf gelöscht',
 

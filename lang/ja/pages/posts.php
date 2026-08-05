@@ -87,7 +87,7 @@ return [
     'add_note' => 'メモ',
 
     // Drafts
-    'save_draft' => '下書きを保存',
+    'save_draft' => '保存',
 
     // Imported Google posts
     'view' => '表示',
@@ -95,7 +95,7 @@ return [
     'duplicated_draft' => '下書きを作成しました',
     'draft_heading' => '下書きを編集',
     'draft_saved' => '下書きを保存しました',
-    'draft_delete' => '下書きを削除',
+    'draft_delete' => '削除',
     'draft_delete_desc' => '下書きが削除されます。Googleには何も公開されていません。',
     'draft_deleted' => '下書きを削除しました',
 

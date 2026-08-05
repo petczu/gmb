@@ -87,7 +87,7 @@ return [
     'add_note' => 'Notitie',
 
     // Drafts
-    'save_draft' => 'Concept opslaan',
+    'save_draft' => 'Opslaan',
 
     // Imported Google posts
     'view' => 'Bekijken',
@@ -95,7 +95,7 @@ return [
     'duplicated_draft' => 'Concept aangemaakt',
     'draft_heading' => 'Concept bewerken',
     'draft_saved' => 'Concept opgeslagen',
-    'draft_delete' => 'Concept verwijderen',
+    'draft_delete' => 'Verwijderen',
     'draft_delete_desc' => 'Het concept wordt verwijderd. Er is niets naar Google gepubliceerd.',
     'draft_deleted' => 'Concept verwijderd',
 

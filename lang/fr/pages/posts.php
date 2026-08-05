@@ -87,7 +87,7 @@ return [
     'add_note' => 'Note',
 
     // Drafts
-    'save_draft' => 'Enregistrer le brouillon',
+    'save_draft' => 'Enregistrer',
 
     // Imported Google posts
     'view' => 'Voir',
@@ -95,7 +95,7 @@ return [
     'duplicated_draft' => 'Brouillon créé',
     'draft_heading' => 'Modifier le brouillon',
     'draft_saved' => 'Brouillon enregistré',
-    'draft_delete' => 'Supprimer le brouillon',
+    'draft_delete' => 'Supprimer',
     'draft_delete_desc' => 'Le brouillon sera supprimé. Rien n’a été publié sur Google.',
     'draft_deleted' => 'Brouillon supprimé',
 

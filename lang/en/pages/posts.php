@@ -134,7 +134,7 @@ return [
     'add_note' => 'Note',
 
     // Drafts
-    'save_draft' => 'Save draft',
+    'save_draft' => 'Save',
 
     // Imported Google posts
     'view' => 'View',
@@ -143,7 +143,7 @@ return [
     'duplicated_draft' => 'Draft created',
     'draft_heading' => 'Edit draft',
     'draft_saved' => 'Draft saved',
-    'draft_delete' => 'Delete draft',
+    'draft_delete' => 'Delete',
     'draft_delete_desc' => 'The draft will be removed. Nothing was published to Google.',
     'draft_deleted' => 'Draft deleted',
 

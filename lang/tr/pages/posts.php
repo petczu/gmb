@@ -87,7 +87,7 @@ return [
     'add_note' => 'Not',
 
     // Drafts
-    'save_draft' => 'Taslağı kaydet',
+    'save_draft' => 'Kaydet',
 
     // Imported Google posts
     'view' => 'Görüntüle',
@@ -95,7 +95,7 @@ return [
     'duplicated_draft' => 'Taslak oluşturuldu',
     'draft_heading' => 'Taslağı düzenle',
     'draft_saved' => 'Taslak kaydedildi',
-    'draft_delete' => 'Taslağı sil',
+    'draft_delete' => 'Sil',
     'draft_delete_desc' => 'Taslak kaldırılacak. Google\'a hiçbir şey yayınlanmadı.',
     'draft_deleted' => 'Taslak silindi',
 

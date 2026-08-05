@@ -87,7 +87,7 @@ return [
     'add_note' => 'Nota',
 
     // Drafts
-    'save_draft' => 'Guardar borrador',
+    'save_draft' => 'Guardar',
 
     // Imported Google posts
     'view' => 'Ver',
@@ -95,7 +95,7 @@ return [
     'duplicated_draft' => 'Borrador creado',
     'draft_heading' => 'Editar borrador',
     'draft_saved' => 'Borrador guardado',
-    'draft_delete' => 'Eliminar borrador',
+    'draft_delete' => 'Eliminar',
     'draft_delete_desc' => 'El borrador se eliminará. No se ha publicado nada en Google.',
     'draft_deleted' => 'Borrador eliminado',
 
