@@ -53,6 +53,8 @@ return [
     'comment_placeholder' => 'Schreib etwas…',
     'comment_mention' => 'Personen benachrichtigen',
     'comment_mention_placeholder' => 'Teammitglieder zum Benachrichtigen wählen',
+    'comment_mention_hint' => 'Teammitglieder zum Benachrichtigen wählen (In-App + E-Mail). Cmd/Strg-Klick für mehrere.',
+    'labels_edit' => 'Bearbeiten',
     'comment_attachments' => 'Anhänge',
     'comment_mention_title' => ':name hat dich in einem Beitrag erwähnt',
     'activity_commented' => 'hat diesen Beitrag kommentiert',

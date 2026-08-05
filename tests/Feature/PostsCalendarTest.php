@@ -417,6 +417,33 @@ class PostsCalendarTest extends TestCase
         $this->assertSame([42, 43], $mentioned->refresh()->mentioned_user_ids);
     }
 
+    public function test_the_feedback_panel_posts_a_comment_inline(): void
+    {
+        $location = $this->location();
+        $post = Post::create([
+            'type' => 'update',
+            'caption' => 'Post',
+            'location_ids' => [$location->id],
+            'source_ids' => [],
+            'status' => 'published',
+        ]);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $post->id);
+        $component->set('commentBody', 'Inline from the panel');
+        $component->call('addComment');
+
+        $comment = PostComment::query()->sole();
+        $this->assertSame('Inline from the panel', $comment->body);
+        $this->assertSame($post->id, $comment->post_id);
+        // The composer resets after posting.
+        $component->assertSet('commentBody', '');
+
+        // Empty body + no files is a no-op.
+        $component->call('addComment');
+        $this->assertSame(1, PostComment::count());
+    }
+
     public function test_labels_are_assigned_to_a_post_via_the_assign_action(): void
     {
         $location = $this->location();

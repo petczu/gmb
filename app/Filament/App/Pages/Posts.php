@@ -51,6 +51,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 
 /**
  * Google Business Profile posts (updates, offers, events, photos), published
@@ -60,6 +61,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 class Posts extends Page implements HasTable
 {
     use InteractsWithTable;
+    use WithFileUploads;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMegaphone;
 
@@ -803,13 +805,68 @@ class Posts extends Page implements HasTable
     /** The post whose details modal is open (calendar card click). */
     public ?int $viewingPostId = null;
 
+    /** Comment composer state for the feedback panel in the view dialog. */
+    public string $commentBody = '';
+
+    /** @var list<int|string> */
+    public array $commentMentions = [];
+
+    /** @var array<int, TemporaryUploadedFile> */
+    public $commentFiles = [];
+
     public function showPost(int $postId): void
     {
         $this->viewingPostId = $postId;
+        $this->resetCommentComposer();
 
         // Drafts open in the editable composer; everything else is history and
         // gets the read-only details dialog.
         $this->mountAction(Post::find($postId)?->status === 'draft' ? 'editDraft' : 'viewPost');
+    }
+
+    private function resetCommentComposer(): void
+    {
+        $this->commentBody = '';
+        $this->commentMentions = [];
+        $this->commentFiles = [];
+    }
+
+    /** Post a comment from the feedback panel (right column of the view dialog). */
+    public function addComment(): void
+    {
+        $post = Post::find($this->viewingPostId);
+        $body = trim($this->commentBody);
+
+        if ($post === null || ($body === '' && $this->commentFiles === [])) {
+            return;
+        }
+
+        $paths = [];
+        foreach ($this->commentFiles as $file) {
+            try {
+                $paths[] = $file->store('post-comments', 'uploads');
+            } catch (\Throwable $e) {
+                Log::warning('Comment attachment failed', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // Only real workspace members can be mentioned.
+        $members = array_map('intval', array_keys($this->workspaceMembers()));
+        $mentions = array_values(array_intersect(array_map('intval', $this->commentMentions), $members));
+
+        $comment = PostComment::create([
+            'post_id' => $post->id,
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()?->name,
+            'body' => $body,
+            'attachments' => $paths,
+            'mentioned_user_ids' => $mentions,
+        ]);
+
+        app(PostCommentNotifier::class)->notifyMentioned($post, $comment);
+        ActivityLogger::log('post.commented', [], $post);
+
+        $this->resetCommentComposer();
     }
 
     /** Details modal for a calendar card. */
@@ -817,14 +874,21 @@ class Posts extends Page implements HasTable
     {
         return Action::make('viewPost')
             ->modalHeading(fn (): string => __('pages/posts.type_'.(Post::find($this->viewingPostId)?->type ?? 'update')))
-            // Hug the preview card (max-width 26rem) instead of a wide default.
-            ->modalWidth(Width::Medium)
+            // Two columns: the Google-style preview and a Planable-style
+            // feedback panel (labels, comments, activity) on the right.
+            ->modalWidth(Width::FiveExtraLarge)
             ->modalSubmitAction(false)
             ->modalCancelActionLabel(__('pages/posts.close'))
             ->schema(fn (): array => [
                 Placeholder::make('post_details')
                     ->hiddenLabel()
-                    ->content(new HtmlString($this->postDetailsHtml((int) $this->viewingPostId))),
+                    ->content(fn (): HtmlString => new HtmlString(
+                        '<div style="display:grid; grid-template-columns:minmax(0,26rem) minmax(0,1fr); gap:1.4rem; align-items:start;" class="pv-grid">'
+                        .'<div>'.$this->postDetailsHtml((int) $this->viewingPostId).'</div>'
+                        .$this->feedbackPanelHtml((int) $this->viewingPostId)
+                        .'</div>'
+                        .'<style>@media (max-width: 860px) { .pv-grid { grid-template-columns: 1fr !important; } }</style>'
+                    )),
             ])
             ->extraModalFooterActions(fn (): array => array_values(array_filter([
                 // Scheduled/failed posts we sent can be pulled back to a draft
@@ -836,17 +900,6 @@ class Posts extends Page implements HasTable
                         ->icon(Heroicon::OutlinedPencilSquare)
                         ->action(fn () => $this->revertToDraftAndEdit())
                     : null,
-                Action::make('comments')
-                    ->label(__('pages/posts.comments'))
-                    ->icon(Heroicon::OutlinedChatBubbleLeftRight)
-                    ->color('gray')
-                    ->badge(fn (): ?int => ($n = PostComment::query()->where('post_id', $this->viewingPostId)->count()) > 0 ? $n : null)
-                    ->action(fn () => $this->replaceMountedAction('comments')),
-                Action::make('assignLabels')
-                    ->label(__('pages/posts.labels_assign'))
-                    ->icon(Heroicon::OutlinedTag)
-                    ->color('gray')
-                    ->action(fn () => $this->replaceMountedAction('assignLabels')),
                 Action::make('duplicateDraft')
                     ->label(__('pages/posts.duplicate_draft'))
                     ->icon(Heroicon::OutlinedDocumentDuplicate)
@@ -1093,9 +1146,66 @@ class Posts extends Page implements HasTable
             $html .= '<div style="margin-top:.8rem; padding:.6rem .8rem; border-radius:.5rem; background:#fef2f2; color:#991b1b; font-size:.85rem;">'.e($post->error).'</div>';
         }
 
-        $html .= $this->activityFeedHtml($post->id);
-
         return $html;
+    }
+
+    /**
+     * The Planable-style right column of the view dialog: assigned labels, a
+     * Comments / Activity tab switch, the comment thread and a live composer
+     * (textarea + mentions + attachments) wired straight to this page.
+     */
+    private function feedbackPanelHtml(int $postId): string
+    {
+        $post = Post::find($postId);
+        if ($post === null) {
+            return '';
+        }
+
+        // Assigned labels as chips + a manage shortcut.
+        $labelMap = PostLabel::query()->whereIn('id', $post->label_ids ?? [])->get();
+        $chips = $labelMap->map(function (PostLabel $label): string {
+            [$bg, $accent] = PostLabel::COLORS[$label->color] ?? PostLabel::COLORS['blue'];
+
+            return '<span style="font-size:.68rem; font-weight:700; letter-spacing:.02em; padding:.15rem .5rem; border-radius:999px; background:'.$bg.'; color:'.$accent.';">'.e($label->name).'</span>';
+        })->implode(' ');
+
+        $members = '';
+        foreach ($this->workspaceMembers() as $id => $name) {
+            $members .= '<option value="'.e((string) $id).'">'.e((string) $name).'</option>';
+        }
+
+        $count = PostComment::query()->where('post_id', $postId)->count();
+
+        return '<div x-data="{ tab: \'comments\' }" style="border-left:1px solid #eceef2; padding-left:1.4rem; min-height:20rem;" class="fp-panel">'
+            // Labels row
+            .'<div style="display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-bottom:.8rem;">'
+            .($chips !== '' ? $chips : '<span style="font-size:.75rem; color:#9ca3af;">'.e(__('pages/posts.labels_none')).'</span>')
+            .'<button type="button" wire:click="replaceMountedAction(\'assignLabels\')" style="font-size:.72rem; color:#2d19ec; font-weight:600; background:none; border:none; cursor:pointer; padding:.1rem .25rem;">'.e(__('pages/posts.labels_edit')).'</button>'
+            .'</div>'
+            // Tabs
+            .'<div style="display:flex; gap:.3rem; border-bottom:1px solid #eceef2; margin-bottom:.6rem;">'
+            .'<button type="button" @click="tab = \'comments\'" :style="tab === \'comments\' ? \'border-bottom:2px solid #2d19ec; color:#111;\' : \'color:#6b7280;\'" style="padding:.35rem .6rem; font-size:.82rem; font-weight:600; background:none; border:none; cursor:pointer;">'.e(__('pages/posts.comments')).($count > 0 ? ' <span style="font-size:.68rem; background:#eef2ff; color:#2d19ec; border-radius:999px; padding:.05rem .4rem;">'.$count.'</span>' : '').'</button>'
+            .'<button type="button" @click="tab = \'activity\'" :style="tab === \'activity\' ? \'border-bottom:2px solid #2d19ec; color:#111;\' : \'color:#6b7280;\'" style="padding:.35rem .6rem; font-size:.82rem; font-weight:600; background:none; border:none; cursor:pointer;">'.e(__('pages/posts.activity_title')).'</button>'
+            .'</div>'
+            // Comments tab: thread + composer
+            .'<div x-show="tab === \'comments\'">'
+            .$this->commentsHtml($postId)
+            .'<div style="margin-top:.6rem; display:grid; gap:.5rem;">'
+            .'<textarea wire:model="commentBody" rows="3" placeholder="'.e(__('pages/posts.comment_placeholder')).'" style="width:100%; border:1px solid #e5e7eb; border-radius:.5rem; padding:.5rem .65rem; font-size:.85rem; resize:vertical;"></textarea>'
+            .'<select wire:model="commentMentions" multiple size="3" style="width:100%; border:1px solid #e5e7eb; border-radius:.5rem; padding:.35rem .5rem; font-size:.8rem; color:#374151;" title="'.e(__('pages/posts.comment_mention_placeholder')).'">'.$members.'</select>'
+            .'<div style="font-size:.7rem; color:#9ca3af; margin-top:-.3rem;">'.e(__('pages/posts.comment_mention_hint')).'</div>'
+            .'<input type="file" wire:model="commentFiles" multiple style="font-size:.75rem; color:#6b7280;" />'
+            .'<div style="display:flex; justify-content:flex-end;">'
+            .'<button type="button" wire:click="addComment" wire:loading.attr="disabled" style="background:#2d19ec; color:#fff; font-size:.82rem; font-weight:600; padding:.45rem 1rem; border:none; border-radius:.5rem; cursor:pointer;">'
+            .'<span wire:loading.remove wire:target="addComment, commentFiles">'.e(__('pages/posts.comment_post')).'</span>'
+            .'<span wire:loading wire:target="addComment, commentFiles">…</span>'
+            .'</button>'
+            .'</div>'
+            .'</div>'
+            .'</div>'
+            // Activity tab
+            .'<div x-show="tab === \'activity\'" x-cloak>'.($this->activityFeedHtml($postId) ?: '<div style="color:#9ca3af; font-size:.85rem; padding:.4rem 0;">—</div>').'</div>'
+            .'</div>';
     }
 
     /** Compact "who did what, when" feed for one post, from the activity log. */
@@ -1129,9 +1239,7 @@ class Posts extends Page implements HasTable
                 .'</li>';
         })->implode('');
 
-        return '<div style="margin-top:1rem; padding-top:.8rem; border-top:1px solid #eceef2;">'
-            .'<div style="font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:#9ca3af; margin-bottom:.35rem;">'.e(__('pages/posts.activity_title')).'</div>'
-            .'<ul style="list-style:none; margin:0; padding:0;">'.$rows.'</ul></div>';
+        return '<ul style="list-style:none; margin:0; padding:0;">'.$rows.'</ul>';
     }
 
     /** @param  array<int, int|string>  $locationIds */

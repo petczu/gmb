@@ -53,6 +53,8 @@ return [
     'comment_placeholder' => 'Say something…',
     'comment_mention' => 'Notify people',
     'comment_mention_placeholder' => 'Pick teammates to notify',
+    'comment_mention_hint' => 'Select teammates to notify (in-app + email). Cmd/Ctrl-click for several.',
+    'labels_edit' => 'Edit',
     'comment_attachments' => 'Attachments',
     'comment_mention_title' => ':name mentioned you on a post',
     'activity_commented' => 'commented on this post',
