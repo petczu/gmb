@@ -516,6 +516,9 @@ class PostsCalendarTest extends TestCase
         $this->assertNotNull($share->access_until);
 
         // Re-saving with a password keeps the token, hashes the password.
+        // (Closing the previous dialog cleared the ?post deep link, so point
+        // the page back at the post first.)
+        $component->set('viewingPostId', $post->id);
         $component->callAction('sharePost', ['password' => 'p4ss-p4ss', 'access_from' => null, 'access_until' => null]);
         $updated = PostShare::sole();
         $this->assertSame($share->token, $updated->token);
@@ -571,10 +574,24 @@ class PostsCalendarTest extends TestCase
         $component = Livewire::test(Posts::class);
         $component->set('viewingPostId', $post->id);
         $component->call('mountAction', 'viewPost');
-        $component->call('mountAction', 'sharePost');
+
+        // The share panel floats INSIDE the dialog: opening, saving and
+        // revoking never unmounts the post dialog.
+        $component->call('openSharePanel');
+        $this->assertTrue($component->get('sharePanelOpen'));
+        $this->assertSame(1, PostShare::count());
+
+        $component->set('sharePassword', 'p4ss-p4ss');
+        $component->call('saveSharePanel');
+        $share = PostShare::sole();
+        $this->assertTrue(Hash::check('p4ss-p4ss', $share->password));
+
+        $component->call('openSharePanel');
+        $component->call('revokeSharePanel');
+        $this->assertSame(0, PostShare::count());
 
         $mounted = array_map(fn ($a) => $a->getName(), $component->instance()->getMountedActions());
-        $this->assertSame(['viewPost', 'sharePost'], $mounted);
+        $this->assertSame(['viewPost'], $mounted);
     }
 
     public function test_the_list_edit_action_opens_the_draft_composer(): void

@@ -54,6 +54,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Js;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Url;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 
@@ -452,6 +453,26 @@ class Posts extends Page implements HasTable
             (array) session('posts_hidden_note_tags', []),
             fn ($tag): bool => is_string($tag) && $tag !== self::UNTAGGED,
         ));
+
+        // Deep link: /posts?post=ID opens the post dialog straight away.
+        if ($this->viewingPostId !== null && Post::find($this->viewingPostId) !== null) {
+            $this->showPost($this->viewingPostId);
+        } else {
+            $this->viewingPostId = null;
+        }
+    }
+
+    /** Clear the ?post deep link when the last dialog closes. */
+    public function unmountAction(bool $canCancelParentActions = true): void
+    {
+        parent::unmountAction($canCancelParentActions);
+
+        if ($this->getMountedActions() === []) {
+            $this->viewingPostId = null;
+            $this->sharePanelOpen = false;
+            $this->duplicatePanelOpen = false;
+            $this->labelsPopoverOpen = false;
+        }
     }
 
     public function setMode(string $mode): void
@@ -981,7 +1002,9 @@ class Posts extends Page implements HasTable
             });
     }
 
-    /** The post whose details modal is open (calendar card click). */
+    /** The post whose details modal is open (calendar card click). Mirrored
+     *  into the URL (?post=ID) so the dialog can be deep-linked to teammates. */
+    #[Url(as: 'post', except: null)]
     public ?int $viewingPostId = null;
 
     /** Comment composer state for the feedback panel in the view dialog. */
@@ -1277,6 +1300,87 @@ class Posts extends Page implements HasTable
 
     // ── Share & duplicate (the "…" menu) ────────────────────────────────────
 
+    // ── Share & duplicate panels (float INSIDE the post dialog, so it never
+    //    closes — Filament's modal stack swaps windows instead of layering). ──
+
+    public bool $sharePanelOpen = false;
+
+    public bool $duplicatePanelOpen = false;
+
+    public string $sharePassword = '';
+
+    public ?string $shareFrom = null;
+
+    public ?string $shareUntil = null;
+
+    public string $duplicateWorkspaceId = '';
+
+    public function openSharePanel(): void
+    {
+        $share = $this->ensurePostShare();
+        $this->sharePassword = '';
+        $this->shareFrom = $share?->access_from?->format('Y-m-d\TH:i');
+        $this->shareUntil = $share?->access_until?->format('Y-m-d\TH:i');
+        $this->duplicatePanelOpen = false;
+        $this->labelsPopoverOpen = false;
+        $this->sharePanelOpen = true;
+    }
+
+    public function generateSharePanelPassword(): void
+    {
+        $this->sharePassword = Str::password(12, symbols: false);
+    }
+
+    public function saveSharePanel(): void
+    {
+        $post = Post::find($this->viewingPostId);
+        $existing = $this->postShare();
+        if ($post === null) {
+            return;
+        }
+
+        PostShare::updateOrCreate(
+            ['workspace_id' => (string) session('current_workspace_id'), 'post_id' => $post->id],
+            [
+                'token' => $existing?->token ?? Str::random(48),
+                'title' => (string) ($post->title ?: Str::limit((string) $post->caption, 60)),
+                'html' => $this->shareHtmlFor($post),
+                'password' => filled($this->sharePassword) ? Hash::make($this->sharePassword) : $existing?->password,
+                'access_from' => filled($this->shareFrom) ? $this->shareFrom : null,
+                'access_until' => filled($this->shareUntil) ? $this->shareUntil : null,
+            ],
+        );
+
+        ActivityLogger::log('post.shared', [], $post);
+        $this->sharePanelOpen = false;
+        Notification::make()->title(__('pages/posts.share_saved'))->success()->send();
+    }
+
+    public function revokeSharePanel(): void
+    {
+        $this->postShare()?->delete();
+        $this->sharePanelOpen = false;
+        Notification::make()->title(__('pages/posts.share_revoked'))->success()->send();
+    }
+
+    public function openDuplicatePanel(): void
+    {
+        $this->duplicateWorkspaceId = (string) session('current_workspace_id');
+        $this->sharePanelOpen = false;
+        $this->labelsPopoverOpen = false;
+        $this->duplicatePanelOpen = true;
+    }
+
+    public function submitDuplicatePanel(): void
+    {
+        if ($this->duplicateWorkspaceId === '') {
+            return;
+        }
+
+        $this->duplicatePostTo($this->duplicateWorkspaceId);
+        $this->duplicatePanelOpen = false;
+    }
+
     private function postShare(): ?PostShare
     {
         return PostShare::query()
@@ -1491,9 +1595,6 @@ class Posts extends Page implements HasTable
             // The heading slot carries the labels control (reference-style);
             // the type name stays as the screen-reader title.
             ->modalHeading(fn (): HtmlString => $this->labelsHeadingHtml(__('pages/posts.type_'.(Post::find($this->viewingPostId)?->type ?? 'update'))))
-            // Registered so the heading kebab can mount them STACKED on top of
-            // this dialog (nested mountAction only resolves registered children).
-            ->registerModalActions([$this->sharePostAction(), $this->duplicateToAction()])
             // Two columns: the Google-style preview and a Planable-style
             // feedback panel (labels, comments, activity) on the right.
             ->modalWidth(Width::FiveExtraLarge)
@@ -1644,7 +1745,6 @@ class Posts extends Page implements HasTable
     {
         return Action::make('editDraft')
             ->modalHeading(fn (): HtmlString => $this->labelsHeadingHtml(__('pages/posts.draft_heading')))
-            ->registerModalActions([$this->sharePostAction(), $this->duplicateToAction()])
             ->modalSubmitActionLabel(__('pages/posts.submit'))
             // Wider than the create dialog: three columns (form | preview |
             // feedback panel), the same collaboration surface as the view
@@ -1879,13 +1979,16 @@ class Posts extends Page implements HasTable
                 return '<span class="fp-chip" style="background:'.$bg.'; color:'.$accent.';">'.e($label->name).'</span>';
             })->implode('');
 
-        // The "…" menu lives up here, next to the dialog's close button.
+        // The "…" menu lives up here, next to the dialog's close button. Its
+        // entries open floating panels INSIDE this dialog (no modal swapping).
         $kebab = '<span x-data="{ open: false }" style="position:relative; margin-left:auto;">'
             .'<button type="button" class="fp-c-btn" @click="open = ! open">'.$this->icon('o-ellipsis-vertical').'</button>'
             .'<span class="fp-menu" x-show="open" x-cloak @click.outside="open = false" style="top:1.9rem;">'
-            .'<button type="button" wire:click="mountAction(\'sharePost\')" @click="open = false">'.$this->icon('o-share').' '.e(__('pages/posts.share')).'</button>'
-            .'<button type="button" wire:click="mountAction(\'duplicateTo\')" @click="open = false">'.$this->icon('o-document-duplicate').' '.e(__('pages/posts.duplicate_to')).'</button>'
+            .'<button type="button" wire:click="openSharePanel" @click="open = false">'.$this->icon('o-share').' '.e(__('pages/posts.share')).'</button>'
+            .'<button type="button" wire:click="openDuplicatePanel" @click="open = false">'.$this->icon('o-document-duplicate').' '.e(__('pages/posts.duplicate_to')).'</button>'
             .'</span>'
+            .($this->sharePanelOpen ? $this->sharePanelHtml() : '')
+            .($this->duplicatePanelOpen ? $this->duplicatePanelHtml() : '')
             .'</span>';
 
         return new HtmlString(
@@ -1903,6 +2006,58 @@ class Posts extends Page implements HasTable
             .$kebab
             .'</div>'
         );
+    }
+
+    /** The floating Share panel (link, password, access window, revoke). */
+    private function sharePanelHtml(): string
+    {
+        $share = $this->postShare();
+        $url = $share !== null ? route('posts.shared', $share->token) : '';
+
+        return '<div class="fp-pop fp-panel-float" x-data="{ copied: false }" @click.outside="$wire.set(\'sharePanelOpen\', false)">'
+            .'<div class="fp-pop-title">'.e(__('pages/posts.share_heading')).'</div>'
+            .'<div class="fp-float-label">'.e(__('pages/posts.share_link')).'</div>'
+            .'<div class="fp-share-link">'
+            .'<a href="'.e($url).'" target="_blank" rel="noopener">'.e($url).'</a>'
+            .'<button type="button" @click="navigator.clipboard.writeText('.Js::from($url).'); copied = true; setTimeout(() => copied = false, 1500)">'
+            .$this->icon('o-clipboard').'<span x-text="copied ? '.Js::from(__('pages/posts.share_copied')).' : '.Js::from(__('pages/posts.share_copy')).'"></span>'
+            .'</button>'
+            .'</div>'
+            .'<div class="fp-float-label" style="display:flex; justify-content:space-between; align-items:center;">'
+            .e(__('pages/posts.share_password'))
+            .'<button type="button" class="fp-link" wire:click="generateSharePanelPassword">'.e(__('pages/posts.share_generate')).'</button>'
+            .'</div>'
+            .'<input type="text" class="fp-float-input" wire:model="sharePassword" placeholder="'.e(__('pages/posts.share_password_help')).'" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true">'
+            .'<div class="fp-float-grid">'
+            .'<span><span class="fp-float-label">'.e(__('pages/posts.share_from')).'</span><input type="datetime-local" class="fp-float-input" wire:model="shareFrom"></span>'
+            .'<span><span class="fp-float-label">'.e(__('pages/posts.share_until')).'</span><input type="datetime-local" class="fp-float-input" wire:model="shareUntil"></span>'
+            .'</div>'
+            .'<div class="fp-float-bar">'
+            .'<button type="button" class="fp-send" wire:click="saveSharePanel">'.e(__('pages/posts.share_save')).'</button>'
+            .'<button type="button" class="fp-float-danger" wire:click="revokeSharePanel">'.e(__('pages/posts.share_revoke')).'</button>'
+            .'<button type="button" class="fp-link" wire:click="$set(\'sharePanelOpen\', false)" style="margin-left:auto;">'.e(__('pages/posts.close')).'</button>'
+            .'</div>'
+            .'</div>';
+    }
+
+    /** The floating Duplicate panel (pick a workspace, copy as draft). */
+    private function duplicatePanelHtml(): string
+    {
+        $options = '';
+        foreach (auth()->user()?->workspaces()->orderBy('name')->pluck('name', 'tenants.id')->all() ?? [] as $id => $name) {
+            $options .= '<option value="'.e((string) $id).'"'.((string) $id === $this->duplicateWorkspaceId ? ' selected' : '').'>'.e((string) $name).'</option>';
+        }
+
+        return '<div class="fp-pop fp-panel-float" x-data @click.outside="$wire.set(\'duplicatePanelOpen\', false)">'
+            .'<div class="fp-pop-title">'.e(__('pages/posts.duplicate_to_heading')).'</div>'
+            .'<div class="fp-muted" style="margin-bottom:.5rem;">'.e(__('pages/posts.duplicate_to_desc')).'</div>'
+            .'<div class="fp-float-label">'.e(__('pages/posts.duplicate_to_workspace')).'</div>'
+            .'<select class="fp-float-input" wire:model="duplicateWorkspaceId">'.$options.'</select>'
+            .'<div class="fp-float-bar">'
+            .'<button type="button" class="fp-send" wire:click="submitDuplicatePanel">'.e(__('pages/posts.duplicate_to_submit')).'</button>'
+            .'<button type="button" class="fp-link" wire:click="$set(\'duplicatePanelOpen\', false)" style="margin-left:auto;">'.e(__('pages/posts.close')).'</button>'
+            .'</div>'
+            .'</div>';
     }
 
     /** The "Add labels" popover: check to assign, pencil to edit, trash to
@@ -2059,9 +2214,12 @@ class Posts extends Page implements HasTable
                 .fp-composer:focus-within { border-color: #2d19ec66; }
                 .fp-composer textarea { display: block; width: 100%; border: none; outline: none; background: transparent; resize: none; padding: .6rem .75rem .3rem; font-size: .85rem; color: inherit; }
                 .fp-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-                /* The dialog heading must span the header row, or margin-left:auto
-                   inside it has no room and the kebab sticks to the Labels button. */
-                .fi-modal-header .fi-modal-heading { flex: 1 1 auto; min-width: 0; }
+                /* The dialog header is a flex row and the heading's unclassed
+                   wrapper div shrinks to content — stretch it, or the kebab's
+                   margin-left:auto has no room and it sticks to Labels. The
+                   padding keeps it clear of the absolutely-positioned close ✕. */
+                .fi-modal-header > div:not(.fi-modal-icon-ctn) { flex: 1 1 auto; min-width: 0; }
+                .fi-modal-header .fp-labels { padding-inline-end: 3rem; }
                 /* Anchored right under the first line of the textarea, near the "@". */
                 .fp-mention-pop { position: absolute; top: 2.4rem; left: .75rem; right: .75rem; z-index: 40; background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; box-shadow: 0 12px 32px -8px rgb(0 0 0 / .18); padding: .3rem; max-height: 12rem; overflow: auto; }
                 .dark .fp-mention-pop { background: #1b1b21; border-color: rgb(255 255 255 / .12); }
@@ -2160,6 +2318,23 @@ class Posts extends Page implements HasTable
                 /* Selection ring offset from the dot, readable in both themes. */
                 .fp-dot.active { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--dot); }
                 .dark .fp-dot.active { box-shadow: 0 0 0 2px #1b1b21, 0 0 0 3.5px var(--dot); }
+                /* Floating Share / Duplicate panels (anchored at the kebab) */
+                .fp-panel-float { width: 21rem; right: 0; left: auto; top: 1.9rem; font-weight: 400; text-align: left; }
+                .fp-float-label { font-size: .72rem; font-weight: 600; color: #6b7280; margin: .5rem 0 .25rem; }
+                .dark .fp-float-label { color: #a1a1aa; }
+                .fp-float-input { width: 100%; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: .45rem; padding: .38rem .55rem; font-size: .8rem; background: transparent; color: inherit; }
+                .dark .fp-float-input { border-color: rgb(255 255 255 / .14); }
+                .fp-float-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+                .fp-share-link { display: flex; align-items: center; gap: .4rem; }
+                .fp-share-link a { flex: 1; min-width: 0; font-size: .74rem; color: #2d19ec; word-break: break-all; }
+                .dark .fp-share-link a { color: #a5b4fc; }
+                .fp-share-link button { flex: none; display: inline-flex; align-items: center; gap: .3rem; border: 1px solid #e5e7eb; border-radius: .45rem; background: none; cursor: pointer; padding: .3rem .55rem; font-size: .72rem; color: inherit; }
+                .dark .fp-share-link button { border-color: rgb(255 255 255 / .14); }
+                .fp-share-link button svg { width: .8rem; height: .8rem; }
+                .fp-float-bar { display: flex; align-items: center; gap: .5rem; margin-top: .7rem; }
+                .fp-float-danger { background: none; border: 1px solid #fecaca; color: #dc2626; border-radius: 999px; padding: .35rem .8rem; font-size: .78rem; font-weight: 600; cursor: pointer; }
+                .fp-float-danger:hover { background: #fef2f2; }
+                .dark .fp-float-danger { border-color: rgb(220 38 38 / .4); }
             </style>
             HTML;
     }
