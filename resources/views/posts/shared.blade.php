@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>{{ $share->title ?: $branding['name'] }}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#f3f4f6; color:#1f2937; margin:0; }
+        .top { background:#fff; border-bottom:1px solid #e5e7eb; padding:.7rem 1.2rem; display:flex; align-items:center; gap:.6rem; }
+        .top img { height:26px; display:block; }
+        .top .nm { font-weight:700; font-size:.95rem; }
+        .wrap { max-width:26rem; margin:0 auto; padding:1.6rem 1rem 3rem; }
+        .cmts { background:#fff; border:1px solid #e5e7eb; border-radius:.9rem; padding:1rem 1.1rem; margin-top:1.2rem; }
+        .cmts h2 { font-size:.95rem; margin:0 0 .6rem; }
+        .cmt { display:flex; gap:.55rem; padding:.5rem 0; border-top:1px solid #f1f2f4; }
+        .cmt:first-of-type { border-top:0; }
+        .cmt.reply { margin-left:1.6rem; }
+        .cmt .av { flex:none; width:1.8rem; height:1.8rem; border-radius:999px; background:#eef2ff; color:{{ $branding['color'] }}; font-size:.75rem; font-weight:700; display:grid; place-items:center; }
+        .cmt .who { font-size:.78rem; }
+        .cmt .who b { font-size:.8rem; }
+        .cmt .who span { color:#9ca3af; font-size:.7rem; }
+        .cmt .txt { font-size:.84rem; margin-top:.1rem; overflow-wrap:anywhere; }
+        .empty { color:#9ca3af; font-size:.83rem; padding:.3rem 0 .6rem; }
+        form.guest { margin-top:.6rem; }
+        .glabel { font-size:.72rem; font-weight:600; color:#6b7280; margin:0 0 .25rem; }
+        input[type="text"], textarea { width:100%; border:1px solid #d1d5db; border-radius:.55rem; padding:.5rem .65rem; font-size:.86rem; font-family:inherit; background:#fff; color:inherit; }
+        textarea { resize:vertical; min-height:4.2rem; }
+        .bar { display:flex; justify-content:flex-end; margin-top:.55rem; }
+        button.send { background:{{ $branding['color'] }}; color:#fff; border:none; border-radius:999px; padding:.5rem 1.1rem; font-size:.85rem; font-weight:600; cursor:pointer; }
+        .hello { font-size:.78rem; color:#6b7280; margin-bottom:.35rem; }
+        .err { color:#b91c1c; font-size:.8rem; margin-top:.5rem; }
+        .foot { text-align:center; font-size:.75rem; color:#9ca3af; padding:0 0 2rem; }
+        .foot a { color:{{ $branding['color'] }}; text-decoration:none; font-weight:600; }
+    </style>
+</head>
+<body>
+    <div class="top">
+        @if ($branding['logo'])
+            <img src="{{ $branding['logo'] }}" alt="{{ $branding['name'] }}">
+        @else
+            <span class="nm">{{ $branding['name'] }}</span>
+        @endif
+    </div>
+
+    <div class="wrap">
+        {!! $share->html !!}
+
+        @if ($canComment)
+            <div class="cmts">
+                <h2>Comments</h2>
+
+                @forelse ($comments as $comment)
+                    <div class="cmt {{ $comment['reply'] ? 'reply' : '' }}">
+                        <span class="av">{{ mb_strtoupper(mb_substr($comment['name'], 0, 1)) }}</span>
+                        <span>
+                            <span class="who"><b>{{ $comment['name'] }}</b> <span>· {{ $comment['when'] }}</span></span>
+                            <div class="txt">{{ $comment['body'] }}</div>
+                        </span>
+                    </div>
+                @empty
+                    <div class="empty">No comments yet. Be the first to leave feedback.</div>
+                @endforelse
+
+                <form class="guest" method="POST" action="{{ route('posts.shared.comment', $share->token) }}">
+                    @csrf
+                    @if ($guestName === '')
+                        {{-- First visit: ask who they are, once. --}}
+                        <div class="glabel">Your name</div>
+                        <input type="text" name="name" required minlength="2" maxlength="60" placeholder="Your name" value="{{ old('name') }}">
+                        <div class="glabel" style="margin-top:.55rem;">Comment</div>
+                    @else
+                        <div class="hello">Commenting as <b>{{ $guestName }}</b></div>
+                        <input type="hidden" name="name" value="{{ $guestName }}">
+                    @endif
+                    <textarea name="body" required maxlength="2000" placeholder="Leave your feedback…">{{ old('body') }}</textarea>
+                    @if (($errors ?? null)?->any())
+                        <div class="err">{{ $errors->first() }}</div>
+                    @endif
+                    @if ($error)
+                        <div class="err">{{ $error }}</div>
+                    @endif
+                    <div class="bar"><button type="submit" class="send">Post comment</button></div>
+                </form>
+            </div>
+        @endif
+    </div>
+
+    @unless ($branding['whiteLabel'])
+        <div class="foot">Shared via <a href="{{ config('app.url') }}" rel="noopener">{{ $branding['name'] }}</a></div>
+    @endunless
+</body>
+</html>

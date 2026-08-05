@@ -75,6 +75,9 @@ Route::middleware('web')
     ->group(function () {
         Route::get('/{token}', [PostShareController::class, 'shared'])->name('posts.shared');
         Route::post('/{token}', [PostShareController::class, 'sharedUnlock'])->name('posts.shared.unlock');
+        Route::post('/{token}/comment', [PostShareController::class, 'comment'])
+            ->middleware('throttle:10,1')
+            ->name('posts.shared.comment');
     });
 
 Route::middleware('web')

@@ -1407,18 +1407,11 @@ class Posts extends Page implements HasTable
         );
     }
 
-    /** Standalone public page for a shared post (snapshot, like report shares). */
+    /** Card snapshot for the public share page (the posts.shared view wraps it
+     *  with branding and the guest comment thread). */
     private function shareHtmlFor(Post $post): string
     {
-        $business = e($this->businessNameLabel($post->location_ids ?? []));
-
-        return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
-            .'<meta name="viewport" content="width=device-width, initial-scale=1">'
-            .'<title>'.$business.'</title>'
-            .'<style>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#f3f4f6; color:#1f2937; margin:0; padding:2rem 1rem; display:flex; justify-content:center; } .wrap { width:100%; max-width:26rem; }</style>'
-            .'</head><body><div class="wrap">'
-            .$this->postDetailsHtml($post->id)
-            .'</div></body></html>';
+        return $this->postDetailsHtml($post->id);
     }
 
     public function sharePostAction(): Action
@@ -1982,7 +1975,7 @@ class Posts extends Page implements HasTable
         // The "…" menu lives up here, next to the dialog's close button. Its
         // entries open floating panels INSIDE this dialog (no modal swapping).
         $kebab = '<span x-data="{ open: false }" style="position:relative; margin-left:auto;">'
-            .'<button type="button" class="fp-c-btn" @click="open = ! open">'.$this->icon('o-ellipsis-vertical').'</button>'
+            .'<button type="button" class="fp-kebab" @click="open = ! open">'.$this->icon('o-ellipsis-vertical').'</button>'
             .'<span class="fp-menu" x-show="open" x-cloak @click.outside="open = false" style="top:1.9rem;">'
             .'<button type="button" wire:click="openSharePanel" @click="open = false">'.$this->icon('o-share').' '.e(__('pages/posts.share')).'</button>'
             .'<button type="button" wire:click="openDuplicatePanel" @click="open = false">'.$this->icon('o-document-duplicate').' '.e(__('pages/posts.duplicate_to')).'</button>'
@@ -2219,7 +2212,7 @@ class Posts extends Page implements HasTable
                    margin-left:auto has no room and it sticks to Labels. The
                    padding keeps it clear of the absolutely-positioned close ✕. */
                 .fi-modal-header > div:not(.fi-modal-icon-ctn) { flex: 1 1 auto; min-width: 0; }
-                .fi-modal-header .fp-labels { padding-inline-end: 3rem; }
+                .fi-modal-header .fp-labels { padding-inline-end: 2.35rem; }
                 /* Anchored right under the first line of the textarea, near the "@". */
                 .fp-mention-pop { position: absolute; top: 2.4rem; left: .75rem; right: .75rem; z-index: 40; background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; box-shadow: 0 12px 32px -8px rgb(0 0 0 / .18); padding: .3rem; max-height: 12rem; overflow: auto; }
                 .dark .fp-mention-pop { background: #1b1b21; border-color: rgb(255 255 255 / .12); }
@@ -2318,8 +2311,17 @@ class Posts extends Page implements HasTable
                 /* Selection ring offset from the dot, readable in both themes. */
                 .fp-dot.active { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--dot); }
                 .dark .fp-dot.active { box-shadow: 0 0 0 2px #1b1b21, 0 0 0 3.5px var(--dot); }
-                /* Floating Share / Duplicate panels (anchored at the kebab) */
-                .fp-panel-float { width: 21rem; right: 0; left: auto; top: 1.9rem; font-weight: 400; text-align: left; }
+                /* Floating Share / Duplicate panels (anchored at the kebab).
+                   They render INSIDE the dialog's h2 heading, so reset its
+                   typography or everything inherits large semibold text. */
+                .fp-panel-float { width: 21rem; right: 0; left: auto; top: 1.9rem; text-align: left; font-size: .8rem; font-weight: 400; line-height: 1.45; letter-spacing: normal; color: inherit; }
+                .fp-panel-float .fp-pop-title { font-size: .86rem; font-weight: 700; margin-bottom: .35rem; }
+                .fp-panel-float .fp-muted { font-size: .74rem; line-height: 1.4; }
+                .fp-kebab { display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border: 1px solid #e5e7eb; border-radius: .5rem; background: none; color: #6b7280; cursor: pointer; }
+                .fp-kebab:hover { border-color: #2d19ec66; color: #2d19ec; background: #eef2ff; }
+                .fp-kebab svg { width: 1.05rem; height: 1.05rem; }
+                .dark .fp-kebab { border-color: rgb(255 255 255 / .16); color: #a1a1aa; }
+                .dark .fp-kebab:hover { border-color: #a5b4fc66; color: #a5b4fc; background: rgb(99 102 241 / .15); }
                 .fp-float-label { font-size: .72rem; font-weight: 600; color: #6b7280; margin: .5rem 0 .25rem; }
                 .dark .fp-float-label { color: #a1a1aa; }
                 .fp-float-input { width: 100%; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: .45rem; padding: .38rem .55rem; font-size: .8rem; background: transparent; color: inherit; }

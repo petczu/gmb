@@ -63,6 +63,39 @@ class PostSharePublicTest extends TestCase
             ->assertSee('Shared post body');
     }
 
+    public function test_a_card_snapshot_gets_the_branded_page(): void
+    {
+        // Card-fragment snapshots (the current format) are wrapped in the
+        // branded page with the platform attribution; guest comments stay
+        // hidden because the workspace can't be initialized here.
+        $share = $this->share(['html' => '<div class="card">Card body</div>']);
+
+        $response = $this->get(route('posts.shared', $share->token));
+
+        $response->assertOk()
+            ->assertSee('Card body', escape: false)
+            ->assertSee('Shared via', escape: false)
+            ->assertDontSee('Leave your feedback');
+    }
+
+    public function test_guest_comment_endpoint_requires_the_gates(): void
+    {
+        $locked = $this->share([
+            'html' => '<div>Card</div>',
+            'password' => Hash::make('secret-1'),
+        ]);
+
+        // Locked share: commenting is forbidden until unlocked.
+        $this->post(route('posts.shared.comment', $locked->token), ['name' => 'Guest', 'body' => 'Hi'])
+            ->assertForbidden();
+
+        // Open share but the workspace is unreachable in this environment:
+        // the guest is sent back with a friendly error, nothing crashes.
+        $open = $this->share(['html' => '<div>Card</div>']);
+        $this->post(route('posts.shared.comment', $open->token), ['name' => 'Guest', 'body' => 'Hi'])
+            ->assertRedirect(route('posts.shared', $open->token));
+    }
+
     public function test_an_unknown_token_is_404(): void
     {
         $this->get(route('posts.shared', 'nope'))->assertNotFound();
