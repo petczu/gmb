@@ -165,8 +165,13 @@ class ZernioConnectionManager
 
     /**
      * Finalize: connect the chosen Google Business location to the profile.
+     * Returns the account Zernio just created (id + name) so the caller can
+     * link exactly that account instead of sweeping the whole profile. Null
+     * when the response carries no account (older API shape).
+     *
+     * @return array{id: string, name: ?string}|null
      */
-    public function selectLocation(string $profileId, ?string $pendingDataToken, ?string $tempToken, string $locationId, string $redirectUrl): void
+    public function selectLocation(string $profileId, ?string $pendingDataToken, ?string $tempToken, string $locationId, string $redirectUrl): ?array
     {
         $request = (new SelectGoogleBusinessLocationRequest)
             ->setProfileId($profileId)
@@ -176,7 +181,14 @@ class ZernioConnectionManager
             // tempToken when that's what the headless callback returned.
             ->setPendingDataToken($pendingDataToken ?? $tempToken);
 
-        $this->connectApi()->selectGoogleBusinessLocation($request);
+        $account = $this->connectApi()->selectGoogleBusinessLocation($request)->getAccount();
+        $accountId = $account?->getAccountId();
+
+        if ($account === null || blank($accountId)) {
+            return null;
+        }
+
+        return ['id' => (string) $accountId, 'name' => $account->getDisplayName() ?? $account->getUsername()];
     }
 
     /**

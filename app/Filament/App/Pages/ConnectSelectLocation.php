@@ -104,18 +104,28 @@ class ConnectSelectLocation extends Page
         try {
             // Finalize the Google account once (the first selection consumes the
             // pending token); later picks just add more tracked locations.
+            $accountId = null;
             if (! GoogleAccount::query()->where('workspace_id', $workspace->id)->exists()) {
-                $manager->selectLocation(
+                // Zernio now returns the connected account on select-location, so
+                // link exactly that one; fall back to the profile-wide sweep only
+                // when the response carries no account (older API).
+                $connected = $manager->selectLocation(
                     $pending['profileId'],
                     $pending['pendingDataToken'] ?? null,
                     $pending['tempToken'] ?? null,
                     $locationId,
                     url('/locations'),
                 );
-                $manager->linkConnectedAccounts($workspace);
+
+                if ($connected !== null) {
+                    $manager->link($workspace, $connected['id'], $connected['name']);
+                    $accountId = $connected['id'];
+                } else {
+                    $manager->linkConnectedAccounts($workspace);
+                }
             }
 
-            $accountId = GoogleAccount::query()->where('workspace_id', $workspace->id)->value('zernio_account_id');
+            $accountId ??= GoogleAccount::query()->where('workspace_id', $workspace->id)->value('zernio_account_id');
 
             $location = Location::updateOrCreate(
                 ['external_id' => $locationId],
