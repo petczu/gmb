@@ -2079,11 +2079,18 @@ class Posts extends Page implements HasTable
             ->recordActions([
                 // Same routing as a calendar card: drafts open the editable
                 // composer (edit/delete live there), the rest the view dialog.
+                // replaceMountedAction, NOT showPost/mountAction: a modal
+                // mounted from inside a running table action is torn down again
+                // when that action unmounts, so Edit appeared to do nothing.
                 Action::make('view')
                     ->label(fn (Post $record): string => $record->status === 'draft' ? __('pages/posts.edit') : __('pages/posts.view'))
                     ->icon(fn (Post $record) => $record->status === 'draft' ? Heroicon::OutlinedPencilSquare : Heroicon::OutlinedEye)
                     ->color('gray')
-                    ->action(fn (Post $record) => $this->showPost($record->id)),
+                    ->action(function (Post $record): void {
+                        $this->viewingPostId = $record->id;
+                        $this->resetCommentComposer();
+                        $this->replaceMountedAction($record->status === 'draft' ? 'editDraft' : 'viewPost');
+                    }),
 
                 Action::make('delete')
                     ->label(__('pages/posts.delete'))

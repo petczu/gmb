@@ -458,6 +458,23 @@ class PostsCalendarTest extends TestCase
         $this->assertSame('calendar', $component->get('mode'));
     }
 
+    public function test_the_list_edit_action_opens_the_draft_composer(): void
+    {
+        $location = $this->location();
+        $draft = Post::create([
+            'type' => 'update', 'caption' => 'Editable', 'location_ids' => [$location->id],
+            'source_ids' => [], 'status' => 'draft', 'scheduled_at' => now()->setTime(10, 0),
+        ]);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('mode', 'table');
+        $component->callTableAction('view', $draft->getKey());
+
+        $this->assertSame($draft->id, $component->get('viewingPostId'));
+        // The composer action must survive the table action's unmount.
+        $component->assertActionMounted('editDraft');
+    }
+
     public function test_comments_support_reply_edit_delete_and_reactions(): void
     {
         $location = $this->location();
