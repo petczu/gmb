@@ -38,7 +38,11 @@ return [
     'field_locations' => 'Lokalizacje',
     'field_caption' => 'Tekst',
     'field_image' => 'Obraz',
-    'field_image_helper' => 'Obraz musi być publicznie dostępny, aby Google mógł go pobrać: przesyłanie działa tylko z serwera publicznego, a nie z komputera lokalnego.',
+    'field_image_helper' => 'Przeciągnij i upuść obraz lub wybierz go z komputera. JPG lub PNG, do 4 MB.',
+    'field_video' => 'Wideo',
+    'field_video_helper' => 'Opcjonalnie. Przeciągnij plik MP4 lub wybierz go z komputera, do 75 MB. Używany zamiast obrazu.',
+    'field_media' => 'Obraz lub wideo',
+    'field_media_helper' => 'Przeciągnij i upuść lub wybierz z komputera. Obraz (JPG, PNG) lub wideo (MP4), do 25 MB.',
     'field_photo_category' => 'Kategoria zdjęcia',
     'field_title' => 'Tytuł',
     'field_starts' => 'Początek',
@@ -48,8 +52,8 @@ return [
     'field_terms_url' => 'Link do regulaminu',
     'field_cta' => 'Przycisk wezwania do działania',
     'field_cta_url' => 'Link przycisku',
-    'field_schedule' => 'Zaplanuj na później',
-    'field_schedule_helper' => 'Pozostaw puste, aby opublikować od razu. Godziny są w UTC.',
+    'field_schedule' => 'Opublikuj dnia',
+    'field_schedule_helper' => 'Pozostaw puste, aby opublikować od razu. Godziny w Twojej strefie czasowej (:tz).',
 
     'cta_none' => 'Bez przycisku',
     'cta_book' => 'Zarezerwuj',
@@ -99,7 +103,7 @@ return [
     'preview_label' => 'Podgląd',
     'preview_business' => 'Twoja firma',
     'preview_now' => 'przed chwilą',
-    'preview_no_image' => 'Brak obrazu',
+    'preview_no_image' => 'Brak multimediów',
     'preview_placeholder' => 'Tutaj pojawi się tekst Twojego postu.',
 
     // Sticky notes

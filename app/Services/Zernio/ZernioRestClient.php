@@ -44,6 +44,20 @@ class ZernioRestClient
     }
 
     /**
+     * Delete (cancel) a post by its Zernio id. Used to cancel a still-scheduled
+     * post before we drop or revert it on our side.
+     *
+     * @throws RequestException
+     */
+    public function deletePost(string $postId): void
+    {
+        $this->request()
+            ->withHeaders(['x-request-id' => (string) Str::uuid()])
+            ->delete('/posts/'.rawurlencode($postId))
+            ->throw();
+    }
+
+    /**
      * List a social account's external (natively-published) posts, paginated.
      * source=external returns posts published directly on the platform, not
      * through Zernio (e.g. Google Business localPosts created in the Google UI).

@@ -38,7 +38,11 @@ return [
     'field_locations' => 'Konumlar',
     'field_caption' => 'Metin',
     'field_image' => 'Görsel',
-    'field_image_helper' => 'Google\'ın görseli getirebilmesi için herkese açık şekilde erişilebilir olması gerekir: yüklemeler yalnızca herkese açık bir sunucudan çalışır, yerel bir makineden değil.',
+    'field_image_helper' => 'Bir görseli sürükleyip bırakın veya bilgisayarınızdan seçin. JPG veya PNG, en fazla 4 MB.',
+    'field_video' => 'Video',
+    'field_video_helper' => 'İsteğe bağlı. Bir MP4 sürükleyip bırakın veya bilgisayarınızdan seçin, en fazla 75 MB. Görsel yerine kullanılır.',
+    'field_media' => 'Görsel veya video',
+    'field_media_helper' => 'Sürükleyip bırakın veya bilgisayarınızdan seçin. Görsel (JPG, PNG) veya video (MP4), en fazla 25 MB.',
     'field_photo_category' => 'Fotoğraf kategorisi',
     'field_title' => 'Başlık',
     'field_starts' => 'Başlangıç',
@@ -48,8 +52,8 @@ return [
     'field_terms_url' => 'Şartlar & koşullar bağlantısı',
     'field_cta' => 'Eylem çağrısı düğmesi',
     'field_cta_url' => 'Düğme bağlantısı',
-    'field_schedule' => 'Sonrası için zamanla',
-    'field_schedule_helper' => 'Hemen yayınlamak için boş bırakın. Saatler UTC\'dir.',
+    'field_schedule' => 'Yayınlanma tarihi',
+    'field_schedule_helper' => 'Hemen yayınlamak için boş bırakın. Saatler senin saat diliminde (:tz).',
 
     'cta_none' => 'Düğme yok',
     'cta_book' => 'Rezervasyon yap',
@@ -99,7 +103,7 @@ return [
     'preview_label' => 'Önizleme',
     'preview_business' => 'İşletmeniz',
     'preview_now' => 'az önce',
-    'preview_no_image' => 'Görsel yok',
+    'preview_no_image' => 'Medya yok',
     'preview_placeholder' => 'Gönderi metniniz burada görünecek.',
 
     // Sticky notes

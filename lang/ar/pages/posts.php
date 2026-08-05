@@ -38,7 +38,11 @@ return [
     'field_locations' => 'المواقع',
     'field_caption' => 'النص',
     'field_image' => 'الصورة',
-    'field_image_helper' => 'يجب أن تكون الصورة متاحة للعموم كي يتمكن Google من جلبها: تعمل عمليات الرفع من خادم عام فقط، لا من جهاز محلي.',
+    'field_image_helper' => 'اسحب صورة وأفلتها أو اخترها من جهازك. JPG أو PNG، حتى 4 ميغابايت.',
+    'field_video' => 'فيديو',
+    'field_video_helper' => 'اختياري. اسحب ملف MP4 وأفلته أو اختره من جهازك، حتى 75 ميغابايت. يُستخدم بدلاً من الصورة.',
+    'field_media' => 'صورة أو فيديو',
+    'field_media_helper' => 'اسحب وأفلت أو اختر من جهازك. صورة (JPG أو PNG) أو فيديو (MP4)، حتى 25 ميغابايت.',
     'field_photo_category' => 'فئة الصورة',
     'field_title' => 'العنوان',
     'field_starts' => 'يبدأ',
@@ -48,8 +52,8 @@ return [
     'field_terms_url' => 'رابط الأحكام والشروط',
     'field_cta' => 'زر الحث على اتخاذ إجراء',
     'field_cta_url' => 'رابط الزر',
-    'field_schedule' => 'الجدولة لوقت لاحق',
-    'field_schedule_helper' => 'اتركه فارغًا للنشر فورًا. الأوقات بتوقيت UTC.',
+    'field_schedule' => 'انشر في',
+    'field_schedule_helper' => 'اتركه فارغًا للنشر فورًا. الأوقات بتوقيتك (:tz).',
 
     'cta_none' => 'بلا زر',
     'cta_book' => 'احجز',
@@ -99,7 +103,7 @@ return [
     'preview_label' => 'معاينة',
     'preview_business' => 'نشاطك التجاري',
     'preview_now' => 'الآن',
-    'preview_no_image' => 'لا توجد صورة',
+    'preview_no_image' => 'لا وسائط',
     'preview_placeholder' => 'سيظهر نص منشورك هنا.',
 
     // Sticky notes

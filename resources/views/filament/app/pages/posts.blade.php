@@ -94,6 +94,36 @@
             .pc-iconbtn:hover { opacity:1; }
 
             @media (max-width: 900px) { .pc-day { min-height:4.5rem; } .pc-card img { display:none; } }
+
+            /* Post-type picker: a compact row of cards (icon on top, label
+               beneath). Flat: no shadow, no hover motion; the selected state is
+               a brand-tinted card. */
+            .post-type-picker.fi-fo-toggle-buttons { display:flex; flex-wrap:wrap; gap:.5rem; }
+            .post-type-picker .fi-fo-toggle-buttons-btn-ctn { flex:1 1 0; min-width:6rem; }
+            .post-type-picker .fi-fo-toggle-buttons-btn-ctn .fi-btn {
+                width:100%; flex-direction:column; gap:.4rem; padding:.65rem .5rem;
+                border:1px solid rgb(17 24 39 / .1) !important;
+                background:#fff !important; color:rgb(75 85 99) !important;
+                border-radius:.75rem; font-weight:600; font-size:.85rem;
+                box-shadow:none !important;
+                transition:border-color .12s ease, background-color .12s ease, color .12s ease;
+            }
+            .post-type-picker .fi-fo-toggle-buttons-btn-ctn .fi-btn:hover { border-color:rgb(17 24 39 / .22) !important; }
+            .post-type-picker .fi-fo-toggle-buttons-btn-ctn .fi-btn .fi-btn-icon { width:1.4rem; height:1.4rem; }
+            /* Selected card: brand tint + border, no shadow. */
+            .post-type-picker .fi-fo-toggle-buttons-btn-ctn:has(.fi-fo-toggle-buttons-input:checked) .fi-btn {
+                border-color:#2d19ec !important; color:#2d19ec !important;
+                background:rgb(45 25 236 / .06) !important;
+            }
+            .dark .post-type-picker .fi-fo-toggle-buttons-btn-ctn .fi-btn {
+                border-color:rgb(255 255 255 / .12) !important;
+                background:rgb(255 255 255 / .03) !important; color:#a1a1aa !important;
+            }
+            .dark .post-type-picker .fi-fo-toggle-buttons-btn-ctn .fi-btn:hover { border-color:rgb(255 255 255 / .25) !important; }
+            .dark .post-type-picker .fi-fo-toggle-buttons-btn-ctn:has(.fi-fo-toggle-buttons-input:checked) .fi-btn {
+                border-color:#a5b4fc !important; color:#c7d2fe !important;
+                background:rgb(99 102 241 / .16) !important;
+            }
         </style>
 
         @php
@@ -164,7 +194,8 @@
                     {{-- External calendars: direct add when none yet, else a popover --}}
                     @if ($calendars->isEmpty())
                         <button type="button" class="pc-btn" wire:click="mountAction('addCalendar')" style="display:inline-flex; align-items:center; gap:.35rem;">
-                            <span style="font-size:1rem; line-height:1;">+</span> {{ __('pages/posts.calendars_connect') }}
+                            <svg style="width:1rem; height:1rem; opacity:.7;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            {{ __('pages/posts.calendars_connect') }}
                         </button>
                     @else
                     <div x-data="{ open: false }" style="position:relative;">
@@ -360,4 +391,27 @@
             {{ $this->table }}
         @endif
     @endif
+
+    {{-- The prefix calendar icon should read as clickable (it opens the picker). --}}
+    <style>
+        .fi-fo-date-time-picker .fi-input-wrp-prefix,
+        .fi-fo-date-time-picker .fi-input-wrp-icon,
+        .fi-fo-date-time-picker .fi-input-wrp-prefix svg { cursor: pointer; }
+    </style>
+
+    {{-- The date-time-picker's calendar prefix icon lives on the OUTER field
+         wrapper, outside the picker's own clickable trigger, so clicking it did
+         nothing. Forward such clicks to the picker trigger so the icon opens
+         the calendar. Document-level (delegated) so it also covers the composer
+         modal, which mounts after load. --}}
+    <script>
+        document.addEventListener('click', function (event) {
+            const picker = event.target.closest('.fi-fo-date-time-picker');
+            if (! picker) { return; }
+            // A click already on the trigger/input opens it natively.
+            if (event.target.closest('.fi-fo-date-time-picker-trigger, input')) { return; }
+            const trigger = picker.querySelector('.fi-fo-date-time-picker-trigger, .fi-fo-date-time-picker-display-text-input');
+            if (trigger) { trigger.focus(); trigger.click(); }
+        });
+    </script>
 </x-filament-panels::page>

@@ -38,7 +38,11 @@ return [
     'field_locations' => 'Standorte',
     'field_caption' => 'Text',
     'field_image' => 'Bild',
-    'field_image_helper' => 'Das Bild muss öffentlich erreichbar sein, damit Google es laden kann: Uploads funktionieren nur von einem öffentlichen Server, nicht von einem lokalen Rechner.',
+    'field_image_helper' => 'Bild per Drag-and-drop ablegen oder vom Computer auswählen. JPG oder PNG, bis 4 MB.',
+    'field_video' => 'Video',
+    'field_video_helper' => 'Optional. MP4 per Drag-and-drop ablegen oder vom Computer auswählen, bis 75 MB. Wird statt des Bildes verwendet.',
+    'field_media' => 'Bild oder Video',
+    'field_media_helper' => 'Per Drag-and-drop ablegen oder vom Computer auswählen. Bild (JPG, PNG) oder Video (MP4), bis 25 MB.',
     'field_photo_category' => 'Foto-Kategorie',
     'field_title' => 'Titel',
     'field_starts' => 'Beginn',
@@ -48,8 +52,8 @@ return [
     'field_terms_url' => 'Link zu den Bedingungen',
     'field_cta' => 'Call-to-Action-Button',
     'field_cta_url' => 'Button-Link',
-    'field_schedule' => 'Für später planen',
-    'field_schedule_helper' => 'Leer lassen, um sofort zu veröffentlichen. Zeiten sind UTC.',
+    'field_schedule' => 'Veröffentlichen am',
+    'field_schedule_helper' => 'Leer lassen, um sofort zu veröffentlichen. Zeiten in deiner Zeitzone (:tz).',
 
     'cta_none' => 'Kein Button',
     'cta_book' => 'Buchen',
@@ -99,7 +103,7 @@ return [
     'preview_label' => 'Vorschau',
     'preview_business' => 'Dein Unternehmen',
     'preview_now' => 'gerade eben',
-    'preview_no_image' => 'Kein Bild',
+    'preview_no_image' => 'Kein Medium',
     'preview_placeholder' => 'Dein Post-Text erscheint hier.',
 
     // Notizen

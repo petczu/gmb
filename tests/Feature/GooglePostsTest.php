@@ -44,6 +44,7 @@ class GooglePostsTest extends TestCase
             $table->string('cta_type', 20)->nullable();
             $table->string('cta_url', 2048)->nullable();
             $table->string('image_url', 2048)->nullable();
+            $table->string('video_url', 2048)->nullable();
             $table->string('photo_category', 30)->nullable();
             $table->dateTime('starts_at')->nullable();
             $table->dateTime('ends_at')->nullable();
@@ -150,6 +151,49 @@ class GooglePostsTest extends TestCase
         $this->assertSame('SUN20', $data['offer']['couponCode']);
         $this->assertSame('https://example.com/redeem', $data['offer']['redeemOnlineUrl']);
         $this->assertArrayNotHasKey('callToAction', $data);
+    }
+
+    public function test_event_times_are_emitted_in_the_authors_timezone(): void
+    {
+        // No creator row → the publisher falls back to the app timezone.
+        config(['app.timezone' => 'Asia/Kolkata']); // UTC+5:30, no DST
+
+        $location = $this->location();
+
+        $post = new Post(['type' => 'event', 'caption' => 'Doors open', 'title' => 'Gala']);
+        // Stored moments (UTC) → Google gets the author's wall-clock.
+        $post->starts_at = CarbonImmutable::parse('2026-08-01 07:00:00', 'UTC');
+        $post->ends_at = CarbonImmutable::parse('2026-08-01 15:30:00', 'UTC');
+
+        $data = app(PostPublisher::class)->payload($post, collect([$location]))['platforms'][0]['platformSpecificData'];
+
+        $this->assertSame(['hours' => 12, 'minutes' => 30], $data['event']['schedule']['startTime']);
+        $this->assertSame(['hours' => 21, 'minutes' => 0], $data['event']['schedule']['endTime']);
+    }
+
+    public function test_video_is_sent_as_a_video_media_item_and_wins_over_an_image(): void
+    {
+        $location = $this->location();
+
+        $post = new Post([
+            'type' => 'update',
+            'caption' => 'Watch this',
+            'image_url' => 'https://cdn.example.com/pic.jpg',
+            'video_url' => 'https://cdn.example.com/clip.mp4',
+        ]);
+
+        $payload = app(PostPublisher::class)->payload($post, collect([$location]));
+
+        $this->assertSame([['type' => 'video', 'url' => 'https://cdn.example.com/clip.mp4']], $payload['mediaItems']);
+    }
+
+    public function test_image_is_sent_when_there_is_no_video(): void
+    {
+        $post = new Post(['type' => 'update', 'caption' => 'Photo day', 'image_url' => 'https://cdn.example.com/pic.jpg']);
+
+        $payload = app(PostPublisher::class)->payload($post, collect([$this->location()]));
+
+        $this->assertSame([['type' => 'image', 'url' => 'https://cdn.example.com/pic.jpg']], $payload['mediaItems']);
     }
 
     public function test_multi_location_targets_one_platform_entry_per_location(): void

@@ -7,6 +7,7 @@ namespace App\Services\Posts;
 use App\Mail\PostFailedMail;
 use App\Models\Location;
 use App\Models\Post;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Notifications\NotificationCategory;
 use App\Services\Notifications\NotificationDispatcher;
@@ -109,7 +110,11 @@ class PostPublisher
             $payload['content'] = $post->caption;
         }
 
-        if (filled($post->image_url)) {
+        // A Google post carries one media item. Prefer a video when present,
+        // otherwise the image. Zernio accepts both by public URL.
+        if (filled($post->video_url)) {
+            $payload['mediaItems'] = [['type' => 'video', 'url' => $post->video_url]];
+        } elseif (filled($post->image_url)) {
             $payload['mediaItems'] = [['type' => 'image', 'url' => $post->image_url]];
         }
 
@@ -144,15 +149,21 @@ class PostPublisher
         }
 
         // Google carries the title + date range of BOTH event and offer posts
-        // in the event object.
+        // in the event object. Google event schedules are naive wall-clock, so
+        // render the stored UTC values back into the author's timezone (that is
+        // the timezone they typed in the composer).
         if (in_array($post->type, ['event', 'offer'], true) && $post->starts_at !== null && $post->ends_at !== null) {
+            $tz = $this->postTimezone($post);
+            $start = $post->starts_at->setTimezone($tz)->toImmutable();
+            $end = $post->ends_at->setTimezone($tz)->toImmutable();
+
             $data['event'] = [
                 'title' => (string) $post->title,
                 'schedule' => [
-                    'startDate' => $this->date($post->starts_at->toImmutable()),
-                    'startTime' => $this->time($post->starts_at->toImmutable()),
-                    'endDate' => $this->date($post->ends_at->toImmutable()),
-                    'endTime' => $this->time($post->ends_at->toImmutable()),
+                    'startDate' => $this->date($start),
+                    'startTime' => $this->time($start),
+                    'endDate' => $this->date($end),
+                    'endTime' => $this->time($end),
                 ],
             ];
         }
@@ -210,6 +221,20 @@ class PostPublisher
         }
 
         return $e->getMessage();
+    }
+
+    /**
+     * The timezone the event times were entered in: the post author's, falling
+     * back to the app timezone. Google event schedules have no timezone field,
+     * so we emit the components as the author saw them.
+     */
+    protected function postTimezone(Post $post): string
+    {
+        $timezone = $post->created_by !== null
+            ? User::query()->whereKey($post->created_by)->value('timezone')
+            : null;
+
+        return $timezone ?: (config('app.timezone') ?: 'UTC');
     }
 
     /**

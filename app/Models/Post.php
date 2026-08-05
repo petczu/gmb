@@ -29,7 +29,7 @@ class Post extends Model
     ];
 
     protected $fillable = [
-        'type', 'caption', 'title', 'cta_type', 'cta_url', 'image_url',
+        'type', 'caption', 'title', 'cta_type', 'cta_url', 'image_url', 'video_url',
         'photo_category', 'starts_at', 'ends_at', 'voucher_code', 'redeem_url',
         'terms_url', 'location_ids', 'source_ids', 'scheduled_at', 'status',
         'external_ids', 'error', 'created_by', 'created_by_name',

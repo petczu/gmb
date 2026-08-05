@@ -38,7 +38,11 @@ return [
     'field_locations' => 'Locaties',
     'field_caption' => 'Tekst',
     'field_image' => 'Afbeelding',
-    'field_image_helper' => 'De afbeelding moet openbaar bereikbaar zijn zodat Google deze kan ophalen: uploaden werkt alleen vanaf een openbare server, niet vanaf een lokale machine.',
+    'field_image_helper' => 'Sleep een afbeelding hierheen of kies er een van je computer. JPG of PNG, tot 4 MB.',
+    'field_video' => 'Video',
+    'field_video_helper' => 'Optioneel. Sleep een MP4 hierheen of kies er een van je computer, tot 75 MB. Wordt gebruikt in plaats van de afbeelding.',
+    'field_media' => 'Afbeelding of video',
+    'field_media_helper' => 'Sleep hierheen of kies van je computer. Afbeelding (JPG, PNG) of video (MP4), tot 25 MB.',
     'field_photo_category' => 'Fotocategorie',
     'field_title' => 'Titel',
     'field_starts' => 'Start',
@@ -48,8 +52,8 @@ return [
     'field_terms_url' => 'Link naar voorwaarden',
     'field_cta' => 'Actieknop',
     'field_cta_url' => 'Link van de knop',
-    'field_schedule' => 'Plannen voor later',
-    'field_schedule_helper' => 'Laat leeg om direct te publiceren. Tijden zijn in UTC.',
+    'field_schedule' => 'Publiceren op',
+    'field_schedule_helper' => 'Laat leeg om direct te publiceren. Tijden gebruiken jouw tijdzone (:tz).',
 
     'cta_none' => 'Geen knop',
     'cta_book' => 'Boeken',
@@ -99,7 +103,7 @@ return [
     'preview_label' => 'Voorbeeld',
     'preview_business' => 'Jouw bedrijf',
     'preview_now' => 'zojuist',
-    'preview_no_image' => 'Geen afbeelding',
+    'preview_no_image' => 'Geen media',
     'preview_placeholder' => 'De tekst van je bericht verschijnt hier.',
 
     // Sticky notes

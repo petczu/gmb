@@ -38,7 +38,11 @@ return [
     'field_locations' => '店舗',
     'field_caption' => 'テキスト',
     'field_image' => '画像',
-    'field_image_helper' => 'Googleが取得できるよう、画像は公開状態でアクセスできる必要があります。アップロードは公開サーバーからのみ機能し、ローカルマシンからは機能しません。',
+    'field_image_helper' => '画像をドラッグ＆ドロップするか、パソコンから選択してください。JPGまたはPNG、4MBまで。',
+    'field_video' => '動画',
+    'field_video_helper' => '任意。MP4をドラッグ＆ドロップするか、パソコンから選択してください（75MBまで）。画像の代わりに使用されます。',
+    'field_media' => '画像または動画',
+    'field_media_helper' => 'ドラッグ＆ドロップするか、パソコンから選択してください。画像（JPG、PNG）または動画（MP4）、25MBまで。',
     'field_photo_category' => '写真カテゴリ',
     'field_title' => 'タイトル',
     'field_starts' => '開始',
@@ -48,8 +52,8 @@ return [
     'field_terms_url' => '利用規約リンク',
     'field_cta' => 'コールトゥアクションボタン',
     'field_cta_url' => 'ボタンリンク',
-    'field_schedule' => '後で予約',
-    'field_schedule_helper' => 'すぐに公開する場合は空欄のままにしてください。時刻はUTCです。',
+    'field_schedule' => '公開日',
+    'field_schedule_helper' => 'すぐに公開する場合は空欄のままにしてください。時刻はあなたのタイムゾーン（:tz）です。',
 
     'cta_none' => 'ボタンなし',
     'cta_book' => '予約',
@@ -99,7 +103,7 @@ return [
     'preview_label' => 'プレビュー',
     'preview_business' => 'あなたのビジネス',
     'preview_now' => 'たった今',
-    'preview_no_image' => '画像なし',
+    'preview_no_image' => 'メディアなし',
     'preview_placeholder' => 'ここに投稿テキストが表示されます。',
 
     // Sticky notes

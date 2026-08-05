@@ -38,7 +38,11 @@ return [
     'field_locations' => 'Établissements',
     'field_caption' => 'Texte',
     'field_image' => 'Image',
-    'field_image_helper' => 'L’image doit être accessible publiquement pour que Google puisse la récupérer : l’envoi ne fonctionne que depuis un serveur public, pas depuis une machine locale.',
+    'field_image_helper' => 'Glissez-déposez une image ou choisissez-en une depuis votre ordinateur. JPG ou PNG, jusqu’à 4 Mo.',
+    'field_video' => 'Vidéo',
+    'field_video_helper' => 'Facultatif. Glissez-déposez un MP4 ou choisissez-en un depuis votre ordinateur, jusqu’à 75 Mo. Utilisé à la place de l’image.',
+    'field_media' => 'Image ou vidéo',
+    'field_media_helper' => 'Glissez-déposez ou choisissez depuis votre ordinateur. Image (JPG, PNG) ou vidéo (MP4), jusqu’à 25 Mo.',
     'field_photo_category' => 'Catégorie de photo',
     'field_title' => 'Titre',
     'field_starts' => 'Début',
@@ -48,8 +52,8 @@ return [
     'field_terms_url' => 'Lien vers les conditions',
     'field_cta' => 'Bouton d’action',
     'field_cta_url' => 'Lien du bouton',
-    'field_schedule' => 'Programmer pour plus tard',
-    'field_schedule_helper' => 'Laissez vide pour publier immédiatement. Les heures sont en UTC.',
+    'field_schedule' => 'Publier le',
+    'field_schedule_helper' => 'Laissez vide pour publier immédiatement. Les heures utilisent votre fuseau horaire (:tz).',
 
     'cta_none' => 'Aucun bouton',
     'cta_book' => 'Réserver',
@@ -99,7 +103,7 @@ return [
     'preview_label' => 'Aperçu',
     'preview_business' => 'Votre établissement',
     'preview_now' => 'à l’instant',
-    'preview_no_image' => 'Pas d’image',
+    'preview_no_image' => 'Aucun média',
     'preview_placeholder' => 'Le texte de votre post apparaîtra ici.',
 
     // Sticky notes

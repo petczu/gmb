@@ -104,6 +104,7 @@ class PostsCalendarTest extends TestCase
             $table->string('cta_type', 20)->nullable();
             $table->string('cta_url', 2048)->nullable();
             $table->string('image_url', 2048)->nullable();
+            $table->string('video_url', 2048)->nullable();
             $table->string('photo_category', 30)->nullable();
             $table->dateTime('starts_at')->nullable();
             $table->dateTime('ends_at')->nullable();

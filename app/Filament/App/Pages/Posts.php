@@ -24,6 +24,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
@@ -38,6 +39,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -620,13 +622,65 @@ class Posts extends Page implements HasTable
                     ->hiddenLabel()
                     ->content(new HtmlString($this->postDetailsHtml((int) $this->viewingPostId))),
             ])
-            ->extraModalFooterActions(fn (): array => [
+            ->extraModalFooterActions(fn (): array => array_values(array_filter([
                 Action::make('duplicateDraft')
                     ->label(__('pages/posts.duplicate_draft'))
                     ->icon(Heroicon::OutlinedDocumentDuplicate)
                     ->action(fn () => $this->duplicateAsDraft((int) $this->viewingPostId))
                     ->cancelParentActions(),
-            ]);
+                // Imported (Google-owned) posts can't be deleted from here: they
+                // just re-import on the next sync. Everything we sent can.
+                Post::find($this->viewingPostId)?->origin === 'imported'
+                    ? null
+                    : Action::make('delete')
+                        ->label(__('pages/posts.delete'))
+                        ->icon(Heroicon::OutlinedTrash)
+                        ->color('danger')
+                        ->action(fn () => $this->replaceMountedAction('deletePost')),
+            ])));
+    }
+
+    /** Confirm-and-delete a post (its own top-level modal, mounted from the
+     *  view/edit dialogs so the confirmation isn't a flaky nested modal). */
+    public function deletePostAction(): Action
+    {
+        return Action::make('deletePost')
+            ->modalHeading(__('pages/posts.delete'))
+            ->modalDescription(__('pages/posts.delete_desc'))
+            ->modalSubmitActionLabel(__('pages/posts.delete'))
+            ->modalIcon(Heroicon::OutlinedTrash)
+            ->modalIconColor('danger')
+            ->action(function (): void {
+                $post = Post::find($this->viewingPostId);
+                if ($post === null) {
+                    return;
+                }
+
+                // A still-scheduled post lives on Zernio too; cancel it there
+                // first so it doesn't publish after we drop our row. Best-effort.
+                if ($post->status === 'scheduled') {
+                    $this->cancelScheduledOnZernio($post);
+                }
+
+                $post->delete();
+                Notification::make()->title(__('pages/posts.deleted'))->success()->send();
+            });
+    }
+
+    /** Best-effort cancel of a post's Zernio-side scheduled copies. */
+    private function cancelScheduledOnZernio(Post $post): void
+    {
+        foreach ($post->external_ids ?? [] as $externalId) {
+            if (! is_string($externalId) || $externalId === '') {
+                continue;
+            }
+
+            try {
+                app(ZernioRestClient::class)->deletePost($externalId);
+            } catch (\Throwable $e) {
+                Log::warning('Cancel scheduled post on Zernio failed', ['post' => $post->id, 'external_id' => $externalId, 'error' => $e->getMessage()]);
+            }
+        }
     }
 
     /** Copy any post (including an imported Google one) into a fresh draft. */
@@ -676,14 +730,9 @@ class Posts extends Page implements HasTable
                     ->color('gray'),
                 Action::make('deleteDraft')
                     ->label(__('pages/posts.draft_delete'))
+                    ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalDescription(__('pages/posts.draft_delete_desc'))
-                    ->action(function (): void {
-                        Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->delete();
-                        Notification::make()->title(__('pages/posts.draft_deleted'))->success()->send();
-                    })
-                    ->cancelParentActions(),
+                    ->action(fn () => $this->replaceMountedAction('deletePost')),
             ])
             ->action(function (array $data, array $arguments): void {
                 $draft = Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->first();
@@ -704,7 +753,7 @@ class Posts extends Page implements HasTable
             'type' => $post->type,
             'locations' => $post->location_ids ?? [],
             'caption' => $post->caption,
-            'image' => $this->imagePathFromUrl($post->image_url),
+            'media' => $this->imagePathFromUrl($post->video_url ?: $post->image_url),
             'title' => $post->title,
             'starts_at' => $post->starts_at?->format('Y-m-d H:i'),
             'ends_at' => $post->ends_at?->format('Y-m-d H:i'),
@@ -723,6 +772,18 @@ class Posts extends Page implements HasTable
         $path = (string) parse_url((string) $url, PHP_URL_PATH);
 
         return str_contains($path, '/storage/') ? Str::after($path, '/storage/') : null;
+    }
+
+    /** Whether a stored media path (or URL) points at a video by extension. */
+    private function isVideoPath(?string $path): bool
+    {
+        return (bool) preg_match('/\.(mp4|mov|m4v|webm)$/i', (string) $path);
+    }
+
+    /** Public URL for an uploaded media path, or null when nothing is set. */
+    private function mediaUrl(?string $path): ?string
+    {
+        return filled($path) ? url(Storage::disk('uploads')->url($path)) : null;
     }
 
     private function postDetailsHtml(int $postId): string
@@ -758,6 +819,7 @@ class Posts extends Page implements HasTable
             'date' => $when->translatedFormat('M j, Y'),
             'logoUrl' => $this->previewLogoUrl($post->location_ids ?? []),
             'imageUrl' => filled($post->image_url) ? $post->image_url : null,
+            'videoUrl' => filled($post->video_url) ? $post->video_url : null,
             'title' => $post->title,
             'dates' => $dates,
             'caption' => $post->caption,
@@ -911,22 +973,36 @@ class Posts extends Page implements HasTable
     /**
      * @return array<int, Field>
      */
+    /** The signed-in user's timezone, used for every date/time field + label. */
+    private function userTimezone(): string
+    {
+        return auth()->user()?->timezone ?: (config('app.timezone') ?: 'UTC');
+    }
+
     protected function formSchema(): array
     {
         $isOfferOrEvent = fn (Get $get): bool => in_array($get('type'), ['offer', 'event'], true);
+        $timezone = $this->userTimezone();
 
         return [
-            Select::make('type')
+            ToggleButtons::make('type')
                 ->label(__('pages/posts.field_type'))
                 // Zernio's native API models a photo post as a STANDARD update
                 // with an image, so only the three real GBP topic types remain.
                 ->options(collect(['update', 'offer', 'event'])->mapWithKeys(
                     fn (string $t): array => [$t => __('pages/posts.type_'.$t)],
                 )->all())
+                ->icons([
+                    'update' => Heroicon::OutlinedMegaphone,
+                    'offer' => Heroicon::OutlinedTag,
+                    'event' => Heroicon::OutlinedCalendarDays,
+                ])
+                // Icon-on-top cards in a row (styled in posts.blade.php).
+                ->inline()
+                ->extraAttributes(['class' => 'post-type-picker'])
                 ->default('update')
                 ->required()
-                ->live()
-                ->selectablePlaceholder(false),
+                ->live(),
 
             Select::make('locations')
                 ->label(__('pages/posts.field_locations'))
@@ -935,40 +1011,56 @@ class Posts extends Page implements HasTable
                 ->default(fn (): array => Location::query()->pluck('id')->all())
                 ->required(),
 
+            // Offer/Event carry a headline: keep it above the body text, with a
+            // counter + hard 58-char cap (Google truncates longer titles).
+            TextInput::make('title')
+                ->label(__('pages/posts.field_title'))
+                ->maxLength(58)
+                ->extraInputAttributes(['maxlength' => 58])
+                ->hint(fn (?string $state): string => mb_strlen((string) $state).' / 58')
+                ->hintColor(fn (?string $state): string => mb_strlen((string) $state) >= 58 ? 'danger' : 'gray')
+                ->required($isOfferOrEvent)
+                ->visible($isOfferOrEvent)
+                ->live(debounce: 300),
+
             Textarea::make('caption')
                 ->label(__('pages/posts.field_caption'))
                 ->rows(4)
                 ->maxLength(1500)
+                // Hard stop in the browser + a live counter in the label row.
+                ->extraInputAttributes(['maxlength' => 1500])
+                ->hint(fn (?string $state): string => mb_strlen((string) $state).' / 1500')
+                ->hintColor(fn (?string $state): string => mb_strlen((string) $state) >= 1500 ? 'danger' : 'gray')
                 ->required()
-                ->live(debounce: 600),
+                ->live(debounce: 300),
 
-            FileUpload::make('image')
-                ->label(__('pages/posts.field_image'))
-                ->image()
-                // Resize down in the browser BEFORE upload: keeps the file small
-                // (well under any server upload_max_filesize / body limit, which
-                // is what leaves big uploads stuck mid-progress) and matches the
-                // resolution Google actually uses for post images.
+            // One media slot: an image OR a video (a Google post carries a
+            // single media item). The stored file's extension decides which of
+            // image_url / video_url it becomes on save.
+            FileUpload::make('media')
+                ->label(__('pages/posts.field_media'))
+                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'])
+                // Resize images down in the browser BEFORE upload (keeps them
+                // small and matches the resolution Google uses); videos pass
+                // through untouched.
                 ->imageResizeMode('contain')
                 ->imageResizeUpscale(false)
                 ->imageResizeTargetWidth('1600')
                 ->imageResizeTargetHeight('1600')
                 ->disk('uploads')
                 ->directory('posts')
-                ->maxSize(4096)
+                ->maxSize(25000)
                 ->live()
-                ->helperText(__('pages/posts.field_image_helper')),
-
-            TextInput::make('title')
-                ->label(__('pages/posts.field_title'))
-                ->maxLength(58)
-                ->required($isOfferOrEvent)
-                ->visible($isOfferOrEvent)
-                ->live(debounce: 600),
+                ->helperText(__('pages/posts.field_media_helper')),
 
             DateTimePicker::make('starts_at')
                 ->label(__('pages/posts.field_starts'))
                 ->seconds(false)
+                // JS calendar/time picker (not the raw browser input), in the
+                // user's own timezone.
+                ->native(false)
+                ->prefixIcon(Heroicon::OutlinedCalendar)
+                ->timezone($timezone)
                 ->required($isOfferOrEvent)
                 ->visible($isOfferOrEvent)
                 ->live(),
@@ -976,6 +1068,9 @@ class Posts extends Page implements HasTable
             DateTimePicker::make('ends_at')
                 ->label(__('pages/posts.field_ends'))
                 ->seconds(false)
+                ->native(false)
+                ->prefixIcon(Heroicon::OutlinedCalendar)
+                ->timezone($timezone)
                 ->after('starts_at')
                 ->required($isOfferOrEvent)
                 ->visible($isOfferOrEvent)
@@ -1009,6 +1104,7 @@ class Posts extends Page implements HasTable
             TextInput::make('cta_url')
                 ->label(__('pages/posts.field_cta_url'))
                 ->url()
+                ->placeholder('https://example.com')
                 ->required(fn (Get $get): bool => filled($get('cta_type')) && $get('cta_type') !== 'call')
                 ->visible(fn (Get $get): bool => filled($get('cta_type')) && $get('cta_type') !== 'call'
                     && in_array($get('type'), ['update', 'event'], true)),
@@ -1016,9 +1112,12 @@ class Posts extends Page implements HasTable
             DateTimePicker::make('scheduled_at')
                 ->label(__('pages/posts.field_schedule'))
                 ->seconds(false)
+                ->native(false)
+                ->prefixIcon(Heroicon::OutlinedCalendar)
+                ->timezone($timezone)
                 ->minDate(now())
                 ->default(fn (): ?string => $this->pullPrefillDate())
-                ->helperText(__('pages/posts.field_schedule_helper')),
+                ->helperText(__('pages/posts.field_schedule_helper', ['tz' => $timezone])),
         ];
     }
 
@@ -1027,13 +1126,14 @@ class Posts extends Page implements HasTable
      * The Google-Maps-style post card from normalized data. Shared by the
      * read-only post view (postDetailsHtml) so it matches the composer preview.
      *
-     * @param  array{name:string,date:string,logoUrl:?string,imageUrl:?string,title:?string,dates:?string,caption:?string,captionPlaceholder?:bool,voucher:?string,cta:?string}  $d
+     * @param  array{name:string,date:string,logoUrl:?string,imageUrl:?string,videoUrl?:?string,title:?string,dates:?string,caption:?string,captionPlaceholder?:bool,voucher:?string,cta:?string}  $d
      */
     private function googlePreviewCard(array $d): string
     {
         $name = (string) ($d['name'] ?? '');
         $logoUrl = $d['logoUrl'] ?? null;
         $imageUrl = $d['imageUrl'] ?? null;
+        $videoUrl = $d['videoUrl'] ?? null;
 
         $avatar = $logoUrl !== null
             ? '<img src="'.e($logoUrl).'" alt="" style="width:2.4rem; height:2.4rem; border-radius:999px; object-fit:cover;">'
@@ -1055,7 +1155,9 @@ class Posts extends Page implements HasTable
             .'</span>'
             .'</div>';
 
-        if ($imageUrl !== null) {
+        if ($videoUrl !== null) {
+            $html .= '<video src="'.e($videoUrl).'" controls playsinline style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover; background:#000;"></video>';
+        } elseif ($imageUrl !== null) {
             $html .= '<img src="'.e($imageUrl).'" alt="" style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover;">';
         } else {
             $html .= '<div style="width:100%; aspect-ratio:2/1; background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 12px,#e5e7eb 12px,#e5e7eb 24px); display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:.8rem;">'.e(__('pages/posts.preview_no_image')).'</div>';
@@ -1106,13 +1208,19 @@ class Posts extends Page implements HasTable
 
         $logoUrl = $this->previewLogoUrl($locationIds);
 
-        $image = $get('image');
-        $image = is_array($image) ? collect($image)->first() : $image;
-        $imageUrl = match (true) {
-            $image instanceof TemporaryUploadedFile => $image->temporaryUrl(),
-            is_string($image) && filled($image) => url(Storage::disk('uploads')->url($image)),
-            default => null,
-        };
+        // One media slot: figure out whether it's an image or a video, and its
+        // URL, from either a fresh upload or a re-hydrated draft path.
+        $media = $get('media');
+        $media = is_array($media) ? collect($media)->first() : $media;
+        $imageUrl = null;
+        $videoUrl = null;
+        if ($media instanceof TemporaryUploadedFile) {
+            $url = $media->temporaryUrl();
+            str_starts_with((string) $media->getMimeType(), 'video/') ? $videoUrl = $url : $imageUrl = $url;
+        } elseif (is_string($media) && filled($media)) {
+            $url = url(Storage::disk('uploads')->url($media));
+            $this->isVideoPath($media) ? $videoUrl = $url : $imageUrl = $url;
+        }
 
         $type = (string) $get('type');
         $dates = null;
@@ -1148,7 +1256,9 @@ class Posts extends Page implements HasTable
             .'</span>'
             .'</div>';
 
-        if ($imageUrl !== null) {
+        if ($videoUrl !== null) {
+            $html .= '<video src="'.e($videoUrl).'" controls playsinline style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover; background:#000;"></video>';
+        } elseif ($imageUrl !== null) {
             $html .= '<img src="'.e($imageUrl).'" alt="" style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover;">';
         } else {
             $html .= '<div style="width:100%; aspect-ratio:2/1; background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 12px,#e5e7eb 12px,#e5e7eb 24px); display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:.8rem;">'.e(__('pages/posts.preview_no_image')).'</div>';
@@ -1228,9 +1338,8 @@ class Posts extends Page implements HasTable
             'title' => $data['title'] ?? null,
             'cta_type' => $data['cta_type'] ?? null,
             'cta_url' => $data['cta_url'] ?? null,
-            'image_url' => filled($data['image'] ?? null)
-                ? url(Storage::disk('uploads')->url($data['image']))
-                : null,
+            'image_url' => $this->isVideoPath($data['media'] ?? null) ? null : $this->mediaUrl($data['media'] ?? null),
+            'video_url' => $this->isVideoPath($data['media'] ?? null) ? $this->mediaUrl($data['media'] ?? null) : null,
             'starts_at' => $data['starts_at'] ?? null,
             'ends_at' => $data['ends_at'] ?? null,
             'voucher_code' => $data['voucher_code'] ?? null,
