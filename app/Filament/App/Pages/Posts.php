@@ -1139,13 +1139,9 @@ class Posts extends Page implements HasTable
             FileUpload::make('media')
                 ->label(__('pages/posts.field_media'))
                 ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'])
-                // Resize images down in the browser BEFORE upload (keeps them
-                // small and matches the resolution Google uses); videos pass
-                // through untouched.
-                ->imageResizeMode('contain')
-                ->imageResizeUpscale(false)
-                ->imageResizeTargetWidth('1600')
-                ->imageResizeTargetHeight('1600')
+                // No client-side image resize here: the resize plugin is
+                // image-only and, on a mixed image/video field, hangs FilePond
+                // on "waiting for size". The 25 MB cap keeps uploads bounded.
                 ->disk('uploads')
                 ->directory('posts')
                 ->maxSize(25000)
