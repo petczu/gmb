@@ -73,6 +73,18 @@ return [
     'delete_desc' => 'This only removes the entry from this list, it does not delete the post from Google.',
     'deleted' => 'Entry removed',
 
+    // Activity feed (per post)
+    'activity_title' => 'Activity',
+    'activity_system' => 'System',
+    'activity_draft_created' => 'created this draft',
+    'activity_draft_updated' => 'updated the draft',
+    'activity_published' => 'published this post',
+    'activity_scheduled' => 'scheduled this post',
+    'activity_publish_failed' => 'could not publish this post',
+    'activity_duplicated' => 'duplicated this post as a draft',
+    'activity_deleted' => 'removed this post',
+    'activity_reverted' => 'moved this post back to draft',
+
     // Calendar view
     'view_calendar' => 'Calendar',
     'view_list' => 'List',
@@ -91,6 +103,7 @@ return [
 
     // Imported Google posts
     'view' => 'View',
+    'edit' => 'Edit',
     'duplicate_draft' => 'Duplicate as draft',
     'duplicated_draft' => 'Draft created',
     'draft_heading' => 'Edit draft',
@@ -104,6 +117,7 @@ return [
     'preview_business' => 'Your business',
     'preview_now' => 'just now',
     'preview_no_image' => 'No media',
+    'preview_cta_hint' => 'Preview only: the button becomes active on the published post.',
     'preview_placeholder' => 'Your post text will appear here.',
 
     // Sticky notes

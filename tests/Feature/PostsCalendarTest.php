@@ -331,6 +331,33 @@ class PostsCalendarTest extends TestCase
         $this->assertSame(2, Post::query()->count());
     }
 
+    public function test_a_scheduled_post_can_be_reverted_to_a_draft_for_editing(): void
+    {
+        Http::fake(['zernio.test/api/v1/posts/*' => Http::response([], 200)]);
+        $location = $this->location();
+
+        $scheduled = Post::create([
+            'type' => 'update',
+            'caption' => 'Planned',
+            'location_ids' => [$location->id],
+            'source_ids' => [$location->external_id],
+            'status' => 'scheduled',
+            'origin' => 'app',
+            'external_ids' => ['zp-1'],
+        ]);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $scheduled->id);
+        $component->call('revertToDraftAndEdit');
+
+        $scheduled->refresh();
+        $this->assertSame('draft', $scheduled->status);
+        $this->assertSame([], $scheduled->external_ids);
+        // The Zernio-side schedule is cancelled so it won't publish.
+        Http::assertSent(fn ($request): bool => $request->method() === 'DELETE'
+            && str_contains($request->url(), '/posts/zp-1'));
+    }
+
     public function test_a_draft_can_be_published_later(): void
     {
         Http::fake([

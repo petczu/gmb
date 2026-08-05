@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Models\ActivityEntry;
 use App\Models\ExternalCalendar;
 use App\Models\ExternalCalendarEvent;
 use App\Models\Location;
@@ -623,6 +624,15 @@ class Posts extends Page implements HasTable
                     ->content(new HtmlString($this->postDetailsHtml((int) $this->viewingPostId))),
             ])
             ->extraModalFooterActions(fn (): array => array_values(array_filter([
+                // Scheduled/failed posts we sent can be pulled back to a draft
+                // to edit and re-send (cancels the Zernio-side schedule first).
+                in_array(Post::find($this->viewingPostId)?->status, ['scheduled', 'failed'], true)
+                && Post::find($this->viewingPostId)?->origin !== 'imported'
+                    ? Action::make('editPost')
+                        ->label(__('pages/posts.edit'))
+                        ->icon(Heroicon::OutlinedPencilSquare)
+                        ->action(fn () => $this->revertToDraftAndEdit())
+                    : null,
                 Action::make('duplicateDraft')
                     ->label(__('pages/posts.duplicate_draft'))
                     ->icon(Heroicon::OutlinedDocumentDuplicate)
@@ -638,6 +648,27 @@ class Posts extends Page implements HasTable
                         ->color('danger')
                         ->action(fn () => $this->replaceMountedAction('deletePost')),
             ])));
+    }
+
+    /** Pull a scheduled/failed post back to a draft (cancelling any Zernio-side
+     *  schedule) and reopen it in the composer for editing. */
+    public function revertToDraftAndEdit(): void
+    {
+        $post = Post::find($this->viewingPostId);
+        if ($post === null) {
+            return;
+        }
+
+        $fromStatus = $post->status;
+
+        if ($fromStatus === 'scheduled') {
+            $this->cancelScheduledOnZernio($post);
+        }
+
+        $post->forceFill(['status' => 'draft', 'external_ids' => []])->save();
+        ActivityLogger::log('post.reverted', ['from' => $fromStatus], $post);
+
+        $this->replaceMountedAction('editDraft');
     }
 
     /** Confirm-and-delete a post (its own top-level modal, mounted from the
@@ -662,6 +693,7 @@ class Posts extends Page implements HasTable
                     $this->cancelScheduledOnZernio($post);
                 }
 
+                ActivityLogger::log('post.deleted', ['type' => $post->type, 'status' => $post->status], $post);
                 $post->delete();
                 Notification::make()->title(__('pages/posts.deleted'))->success()->send();
             });
@@ -691,11 +723,12 @@ class Posts extends Page implements HasTable
             return;
         }
 
-        Post::create([
+        $copy = Post::create([
             'type' => in_array($post->type, ['update', 'offer', 'event', 'photo'], true) ? $post->type : 'update',
             'caption' => $post->caption,
             'title' => $post->title,
             'image_url' => $post->image_url,
+            'video_url' => $post->video_url,
             'cta_type' => $post->cta_type,
             'cta_url' => $post->cta_url,
             'photo_category' => $post->photo_category,
@@ -710,8 +743,11 @@ class Posts extends Page implements HasTable
             'source_ids' => [],
             'status' => 'draft',
             'origin' => 'app',
+            'created_by' => auth()->id(),
+            'created_by_name' => auth()->user()?->name,
         ]);
 
+        ActivityLogger::log('post.duplicated', ['from' => $post->id], $copy);
         Notification::make()->title(__('pages/posts.duplicated_draft'))->success()->send();
     }
 
@@ -832,7 +868,45 @@ class Posts extends Page implements HasTable
             $html .= '<div style="margin-top:.8rem; padding:.6rem .8rem; border-radius:.5rem; background:#fef2f2; color:#991b1b; font-size:.85rem;">'.e($post->error).'</div>';
         }
 
+        $html .= $this->activityFeedHtml($post->id);
+
         return $html;
+    }
+
+    /** Compact "who did what, when" feed for one post, from the activity log. */
+    private function activityFeedHtml(int $postId): string
+    {
+        $entries = ActivityEntry::query()
+            ->where('subject_type', 'Post')
+            ->where('subject_id', $postId)
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get();
+
+        if ($entries->isEmpty()) {
+            return '';
+        }
+
+        $rows = $entries->map(function (ActivityEntry $entry): string {
+            $key = 'pages/posts.activity_'.Str::after($entry->action, 'post.');
+            $label = __($key);
+            if ($label === $key) {
+                $label = (string) $entry->action; // graceful fallback for an unmapped action
+            }
+
+            $who = e((string) ($entry->user_name ?? __('pages/posts.activity_system')));
+            $when = e($entry->created_at?->diffForHumans() ?? '');
+
+            return '<li style="display:flex; gap:.55rem; align-items:flex-start; padding:.35rem 0;">'
+                .'<span style="flex:none; margin-top:.4rem; width:.4rem; height:.4rem; border-radius:999px; background:#c7c9d1;"></span>'
+                .'<span style="min-width:0;"><span style="font-weight:600;">'.$who.'</span> '.e($label)
+                .'<span style="display:block; font-size:.72rem; color:#9ca3af;">'.$when.'</span></span>'
+                .'</li>';
+        })->implode('');
+
+        return '<div style="margin-top:1rem; padding-top:.8rem; border-top:1px solid #eceef2;">'
+            .'<div style="font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:#9ca3af; margin-bottom:.35rem;">'.e(__('pages/posts.activity_title')).'</div>'
+            .'<ul style="list-style:none; margin:0; padding:0;">'.$rows.'</ul></div>';
     }
 
     /** @param  array<int, int|string>  $locationIds */
@@ -1188,7 +1262,7 @@ class Posts extends Page implements HasTable
         $cta = (string) ($d['cta'] ?? '');
         if (filled($cta)) {
             $html .= '<div style="margin-top:.55rem; border-top:1px solid rgb(0 0 0 / .07); padding:.75rem; text-align:center;">'
-                .'<span style="color:#0d766e; font-weight:600; font-size:.9rem;">'.e(__('pages/posts.cta_'.$cta)).'</span>'
+                .'<span style="color:#0d766e; font-weight:600; font-size:.9rem; cursor:default; user-select:none;" title="'.e(__('pages/posts.preview_cta_hint')).'">'.e(__('pages/posts.cta_'.$cta)).'</span>'
                 .'</div>';
         } else {
             $html .= '<div style="height:.55rem;"></div>';
@@ -1291,7 +1365,7 @@ class Posts extends Page implements HasTable
         }
         if (filled($cta)) {
             $html .= '<div style="margin-top:.55rem; border-top:1px solid rgb(0 0 0 / .07); padding:.75rem; text-align:center;">'
-                .'<span style="color:#0d766e; font-weight:600; font-size:.9rem;">'.e(__('pages/posts.cta_'.$cta)).'</span>'
+                .'<span style="color:#0d766e; font-weight:600; font-size:.9rem; cursor:default; user-select:none;" title="'.e(__('pages/posts.preview_cta_hint')).'">'.e(__('pages/posts.cta_'.$cta)).'</span>'
                 .'</div>';
         } else {
             $html .= '<div style="height:.55rem;"></div>';
@@ -1362,6 +1436,7 @@ class Posts extends Page implements HasTable
         }
 
         if ($draft) {
+            ActivityLogger::log($existing !== null ? 'post.draft_updated' : 'post.draft_created', ['type' => $post->type], $post);
             Notification::make()->title(__('pages/posts.draft_saved'))->success()->send();
 
             return;
@@ -1371,6 +1446,7 @@ class Posts extends Page implements HasTable
         $post->refresh();
 
         if ($post->status === 'failed') {
+            ActivityLogger::log('post.publish_failed', ['error' => Str::limit((string) $post->error, 120)], $post);
             Notification::make()
                 ->title(__('pages/posts.publish_failed'))
                 ->body((string) $post->error)

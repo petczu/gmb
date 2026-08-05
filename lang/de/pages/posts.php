@@ -73,6 +73,18 @@ return [
     'delete_desc' => 'Entfernt nur den Eintrag aus dieser Liste, der Post auf Google wird nicht gelöscht.',
     'deleted' => 'Eintrag entfernt',
 
+    // Activity feed (per post)
+    'activity_title' => 'Aktivität',
+    'activity_system' => 'System',
+    'activity_draft_created' => 'hat diesen Entwurf erstellt',
+    'activity_draft_updated' => 'hat den Entwurf aktualisiert',
+    'activity_published' => 'hat diesen Beitrag veröffentlicht',
+    'activity_scheduled' => 'hat diesen Beitrag geplant',
+    'activity_publish_failed' => 'konnte diesen Beitrag nicht veröffentlichen',
+    'activity_duplicated' => 'hat diesen Beitrag als Entwurf dupliziert',
+    'activity_deleted' => 'hat diesen Beitrag entfernt',
+    'activity_reverted' => 'hat diesen Beitrag zurück in einen Entwurf verschoben',
+
     // Kalenderansicht
     'view_calendar' => 'Kalender',
     'view_list' => 'Liste',
@@ -91,6 +103,7 @@ return [
 
     // Importierte Google-Beiträge
     'view' => 'Ansehen',
+    'edit' => 'Bearbeiten',
     'duplicate_draft' => 'Als Entwurf duplizieren',
     'duplicated_draft' => 'Entwurf erstellt',
     'draft_heading' => 'Entwurf bearbeiten',
@@ -104,6 +117,7 @@ return [
     'preview_business' => 'Dein Unternehmen',
     'preview_now' => 'gerade eben',
     'preview_no_image' => 'Kein Medium',
+    'preview_cta_hint' => 'Nur Vorschau: Der Button wird erst im veröffentlichten Beitrag aktiv.',
     'preview_placeholder' => 'Dein Post-Text erscheint hier.',
 
     // Notizen
