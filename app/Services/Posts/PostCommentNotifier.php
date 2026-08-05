@@ -42,7 +42,8 @@ class PostCommentNotifier
         }
 
         $author = (string) ($comment->user_name ?? __('pages/posts.activity_system'));
-        $url = rtrim((string) config('app.url'), '/').'/posts';
+        // Deep link straight to the post's dialog when it has a URL handle.
+        $url = rtrim((string) config('app.url'), '/').'/posts'.($post->uid ? '/'.$post->uid : '');
         // Escaped: the excerpt lands in the email's HTML body.
         $excerpt = e(Str::limit((string) $comment->body, 300));
 
