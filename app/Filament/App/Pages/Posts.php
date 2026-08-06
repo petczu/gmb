@@ -49,6 +49,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Image;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
@@ -1834,6 +1835,36 @@ class Posts extends Page implements HasTable
         return filled($path) ? url(Storage::disk('uploads')->url($path)) : null;
     }
 
+    /**
+     * Convert an uploaded HEIC/HEIF photo (iPhone default) to JPEG — Google
+     * posts only accept JPEG/PNG/WebP. Returns the path to use; the original
+     * is dropped after a successful conversion. Requires an Imagick build
+     * with the HEIC codec; on failure the original path is kept and logged.
+     */
+    private function normalizedMediaPath(?string $path): ?string
+    {
+        if (blank($path) || ! preg_match('/\.(heic|heif)$/i', (string) $path)) {
+            return $path;
+        }
+
+        $jpegPath = (string) preg_replace('/\.(heic|heif)$/i', '.jpg', (string) $path);
+
+        try {
+            Image::fromStorage($path, 'uploads')
+                ->orient()
+                ->toJpeg()
+                ->quality(85)
+                ->storeAs(dirname($jpegPath), basename($jpegPath), 'uploads');
+            Storage::disk('uploads')->delete($path);
+
+            return $jpegPath;
+        } catch (\Throwable $e) {
+            Log::warning('HEIC to JPEG conversion failed', ['path' => $path, 'error' => $e->getMessage()]);
+
+            return $path;
+        }
+    }
+
     private function postDetailsHtml(int $postId): string
     {
         $post = Post::find($postId);
@@ -2673,7 +2704,9 @@ class Posts extends Page implements HasTable
             // image_url / video_url it becomes on save.
             FileUpload::make('media')
                 ->label(__('pages/posts.field_media'))
-                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'])
+                // HEIC/HEIF (iPhone photos) are accepted and converted to JPEG
+                // on save — Google posts only take JPEG/PNG/WebP.
+                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime'])
                 // No client-side image resize here: the resize plugin is
                 // image-only and, on a mixed image/video field, hangs FilePond
                 // on "waiting for size". The 25 MB cap keeps uploads bounded.
@@ -2966,14 +2999,16 @@ class Posts extends Page implements HasTable
             return;
         }
 
+        $media = $this->normalizedMediaPath($data['media'] ?? null);
+
         $attributes = [
             'type' => $data['type'],
             'caption' => $data['caption'] ?? null,
             'title' => $data['title'] ?? null,
             'cta_type' => $data['cta_type'] ?? null,
             'cta_url' => $data['cta_url'] ?? null,
-            'image_url' => $this->isVideoPath($data['media'] ?? null) ? null : $this->mediaUrl($data['media'] ?? null),
-            'video_url' => $this->isVideoPath($data['media'] ?? null) ? $this->mediaUrl($data['media'] ?? null) : null,
+            'image_url' => $this->isVideoPath($media) ? null : $this->mediaUrl($media),
+            'video_url' => $this->isVideoPath($media) ? $this->mediaUrl($media) : null,
             'starts_at' => $data['starts_at'] ?? null,
             'ends_at' => $data['ends_at'] ?? null,
             'voucher_code' => $data['voucher_code'] ?? null,

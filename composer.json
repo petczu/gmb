@@ -10,6 +10,7 @@
         "bacon/bacon-qr-code": "^3.1",
         "dutchcodingcompany/filament-socialite": "^3.1",
         "filament/filament": "^5.7@beta",
+        "intervention/image": "^4.2",
         "laravel/ai": "^0.8.1",
         "laravel/cashier": "^16.6",
         "laravel/framework": "^13.8",
