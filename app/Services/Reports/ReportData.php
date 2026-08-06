@@ -155,6 +155,8 @@ class ReportData
                     'type' => (string) $p->type,
                     'caption' => Str::limit(trim((string) ($p->title ?: $p->caption)), 110),
                     'hasMedia' => filled($p->image_url) || filled($p->video_url),
+                    'image' => $p->image_url,
+                    'isVideo' => filled($p->video_url),
                 ])
                 ->values()
                 ->all(),

@@ -208,6 +208,56 @@
         <p style="font-size:10px; color:#9ca3af; margin:8px 0 2px;">{{ __('report.perf_note') }}</p>
     @endif
 
+    @if($has('posts') && ! empty($data['posts']))
+        @php $posts = $data['posts']; $topType = array_key_first($posts['byType']); @endphp
+        <h2>{{ __('report.posts_title') }}</h2>
+        <div class="statgrid">
+            <div class="kpi">
+                <div class="label">{{ __('report.posts_published') }}</div>
+                <div class="value">{{ $posts['total'] }}</div>
+                <div class="sub">{{ __('report.posts_prev', ['count' => $posts['prev']]) }}</div>
+            </div>
+            <div class="kpi">
+                <div class="label">{{ __('report.posts_media') }}</div>
+                <div class="value">{{ $posts['withMedia'] }}</div>
+                <div class="sub">{{ __('report.posts_media_sub') }}</div>
+            </div>
+            <div class="kpi">
+                <div class="label">{{ __('report.posts_top_type') }}</div>
+                <div class="value" style="font-size:18px;">{{ $topType !== null ? __('pages/posts.type_'.$topType) : '—' }}</div>
+                <div class="sub">{{ $topType !== null ? $posts['byType'][$topType].' × ' : '' }}</div>
+            </div>
+        </div>
+
+        @if($posts['recent'] !== [])
+            <div class="card">
+                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                    <tbody>
+                        @foreach($posts['recent'] as $row)
+                            <tr style="border-top:1px solid #eef0f4;">
+                                <td style="padding:6px 8px; width:56px;">
+                                    @if (! empty($row['image']))
+                                        <img src="{{ $row['image'] }}" alt="" style="width:48px; height:48px; object-fit:cover; border-radius:8px; display:block;">
+                                    @elseif (! empty($row['isVideo']))
+                                        {{-- Video posts have no still frame in a static report; show a play tile. --}}
+                                        <span style="width:48px; height:48px; border-radius:8px; background:#eef0f4; color:#6b7280; display:flex; align-items:center; justify-content:center;">
+                                            <svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"/></svg>
+                                        </span>
+                                    @else
+                                        <span style="width:48px; height:48px; border-radius:8px; background:#f6f7f9; display:block;"></span>
+                                    @endif
+                                </td>
+                                <td style="padding:6px 8px; color:#6b7280; white-space:nowrap;">{{ $row['date'] }}</td>
+                                <td style="padding:6px 8px; white-space:nowrap;"><span style="background:#eef2ff; color:#2d19ec; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:600;">{{ __('pages/posts.type_'.$row['type']) }}</span></td>
+                                <td style="padding:6px 8px;">{{ $row['caption'] !== '' ? $row['caption'] : '—' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    @endif
+
     @if($has('summary'))
         <h2>{{ __('report.executive_summary') }}</h2>
         <div class="summary"><p style="margin:0;">{{ $insights['summary'] }}</p></div>
@@ -300,44 +350,6 @@
             <div class="kpi"><div class="label">{{ __('report.avg_response') }}</div><div class="value">{{ $resp['avgResponseHours'] !== null ? $resp['avgResponseHours'].'h' : '—' }}</div><div class="sub">{{ __('report.to_reply') }}</div></div>
             <div class="kpi"><div class="label">{{ __('report.within_24h') }}</div><div class="value">{{ $resp['within24hPct'] !== null ? $resp['within24hPct'].'%' : '—' }}</div><div class="sub">{{ __('report.of_replies') }}</div></div>
         </div>
-    @endif
-
-    @if($has('posts') && ! empty($data['posts']))
-        @php $posts = $data['posts']; $topType = array_key_first($posts['byType']); @endphp
-        <h2>{{ __('report.posts_title') }}</h2>
-        <div class="statgrid">
-            <div class="kpi">
-                <div class="label">{{ __('report.posts_published') }}</div>
-                <div class="value">{{ $posts['total'] }}</div>
-                <div class="sub">{{ __('report.posts_prev', ['count' => $posts['prev']]) }}</div>
-            </div>
-            <div class="kpi">
-                <div class="label">{{ __('report.posts_media') }}</div>
-                <div class="value">{{ $posts['withMedia'] }}</div>
-                <div class="sub">{{ __('report.posts_media_sub') }}</div>
-            </div>
-            <div class="kpi">
-                <div class="label">{{ __('report.posts_top_type') }}</div>
-                <div class="value" style="font-size:18px;">{{ $topType !== null ? __('pages/posts.type_'.$topType) : '—' }}</div>
-                <div class="sub">{{ $topType !== null ? $posts['byType'][$topType].' × ' : '' }}</div>
-            </div>
-        </div>
-
-        @if($posts['recent'] !== [])
-            <div class="card">
-                <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                    <tbody>
-                        @foreach($posts['recent'] as $row)
-                            <tr style="border-top:1px solid #eef0f4;">
-                                <td style="padding:6px 8px; color:#6b7280; white-space:nowrap;">{{ $row['date'] }}</td>
-                                <td style="padding:6px 8px; white-space:nowrap;"><span style="background:#eef2ff; color:#2d19ec; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:600;">{{ __('pages/posts.type_'.$row['type']) }}</span></td>
-                                <td style="padding:6px 8px;">{{ $row['caption'] !== '' ? $row['caption'] : '—' }}{{ $row['hasMedia'] ? ' 📷' : '' }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
     @endif
 
     @if($has('distribution') || $has('volume'))

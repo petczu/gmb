@@ -17,13 +17,15 @@ class ReportBlocks
     public const ORDER = [
         'glance',
         'performance',
+        // Posts sit right after profile performance: both are about what the
+        // business puts out on Google, before the review-analysis blocks.
+        'posts',
         'summary',
         'topics',
         'staff',
         'cadence',
         'themes',
         'responses',
-        'posts',
         'distribution',
         'volume',
         'competitors',
