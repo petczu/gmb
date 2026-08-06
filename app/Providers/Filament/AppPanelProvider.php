@@ -12,6 +12,7 @@ use App\Http\Middleware\EnsureTermsAccepted;
 use App\Http\Middleware\MarkOnboardingComplete;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Http\Middleware\SetLocale;
+use App\Livewire\ScopedDatabaseNotifications;
 use App\Models\Location;
 use App\Models\SocialiteUser;
 use App\Models\User;
@@ -55,7 +56,7 @@ class AppPanelProvider extends PanelProvider
             ->default()
             // In-app bell: new reviews, failed posts, approvals, billing, etc.
             // are pushed here alongside their emails (see NotificationDispatcher).
-            ->databaseNotifications()
+            ->databaseNotifications(livewireComponent: ScopedDatabaseNotifications::class)
             ->databaseNotificationsPolling('30s')
             ->login(Login::class)
             // "Forgot password?" flow (email a reset link). Needed because

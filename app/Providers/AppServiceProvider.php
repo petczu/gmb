@@ -6,7 +6,6 @@ use App\Billing\Plans;
 use App\Http\Middleware\SetCurrentWorkspace;
 use App\Listeners\GrantCreditPack;
 use App\Listeners\SendBillingEmails;
-use App\Livewire\ScopedDatabaseNotifications;
 use App\Models\CashierSubscription;
 use App\Models\CashierSubscriptionItem;
 use App\Models\EmailSuppression;
@@ -114,13 +113,6 @@ class AppServiceProvider extends ServiceProvider
                 'workspaces' => $workspaces,
                 'selectedWorkspaceId' => $bound ?? $workspaces->first()?->getKey(),
             ]);
-        });
-
-        // Scope the notifications bell to the active workspace. Overrides
-        // Filament's 'database-notifications' alias with our workspace-aware
-        // component (registered after Filament's own boot).
-        $this->app->booted(function (): void {
-            Livewire::component('database-notifications', ScopedDatabaseNotifications::class);
         });
 
         // Livewire temp uploads must use a CENTRAL disk — stancl suffixes the
