@@ -11,8 +11,10 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 /**
  * The bell panel, scoped to the active workspace. A member can belong to several
  * workspaces, so notifications are tagged with data->workspace_id at dispatch
- * ([[NotificationDispatcher]]); here we show only the current workspace's, plus
- * any legacy ones with no workspace tag (so nothing pre-existing disappears).
+ * ([[NotificationDispatcher]]); here we show only the current workspace's.
+ * Legacy rows with no workspace tag are hidden: showing them in every
+ * workspace read as a scoping bug, and their action URLs predate the
+ * current domain anyway.
  */
 class ScopedDatabaseNotifications extends DatabaseNotifications
 {
@@ -22,9 +24,7 @@ class ScopedDatabaseNotifications extends DatabaseNotifications
 
         $workspaceId = session('current_workspace_id');
         if ($workspaceId !== null) {
-            $query->where(fn (Builder $q): Builder => $q
-                ->where('data->workspace_id', (string) $workspaceId)
-                ->orWhereNull('data->workspace_id'));
+            $query->where('data->workspace_id', (string) $workspaceId);
         }
 
         return $query;
