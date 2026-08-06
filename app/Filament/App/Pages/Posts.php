@@ -1660,6 +1660,9 @@ class Posts extends Page implements HasTable
     public function deletePostAction(): Action
     {
         return Action::make('deletePost')
+            // Its own compact width: mounted from the 5xl view dialog, it
+            // would otherwise inherit that full-width look.
+            ->modalWidth(Width::Medium)
             ->modalHeading(__('pages/posts.delete'))
             ->modalDescription(__('pages/posts.delete_desc'))
             ->modalSubmitActionLabel(__('pages/posts.delete'))
