@@ -62,6 +62,10 @@ class ZernioWebhookHandler
                 $this->handleExternalPost($payload);
                 break;
 
+            case 'post.external.deleted':
+                $this->handleExternalPostDeleted($payload);
+                break;
+
             case 'webhook.test':
                 Log::info('Zernio webhook: test event received');
                 break;
@@ -212,6 +216,38 @@ class ZernioWebhookHandler
                 'workspace' => $workspace->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * A post was removed on the platform itself (deleted in Google Maps /
+     * Business Profile): drop our copy too, imported or own — the calendar
+     * mirrors what is actually live on Google.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function handleExternalPostDeleted(array $payload): void
+    {
+        $accountId = $payload['account']['id'] ?? null;
+        $post = $payload['post'] ?? [];
+        $platformPostId = trim((string) (is_array($post) ? ($post['id'] ?? '') : ''));
+        if ($accountId === null || $platformPostId === '') {
+            return;
+        }
+
+        $account = GoogleAccount::query()->where('zernio_account_id', $accountId)->first();
+        $workspace = $account?->workspace;
+        if ($workspace === null) {
+            return;
+        }
+
+        $previous = tenant();
+        tenancy()->initialize($workspace);
+
+        try {
+            Post::query()->where('platform_post_id', $platformPostId)->delete();
+        } finally {
+            $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();
         }
     }
 
