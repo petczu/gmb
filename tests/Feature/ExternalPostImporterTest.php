@@ -146,6 +146,40 @@ class ExternalPostImporterTest extends TestCase
         $this->assertSame('g-123', $own->platform_post_id);
     }
 
+    public function test_a_webhook_external_post_reconciles_onto_our_own_row_by_content(): void
+    {
+        // The post.external.created webhook carries no Zernio post id, so the
+        // importer falls back to matching our own sent post by its exact text.
+        $location = Location::create(['name' => 'Marina', 'zernio_account_id' => 'acc-1']);
+
+        $own = Post::create([
+            'type' => 'update',
+            'caption' => "Back to school!\n\nCome play.",
+            'location_ids' => [$location->id],
+            'source_ids' => [],
+            'status' => 'published',
+            'origin' => 'app',
+            'external_ids' => ['zernio-9'],
+        ]);
+
+        $stored = app(ExternalPostImporter::class)->store($location, [
+            'platform_post_id' => 'g-777',
+            'content' => "Back to school!\n\nCome play.",
+        ]);
+
+        $this->assertFalse($stored);
+        $this->assertSame(1, Post::count());
+        $own->refresh();
+        $this->assertSame('g-777', $own->platform_post_id);
+
+        // And once tagged, the same delivery is a plain platform-id dedupe.
+        $this->assertFalse(app(ExternalPostImporter::class)->store($location, [
+            'platform_post_id' => 'g-777',
+            'content' => "Back to school!\n\nCome play.",
+        ]));
+        $this->assertSame(1, Post::count());
+    }
+
     public function test_it_attributes_shared_account_posts_by_cid(): void
     {
         // Two locations under ONE Zernio account; the feed carries both, each

@@ -10,6 +10,7 @@ use App\Mail\NegativeReviewMail;
 use App\Mail\SyncRestoredMail;
 use App\Models\GoogleAccount;
 use App\Models\Location;
+use App\Models\Post;
 use App\Models\Review;
 use App\Models\Workspace;
 use App\Services\Notifications\NotificationCategory;
@@ -49,6 +50,11 @@ class ZernioWebhookHandler
 
             case 'account.disconnected':
                 $this->updateAccountStatus($payload, 'revoked');
+                break;
+
+            case 'post.published':
+            case 'post.partial':
+                $this->handlePostPublished($payload);
                 break;
 
             case 'post.external.created':
@@ -206,6 +212,60 @@ class ZernioWebhookHandler
                 'workspace' => $workspace->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * A post WE sent finished publishing: record the Google-native post id on
+     * our own row and flip its status. Learning the platform id here is what
+     * stops the hourly external sync from re-importing our own post as a
+     * duplicate (the importer dedupes on platform_post_id).
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function handlePostPublished(array $payload): void
+    {
+        $post = $payload['post'] ?? [];
+        $zernioPostId = trim((string) (is_array($post) ? ($post['id'] ?? '') : ''));
+        if ($zernioPostId === '') {
+            return;
+        }
+
+        $platforms = is_array($post['platforms'] ?? null) ? array_map(fn ($p): array => (array) $p, $post['platforms']) : [];
+        $accountIds = array_values(array_filter(array_map(fn (array $p): string => trim((string) ($p['accountId'] ?? '')), $platforms)));
+        $platformPostId = collect($platforms)->map(fn (array $p): string => trim((string) ($p['platformPostId'] ?? '')))->first(fn (string $id): bool => $id !== '') ?? '';
+
+        $account = GoogleAccount::query()->whereIn('zernio_account_id', $accountIds ?: [''])->first();
+        $workspace = $account?->workspace;
+        if ($workspace === null) {
+            return;
+        }
+
+        $previous = tenant();
+        tenancy()->initialize($workspace);
+
+        try {
+            $own = Post::query()
+                ->where('origin', '!=', 'imported')
+                ->whereNotNull('external_ids')
+                ->get()
+                ->first(fn (Post $p): bool => in_array($zernioPostId, $p->external_ids ?? [], true));
+            if ($own === null) {
+                return;
+            }
+
+            $updates = [];
+            if ($platformPostId !== '' && $own->platform_post_id !== $platformPostId) {
+                $updates['platform_post_id'] = $platformPostId;
+            }
+            if (in_array($own->status, ['scheduled', 'in_progress'], true)) {
+                $updates['status'] = 'published';
+            }
+            if ($updates !== []) {
+                $own->forceFill($updates)->save();
+            }
+        } finally {
+            $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();
         }
     }
 

@@ -252,6 +252,35 @@ class ExternalPostImporter
     }
 
     /**
+     * Fallback reconcile for webhook-delivered external posts (no Zernio post
+     * id in that payload): match our own sent post by identical caption text.
+     * Restricted to rows still missing a platform_post_id and recently sent
+     * (published/in_progress), so the match can only claim the post it is.
+     */
+    private function reconcileOwnPostByContent(string $content, string $platformPostId): bool
+    {
+        $needle = trim($content);
+        if ($needle === '' || $platformPostId === '') {
+            return false;
+        }
+
+        $own = Post::query()
+            ->where('origin', '!=', 'imported')
+            ->whereNull('platform_post_id')
+            ->whereIn('status', ['published', 'in_progress'])
+            ->get()
+            ->first(fn (Post $post): bool => trim((string) $post->caption) === $needle);
+
+        if ($own === null) {
+            return false;
+        }
+
+        $own->forceFill(['platform_post_id' => $platformPostId, 'status' => 'published'])->save();
+
+        return true;
+    }
+
+    /**
      * The location whose CID matches the post's url ("…?id=<cid>…"), or null.
      *
      * @param  Collection<string, Location>  $cidMap
@@ -296,6 +325,15 @@ class ExternalPostImporter
         // flip a still-"scheduled" row to published — instead of creating a
         // duplicate imported copy.
         if ($this->reconcileOwnPost(trim((string) ($data['zernio_post_id'] ?? '')), $platformPostId)) {
+            return false;
+        }
+
+        // Webhook deliveries (post.external.created) carry no Zernio post id,
+        // so when the post.published webhook that records our platform id was
+        // missed, fall back to matching our own row by its exact text. Only
+        // rows still missing a platform id qualify, so an older post with the
+        // same caption can't be hijacked.
+        if ($this->reconcileOwnPostByContent((string) ($data['content'] ?? ''), $platformPostId)) {
             return false;
         }
 
