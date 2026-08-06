@@ -97,7 +97,8 @@
             .pc-card .meta .badge { border-radius:.3rem; padding:0 .3rem; background:rgb(0 0 0 / .06); }
             .dark .pc-card .meta .badge { background:rgb(255 255 255 / .1); }
             .pc-card .cap { font-size:.72rem; line-height:1.3; margin-top:.15rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-            .pc-more { font-size:.7rem; color:#6b7280; padding-left:.2rem; }
+            .pc-more { font-size:.7rem; font-weight:600; color:#6b7280; padding:.15rem .2rem; background:none; border:0; cursor:pointer; text-align:left; border-radius:.3rem; }
+            .pc-more:hover { color:#2d19ec; }
 
             .pc-note { border-radius:.5rem; padding:.4rem .45rem .3rem; margin-bottom:.3rem; }
             /* Drag & drop: notes + draft posts can be dragged onto another day. */
@@ -389,7 +390,7 @@
                         {{-- Drop target: notes and DRAFT posts can be dragged onto
                              another day (payload "note:{id}" / "draft:{id}"). --}}
                         <div class="pc-day {{ $day['inMonth'] ? '' : 'out' }} {{ $day['date']->isWeekend() ? 'weekend' : '' }}"
-                            x-data
+                            x-data="{ all: false }"
                             @dragover.prevent="$event.dataTransfer.dropEffect = 'move'; $el.classList.add('drop')"
                             @dragleave="if (! $el.contains($event.relatedTarget)) $el.classList.remove('drop')"
                             @drop.prevent="
@@ -455,9 +456,11 @@
                                 </div>
                             @endforeach
 
-                            @foreach ($day['posts']->take($postLimit) as $post)
+                            @foreach ($day['posts']->values() as $postIndex => $post)
                                 <button type="button" class="pc-card {{ $post->status === 'draft' ? 'draft' : '' }}" style="border-left-color: {{ $statusColors[$post->status] ?? '#9ca3af' }};"
                                     wire:click="showPost({{ $post->id }})"
+                                    {{-- Cards past the cell limit stay hidden until "+ N more". --}}
+                                    @if ($postIndex >= $postLimit) x-show="all" x-cloak @endif
                                     @if ($post->status === 'draft')
                                         {{-- Only drafts move: everything else lives on Google already. --}}
                                         draggable="true"
@@ -508,7 +511,10 @@
                             @endforeach
 
                             @if ($day['posts']->count() > $postLimit)
-                                <div class="pc-more">+ {{ $day['posts']->count() - $postLimit }}</div>
+                                <button type="button" class="pc-more" @click="all = ! all">
+                                    <span x-show="! all">+ {{ __('pages/posts.more_posts', ['count' => $day['posts']->count() - $postLimit]) }}</span>
+                                    <span x-show="all" x-cloak>{{ __('pages/posts.show_less') }}</span>
+                                </button>
                             @endif
                         </div>
                     @endforeach

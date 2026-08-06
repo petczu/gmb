@@ -84,6 +84,8 @@ return [
     'close' => 'Kapat',
     'location_count' => '{1} 1 konum|[2,*] :count konum',
     'add_post' => 'Gönderi',
+    'more_posts' => ':count tane daha',
+    'show_less' => 'Daha az göster',
     'add_note' => 'Not',
 
     // Drafts

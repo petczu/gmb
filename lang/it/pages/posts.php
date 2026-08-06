@@ -84,6 +84,8 @@ return [
     'close' => 'Chiudi',
     'location_count' => '{1} 1 sede|[2,*] :count sedi',
     'add_post' => 'Post',
+    'more_posts' => ':count altri',
+    'show_less' => 'Mostra meno',
     'add_note' => 'Nota',
 
     // Drafts

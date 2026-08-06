@@ -132,6 +132,8 @@ return [
     'close' => 'Schließen',
     'location_count' => '{1} 1 Standort|[2,*] :count Standorte',
     'add_post' => 'Post',
+    'more_posts' => ':count weitere',
+    'show_less' => 'Weniger anzeigen',
     'add_note' => 'Notiz',
 
     // Entwürfe

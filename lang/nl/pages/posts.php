@@ -84,6 +84,8 @@ return [
     'close' => 'Sluiten',
     'location_count' => '{1} 1 locatie|[2,*] :count locaties',
     'add_post' => 'Bericht',
+    'more_posts' => ':count meer',
+    'show_less' => 'Minder tonen',
     'add_note' => 'Notitie',
 
     // Drafts

@@ -84,6 +84,8 @@ return [
     'close' => 'Fermer',
     'location_count' => '{1} 1 établissement|[2,*] :count établissements',
     'add_post' => 'Post',
+    'more_posts' => ':count de plus',
+    'show_less' => 'Voir moins',
     'add_note' => 'Note',
 
     // Drafts

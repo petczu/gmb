@@ -84,6 +84,8 @@ return [
     'close' => 'Fechar',
     'location_count' => '{1} 1 local|[2,*] :count locais',
     'add_post' => 'Post',
+    'more_posts' => 'mais :count',
+    'show_less' => 'Mostrar menos',
     'add_note' => 'Nota',
 
     // Drafts

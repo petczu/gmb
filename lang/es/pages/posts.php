@@ -84,6 +84,8 @@ return [
     'close' => 'Cerrar',
     'location_count' => '{1} 1 ubicación|[2,*] :count ubicaciones',
     'add_post' => 'Publicación',
+    'more_posts' => ':count más',
+    'show_less' => 'Mostrar menos',
     'add_note' => 'Nota',
 
     // Drafts

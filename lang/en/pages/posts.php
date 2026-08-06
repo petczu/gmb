@@ -132,6 +132,8 @@ return [
     'close' => 'Close',
     'location_count' => '{1} 1 location|[2,*] :count locations',
     'add_post' => 'Post',
+    'more_posts' => ':count more',
+    'show_less' => 'Show less',
     'add_note' => 'Note',
 
     // Drafts

@@ -84,6 +84,8 @@ return [
     'close' => '閉じる',
     'location_count' => '{1} 1店舗|[2,*] :count店舗',
     'add_post' => '投稿',
+    'more_posts' => '他 :count 件',
+    'show_less' => '折りたたむ',
     'add_note' => 'メモ',
 
     // Drafts

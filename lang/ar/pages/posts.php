@@ -84,6 +84,8 @@ return [
     'close' => 'إغلاق',
     'location_count' => '{1} موقع واحد|[2,*] :count مواقع',
     'add_post' => 'منشور',
+    'more_posts' => ':count أخرى',
+    'show_less' => 'عرض أقل',
     'add_note' => 'ملاحظة',
 
     // Drafts
