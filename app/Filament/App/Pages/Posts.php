@@ -1620,11 +1620,8 @@ class Posts extends Page implements HasTable
                         ->icon(Heroicon::OutlinedPencilSquare)
                         ->action(fn () => $this->revertToDraftAndEdit())
                     : null,
-                Action::make('duplicateDraft')
-                    ->label(__('pages/posts.duplicate_draft'))
-                    ->icon(Heroicon::OutlinedDocumentDuplicate)
-                    ->action(fn () => $this->duplicateAsDraft((int) $this->viewingPostId))
-                    ->cancelParentActions(),
+                // No "Duplicate as draft" footer button: duplicating lives in
+                // the header's "…" menu (current or another workspace).
                 // Imported (Google-owned) posts can't be deleted from here: they
                 // just re-import on the next sync. Everything we sent can.
                 Post::find($this->viewingPostId)?->origin === 'imported'
@@ -2034,7 +2031,7 @@ class Posts extends Page implements HasTable
         // entries open floating panels INSIDE this dialog (no modal swapping).
         $kebab = '<span x-data="{ open: false }" style="position:relative; margin-left:auto;">'
             .'<button type="button" class="fp-kebab" @click="open = ! open">'.$this->icon('o-ellipsis-vertical').'</button>'
-            .'<span class="fp-menu" x-show="open" x-cloak @click.outside="open = false" style="top:1.9rem;">'
+            .'<span class="fp-menu" x-show="open" x-cloak @click.outside="open = false" style="top:2.35rem;">'
             .'<button type="button" wire:click="openSharePanel" @click="open = false">'.$this->icon('o-share').' '.e(__('pages/posts.share')).'</button>'
             .'<button type="button" wire:click="openDuplicatePanel" @click="open = false">'.$this->icon('o-document-duplicate').' '.e(__('pages/posts.duplicate_to')).'</button>'
             .'</span>'
