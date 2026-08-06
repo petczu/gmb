@@ -105,6 +105,7 @@ return [
 
     'delete' => 'Entfernen',
     'delete_desc' => 'Der Post wird aus dieser Liste entfernt. Wurde er über die App veröffentlicht, wird er auch auf Google gelöscht.',
+    'delete_imported_tooltip' => 'Dieser Post wurde direkt auf Google veröffentlicht, nicht über die Plattform, daher kann er hier nicht gelöscht werden.',
     'deleted' => 'Eintrag entfernt',
 
     // Activity feed (per post)

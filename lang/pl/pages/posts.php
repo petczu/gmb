@@ -71,6 +71,7 @@ return [
 
     'delete' => 'Usuń',
     'delete_desc' => 'Post zostanie usunięty z tej listy. Jeśli został opublikowany przez aplikację, zostanie też usunięty z Google.',
+    'delete_imported_tooltip' => 'Ten post został opublikowany bezpośrednio w Google, a nie przez platformę, więc nie można go tutaj usunąć.',
     'deleted' => 'Wpis usunięty',
 
     // Calendar view

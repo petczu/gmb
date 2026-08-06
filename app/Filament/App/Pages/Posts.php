@@ -1623,9 +1623,16 @@ class Posts extends Page implements HasTable
                 // No "Duplicate as draft" footer button: duplicating lives in
                 // the header's "…" menu (current or another workspace).
                 // Imported (Google-owned) posts can't be deleted from here: they
-                // just re-import on the next sync. Everything we sent can.
+                // just re-import on the next sync. The button stays visible but
+                // disabled, with a tooltip explaining why (Filament keeps
+                // tooltips working on disabled buttons via aria-disabled).
                 Post::find($this->viewingPostId)?->origin === 'imported'
-                    ? null
+                    ? Action::make('delete')
+                        ->label(__('pages/posts.delete'))
+                        ->icon(Heroicon::OutlinedTrash)
+                        ->color('danger')
+                        ->disabled()
+                        ->tooltip(__('pages/posts.delete_imported_tooltip'))
                     : Action::make('delete')
                         ->label(__('pages/posts.delete'))
                         ->icon(Heroicon::OutlinedTrash)

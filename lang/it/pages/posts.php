@@ -71,6 +71,7 @@ return [
 
     'delete' => 'Rimuovi',
     'delete_desc' => 'Il post verrà rimosso da questo elenco. Se è stato pubblicato tramite l\'app, verrà eliminato anche da Google.',
+    'delete_imported_tooltip' => 'Questo post è stato pubblicato direttamente su Google, non tramite la piattaforma, quindi non può essere eliminato qui.',
     'deleted' => 'Voce rimossa',
 
     // Calendar view

@@ -71,6 +71,7 @@ return [
 
     'delete' => '削除',
     'delete_desc' => 'この投稿はリストから削除されます。アプリから公開された場合は、Google からも削除されます。',
+    'delete_imported_tooltip' => 'この投稿はプラットフォーム経由ではなく Google に直接公開されたため、ここでは削除できません。',
     'deleted' => '項目を削除しました',
 
     // Calendar view

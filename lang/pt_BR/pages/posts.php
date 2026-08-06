@@ -71,6 +71,7 @@ return [
 
     'delete' => 'Remover',
     'delete_desc' => 'A publicação será removida desta lista. Se foi publicada pelo aplicativo, também será excluída do Google.',
+    'delete_imported_tooltip' => 'Esta publicação foi feita diretamente no Google, não pela plataforma, por isso não pode ser excluída aqui.',
     'deleted' => 'Entrada removida',
 
     // Calendar view

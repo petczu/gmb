@@ -71,6 +71,7 @@ return [
 
     'delete' => 'Kaldır',
     'delete_desc' => 'Gönderi bu listeden kaldırılacak. Uygulama üzerinden yayınlandıysa Google\'dan da silinecek.',
+    'delete_imported_tooltip' => 'Bu gönderi platform üzerinden değil, doğrudan Google\'da yayınlandı; bu yüzden buradan silinemez.',
     'deleted' => 'Girdi kaldırıldı',
 
     // Calendar view

@@ -71,6 +71,7 @@ return [
 
     'delete' => 'Verwijderen',
     'delete_desc' => 'De post wordt uit deze lijst verwijderd. Als hij via de app is gepubliceerd, wordt hij ook van Google verwijderd.',
+    'delete_imported_tooltip' => 'Deze post is rechtstreeks op Google gepubliceerd, niet via het platform, en kan hier daarom niet worden verwijderd.',
     'deleted' => 'Item verwijderd',
 
     // Calendar view
