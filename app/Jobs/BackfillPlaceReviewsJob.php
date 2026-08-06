@@ -81,16 +81,24 @@ class BackfillPlaceReviewsJob implements ShouldQueue
      */
     private function store(array $reviews): void
     {
-        foreach ($reviews as $review) {
-            PlaceReview::updateOrCreate(
-                ['place_id' => $this->placeId, 'review_id' => $review['review_id']],
-                [
-                    'rating' => $review['rating'],
-                    'reviewed_at' => $review['reviewed_at'],
-                    'author' => $review['author'],
-                    'text' => $review['text'],
-                    'language' => $review['language'],
-                ],
+        // One statement per chunk instead of a SELECT+INSERT per review
+        // (Sentry flagged the loop as an N+1); the (place_id, review_id)
+        // unique index turns conflicts into updates.
+        $rows = array_map(fn (array $review): array => [
+            'place_id' => $this->placeId,
+            'review_id' => $review['review_id'],
+            'rating' => $review['rating'],
+            'reviewed_at' => $review['reviewed_at'],
+            'author' => $review['author'],
+            'text' => $review['text'],
+            'language' => $review['language'],
+        ], $reviews);
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            PlaceReview::upsert(
+                $chunk,
+                ['place_id', 'review_id'],
+                ['rating', 'reviewed_at', 'author', 'text', 'language'],
             );
         }
     }
