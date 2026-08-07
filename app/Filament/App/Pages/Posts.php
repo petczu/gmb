@@ -1397,7 +1397,10 @@ class Posts extends Page implements HasTable
         }
 
         return $html
-            .'<div style="margin-top:.7rem; font-size:.75rem; color:#9ca3af;">'.e($event->date->translatedFormat('l, j F Y')).'</div>';
+            .'<div style="margin-top:.7rem; display:flex; align-items:center; gap:.35rem; font-size:.75rem; color:#9ca3af;">'
+            .svg('heroicon-o-calendar', ['style' => 'width:.85rem; height:.85rem; flex:none;'])->toHtml()
+            .e($event->date->translatedFormat('l, j F Y'))
+            .'</div>';
     }
 
     /** Briefs are PLATFORM-wide: one hash per day + title + country + language,
