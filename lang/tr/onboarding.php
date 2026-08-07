@@ -80,4 +80,6 @@ return [
     'location_fallback' => 'konum',
     'trial_started_title' => '14 günlük denemeniz başladı',
     'trial_started_body' => ':date tarihine kadar tam erişim, kart gerekmez. İyi eğlenceler!',
+    'could_not_load_body' => 'Google Business konumlarınız yüklenemedi. Bu genellikle geçicidir: yeniden bağlanıp tekrar deneyin.',
+    'connect_failed_body' => 'Konum bağlanamadı. Hiçbir şey değişmedi: yeniden denemek için tekrar Bağlan\'a tıklayın.',
 ];

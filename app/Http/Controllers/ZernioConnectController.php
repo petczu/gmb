@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Workspace;
 use App\Services\Reviews\ZernioConnectionManager;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,7 +46,9 @@ class ZernioConnectController extends Controller
         try {
             $result = $manager->connectUrl($workspace, route('zernio.google.callback'));
         } catch (Throwable $e) {
-            Notification::make()->title(__('errors.google_connect_start_failed'))->body($e->getMessage())->danger()->send();
+            // Sentry gets the raw failure; the user gets a friendly retry.
+            report($e);
+            $this->failureNotification(__('errors.google_connect_start_failed'), __('errors.google_connect_start_failed_body'));
 
             return redirect($this->returnUrl());
         }
@@ -61,6 +64,24 @@ class ZernioConnectController extends Controller
 
         $workspace = $this->workspace();
         if ($workspace === null) {
+            return redirect($this->returnUrl());
+        }
+
+        // Google (or Zernio) sent the user back with an error instead of a
+        // token: authorization was denied or broke upstream. Cancelling is a
+        // user action, not an incident — everything else goes to Sentry.
+        if (filled($request->query('error'))) {
+            $oauthError = (string) $request->query('error');
+
+            if ($oauthError !== 'access_denied') {
+                report(new \RuntimeException('Google OAuth callback returned error: '.$oauthError));
+            }
+
+            $this->failureNotification(
+                __('errors.google_connect_failed'),
+                $oauthError === 'access_denied' ? __('errors.google_connect_cancelled_body') : __('errors.google_connect_failed_body'),
+            );
+
             return redirect($this->returnUrl());
         }
 
@@ -90,7 +111,8 @@ class ZernioConnectController extends Controller
         try {
             $linked = $manager->linkConnectedAccounts($workspace);
         } catch (Throwable $e) {
-            Notification::make()->title(__('errors.google_connect_failed'))->body($e->getMessage())->danger()->send();
+            report($e);
+            $this->failureNotification(__('errors.google_connect_failed'), __('errors.google_connect_failed_body'));
 
             return redirect($this->returnUrl());
         }
@@ -106,5 +128,22 @@ class ZernioConnectController extends Controller
     private function workspace(): ?Workspace
     {
         return Workspace::find(session('current_workspace_id'));
+    }
+
+    /** Persistent danger toast with a one-click "Try again" back into the flow. */
+    private function failureNotification(string $title, string $body): void
+    {
+        Notification::make()
+            ->title($title)
+            ->body($body)
+            ->danger()
+            ->persistent()
+            ->actions([
+                Action::make('retry')
+                    ->label(__('errors.try_again'))
+                    ->button()
+                    ->url(route('zernio.google.connect')),
+            ])
+            ->send();
     }
 }

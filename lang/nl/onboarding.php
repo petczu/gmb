@@ -80,4 +80,6 @@ return [
     'location_fallback' => 'locatie',
     'trial_started_title' => 'Je proefperiode van 14 dagen is gestart',
     'trial_started_body' => 'Volledige toegang tot :date, geen creditcard nodig. Veel plezier!',
+    'could_not_load_body' => 'We konden je Google Business-locaties niet laden. Dit is meestal tijdelijk: verbind opnieuw en probeer het nog eens.',
+    'connect_failed_body' => 'De locatie kon niet worden gekoppeld. Er is niets gewijzigd: klik nogmaals op Koppelen om het opnieuw te proberen.',
 ];

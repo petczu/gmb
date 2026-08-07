@@ -42,4 +42,8 @@ return [
     // i18n label backfill (batch 2)
     'google_connect_start_failed' => 'Google bağlantısı başlatılamadı',
     'google_connect_failed' => 'Google bağlantısı başarısız oldu',
+    'try_again' => 'Tekrar dene',
+    'google_connect_start_failed_body' => 'Bağlantıyı başlatmak için Google\'a ulaşamadık. Bu genellikle geçicidir: biraz bekleyip tekrar deneyin.',
+    'google_connect_failed_body' => 'Google hesabınız bağlanırken bir sorun oluştu. Hiçbir şey değişmedi: birazdan tekrar deneyin.',
+    'google_connect_cancelled_body' => 'Google yetkilendirmesi tamamlanmadan iptal edildi. Hazır olduğunuzda yeniden başlayın.',
 ];

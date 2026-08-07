@@ -42,4 +42,8 @@ return [
     // i18n label backfill (batch 2)
     'google_connect_start_failed' => 'تعذّر بدء الاتصال بـ Google',
     'google_connect_failed' => 'فشل الاتصال بـ Google',
+    'try_again' => 'حاول مرة أخرى',
+    'google_connect_start_failed_body' => 'تعذر الوصول إلى Google لبدء الاتصال. عادةً ما يكون هذا مؤقتًا: انتظر لحظة ثم حاول مرة أخرى.',
+    'google_connect_failed_body' => 'حدث خطأ أثناء ربط حساب Google الخاص بك. لم يتغير شيء: حاول مرة أخرى بعد قليل.',
+    'google_connect_cancelled_body' => 'أُلغي تفويض Google قبل اكتماله. ابدأ من جديد متى شئت.',
 ];

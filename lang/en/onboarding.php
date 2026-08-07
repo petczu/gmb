@@ -80,4 +80,6 @@ return [
     'location_fallback' => 'location',
     'trial_started_title' => 'Your 14-day trial has started',
     'trial_started_body' => 'Full access until :date, no card needed. Enjoy!',
+    'could_not_load_body' => 'We could not load your Google Business locations. This is usually temporary: reconnect and try again.',
+    'connect_failed_body' => 'The location could not be connected. Nothing was changed: click Connect on it again to retry.',
 ];

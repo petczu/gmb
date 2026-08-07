@@ -80,4 +80,6 @@ return [
     'location_fallback' => 'établissement',
     'trial_started_title' => 'Votre essai de 14 jours a commencé',
     'trial_started_body' => 'Accès complet jusqu’au :date, sans carte bancaire. Bonne découverte !',
+    'could_not_load_body' => 'Impossible de charger vos établissements Google Business. C\'est généralement temporaire : reconnectez-vous et réessayez.',
+    'connect_failed_body' => 'L\'établissement n\'a pas pu être connecté. Rien n\'a été modifié : cliquez à nouveau sur Connecter pour réessayer.',
 ];

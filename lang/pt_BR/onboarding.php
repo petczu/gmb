@@ -80,4 +80,6 @@ return [
     'location_fallback' => 'local',
     'trial_started_title' => 'Seu teste de 14 dias começou',
     'trial_started_body' => 'Acesso completo até :date, sem cartão. Aproveite!',
+    'could_not_load_body' => 'Não conseguimos carregar suas unidades do Google Business. Normalmente é temporário: reconecte e tente novamente.',
+    'connect_failed_body' => 'Não foi possível conectar a unidade. Nada foi alterado: clique em Conectar nela de novo para tentar novamente.',
 ];

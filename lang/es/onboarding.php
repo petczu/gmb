@@ -80,4 +80,6 @@ return [
     'location_fallback' => 'ubicación',
     'trial_started_title' => 'Tu prueba de 14 días ha comenzado',
     'trial_started_body' => 'Acceso completo hasta el :date, sin tarjeta. ¡Que la disfrutes!',
+    'could_not_load_body' => 'No pudimos cargar tus ubicaciones de Google Business. Suele ser temporal: vuelve a conectar e inténtalo de nuevo.',
+    'connect_failed_body' => 'No se pudo conectar la ubicación. No se cambió nada: haz clic en Conectar de nuevo para reintentarlo.',
 ];

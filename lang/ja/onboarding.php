@@ -80,4 +80,6 @@ return [
     'location_fallback' => '店舗',
     'trial_started_title' => '14日間のトライアルが始まりました',
     'trial_started_body' => ':dateまでフルアクセスできます。カードは不要です。お楽しみください！',
+    'could_not_load_body' => 'Google ビジネスのビジネス情報を読み込めませんでした。多くは一時的な問題です。再接続してもう一度お試しください。',
+    'connect_failed_body' => 'ビジネス情報を接続できませんでした。変更は行われていません。もう一度「接続」をクリックしてお試しください。',
 ];

@@ -42,4 +42,8 @@ return [
     // i18n label backfill (batch 2)
     'google_connect_start_failed' => 'Google 連携を開始できませんでした',
     'google_connect_failed' => 'Google 連携に失敗しました',
+    'try_again' => 'もう一度試す',
+    'google_connect_start_failed_body' => '接続を開始するための Google への通信に失敗しました。多くは一時的な問題です。少し待ってからもう一度お試しください。',
+    'google_connect_failed_body' => 'Google アカウントの接続中に問題が発生しました。変更は行われていません。しばらくしてからもう一度お試しください。',
+    'google_connect_cancelled_body' => 'Google の認可が完了する前にキャンセルされました。準備ができたら、もう一度始めてください。',
 ];

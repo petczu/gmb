@@ -42,4 +42,8 @@ return [
     // Google connection (Zernio) toasts
     'google_connect_start_failed' => 'Could not start Google connection',
     'google_connect_failed' => 'Google connection failed',
+    'try_again' => 'Try again',
+    'google_connect_start_failed_body' => 'We could not reach Google to start the connection. This is usually temporary: wait a moment and try again.',
+    'google_connect_failed_body' => 'Something went wrong while connecting your Google account. Nothing was changed: try again in a moment.',
+    'google_connect_cancelled_body' => 'The Google authorization was cancelled before it finished. Start again whenever you are ready.',
 ];

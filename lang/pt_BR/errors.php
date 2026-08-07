@@ -42,4 +42,8 @@ return [
     // i18n label backfill (batch 2)
     'google_connect_start_failed' => 'Não foi possível iniciar a conexão com o Google',
     'google_connect_failed' => 'Falha na conexão com o Google',
+    'try_again' => 'Tentar novamente',
+    'google_connect_start_failed_body' => 'Não conseguimos falar com o Google para iniciar a conexão. Normalmente é temporário: aguarde um momento e tente de novo.',
+    'google_connect_failed_body' => 'Algo deu errado ao conectar sua conta do Google. Nada foi alterado: tente novamente em instantes.',
+    'google_connect_cancelled_body' => 'A autorização do Google foi cancelada antes de concluir. Recomece quando quiser.',
 ];

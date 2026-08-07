@@ -42,4 +42,8 @@ return [
     // i18n label backfill (batch 2)
     'google_connect_start_failed' => 'Nie można rozpocząć połączenia z Google',
     'google_connect_failed' => 'Połączenie z Google nie powiodło się',
+    'try_again' => 'Spróbuj ponownie',
+    'google_connect_start_failed_body' => 'Nie udało się połączyć z Google, aby rozpocząć połączenie. Zwykle to chwilowe: odczekaj moment i spróbuj ponownie.',
+    'google_connect_failed_body' => 'Coś poszło nie tak podczas łączenia konta Google. Nic nie zostało zmienione: spróbuj ponownie za chwilę.',
+    'google_connect_cancelled_body' => 'Autoryzacja Google została anulowana przed zakończeniem. Zacznij od nowa, kiedy zechcesz.',
 ];

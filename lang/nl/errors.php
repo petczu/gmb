@@ -42,4 +42,8 @@ return [
     // i18n label backfill (batch 2)
     'google_connect_start_failed' => 'Kan Google-verbinding niet starten',
     'google_connect_failed' => 'Google-verbinding mislukt',
+    'try_again' => 'Opnieuw proberen',
+    'google_connect_start_failed_body' => 'We konden Google niet bereiken om de verbinding te starten. Dit is meestal tijdelijk: wacht even en probeer het opnieuw.',
+    'google_connect_failed_body' => 'Er ging iets mis bij het koppelen van je Google-account. Er is niets gewijzigd: probeer het zo weer.',
+    'google_connect_cancelled_body' => 'De Google-autorisatie is geannuleerd voordat deze klaar was. Begin opnieuw wanneer je wilt.',
 ];

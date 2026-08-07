@@ -80,4 +80,6 @@ return [
     'location_fallback' => 'Standort',
     'trial_started_title' => 'Deine 14-tägige Testphase hat begonnen',
     'trial_started_body' => 'Voller Zugriff bis :date, keine Karte nötig. Viel Erfolg!',
+    'could_not_load_body' => 'Deine Google-Business-Standorte konnten nicht geladen werden. Das ist meist vorübergehend: Verbinde dich neu und versuche es erneut.',
+    'connect_failed_body' => 'Der Standort konnte nicht verbunden werden. Es wurde nichts geändert: Klicke erneut auf Verbinden, um es noch einmal zu versuchen.',
 ];

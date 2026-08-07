@@ -42,4 +42,8 @@ return [
     // i18n label backfill (batch 2)
     'google_connect_start_failed' => 'Google-Verbindung konnte nicht gestartet werden',
     'google_connect_failed' => 'Google-Verbindung fehlgeschlagen',
+    'try_again' => 'Erneut versuchen',
+    'google_connect_start_failed_body' => 'Google war für den Verbindungsstart nicht erreichbar. Das ist meist vorübergehend: Warte kurz und versuche es erneut.',
+    'google_connect_failed_body' => 'Beim Verbinden deines Google-Kontos ist etwas schiefgelaufen. Es wurde nichts geändert: Versuche es gleich noch einmal.',
+    'google_connect_cancelled_body' => 'Die Google-Autorisierung wurde abgebrochen, bevor sie abgeschlossen war. Starte einfach neu, wenn du bereit bist.',
 ];

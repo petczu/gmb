@@ -77,7 +77,10 @@ class ConnectSelectLocation extends Page
                 $this->pendingExpired = true;
                 $this->error = __('onboarding.pending_expired');
             } else {
-                $this->error = $e->getMessage();
+                // Real upstream failure: Sentry gets the details, the user a
+                // friendly message with a reconnect button (see the view).
+                report($e);
+                $this->error = __('onboarding.could_not_load_body');
             }
         }
     }
@@ -173,7 +176,17 @@ class ConnectSelectLocation extends Page
             // Stripe is configured and the workspace is subscribed).
             app(LocationBilling::class)->syncQuantity($workspace);
         } catch (Throwable $e) {
-            Notification::make()->title(__('onboarding.connect_failed'))->body($e->getMessage())->danger()->send();
+            // Sentry gets the raw error; the toast stays friendly and points
+            // at the retry (clicking Connect on the same location again).
+            report($e);
+            Log::warning('Zernio location connect failed', ['location' => $locationId, 'error' => $e->getMessage()]);
+
+            Notification::make()
+                ->title(__('onboarding.connect_failed'))
+                ->body(__('onboarding.connect_failed_body'))
+                ->danger()
+                ->persistent()
+                ->send();
 
             return;
         }

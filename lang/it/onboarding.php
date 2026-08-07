@@ -80,4 +80,6 @@ return [
     'location_fallback' => 'sede',
     'trial_started_title' => 'La tua prova di 14 giorni è iniziata',
     'trial_started_body' => 'Accesso completo fino al :date, senza carta. Buona esplorazione!',
+    'could_not_load_body' => 'Non siamo riusciti a caricare le tue sedi Google Business. Di solito è temporaneo: riconnettiti e riprova.',
+    'connect_failed_body' => 'Impossibile collegare la sede. Non è stato modificato nulla: fai di nuovo clic su Collega per riprovare.',
 ];
