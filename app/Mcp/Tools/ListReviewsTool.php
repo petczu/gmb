@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Tools\Concerns\ResolvesRequestedWorkspace;
 use App\Models\Review;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -14,8 +15,14 @@ use Laravel\Mcp\Server\Tool;
 #[Description('List reviews for the workspace, newest first, with optional filters (rating, replied, text, location, date range) and pagination.')]
 class ListReviewsTool extends Tool
 {
+    use ResolvesRequestedWorkspace;
+
     public function handle(Request $request): Response
     {
+        if (($error = $this->switchWorkspace($request)) !== null) {
+            return $error;
+        }
+
         $query = Review::query()->with('location');
 
         if (($rating = $request->get('rating')) !== null) {
@@ -77,6 +84,6 @@ class ListReviewsTool extends Tool
             'to' => $schema->string()->description('Latest review date, YYYY-MM-DD.'),
             'limit' => $schema->integer()->description('Max rows to return (default 20, max 100).'),
             'offset' => $schema->integer()->description('Pagination offset (default 0).'),
-        ];
+        ] + $this->workspaceSchema($schema);
     }
 }

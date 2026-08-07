@@ -10,7 +10,7 @@ return [
     'endpoint' => 'Endpunkt',
     'docs_link' => 'MCP-Dokumentation',
     'connect_help' => 'Füge diese URL in deinen KI-Client ein (z. B. den claude.ai Custom Connector). Bei der ersten Anfrage wirst du zur Anmeldung und Freigabe aufgefordert — kein Token zum Kopieren.',
-    'workspace_note' => 'Du gehörst zu mehreren Pro-Workspaces: Wähle bei der Freigabe den Workspace, den diese Verbindung nutzen soll. Zum Wechseln später den Connector neu verbinden und einen anderen wählen.',
+    'workspace_note' => 'Du gehörst zu mehreren Pro-Workspaces: Wähle beim Autorisieren alle Workspaces aus, die diese Verbindung abdecken soll. Der erste ist der Standard; der Assistent kann pro Anfrage wechseln, oder du verbindest neu, um die Auswahl zu ändern.',
 
     'write_section' => 'Schreibzugriff',
     'write_section_desc' => 'Standardmäßig ist MCP schreibgeschützt. Wenn du das aktivierst, kann ein verbundener Assistent in deinem Namen Antworten auf Google veröffentlichen.',

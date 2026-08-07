@@ -15,12 +15,13 @@ use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Scopes an authenticated MCP request to the user's workspace. The endpoint is
- * a single /mcp (no workspace in the URL); the user has already been resolved
- * by `auth:api` (Passport OAuth). We use the workspace the user bound to this
- * OAuth client on the consent screen, falling back to their first MCP-enabled
- * (Pro) workspace, then gate the plan and initialize its tenancy so every tool
- * reads and writes strictly within its data.
+ * Scopes an authenticated MCP request to the user's workspace(s). The endpoint
+ * is a single /mcp (no workspace in the URL); the user has already been
+ * resolved by `auth:api` (Passport OAuth). The consent screen binds the
+ * connection to one or MORE workspaces; the first becomes the default tenancy
+ * for the request, and tools may switch to any other allowed one via their
+ * optional `workspace` argument (see ResolvesRequestedWorkspace). The full
+ * allowed set is shared through the container as `mcp.allowed_workspaces`.
  */
 class ResolveMcpWorkspace
 {
@@ -40,17 +41,20 @@ class ResolveMcpWorkspace
 
         $billing = app(LocationBilling::class);
 
-        // The workspace the user picked for this connection on the consent
-        // screen (keyed by the token's OAuth client), if it is still a
-        // workspace they belong to.
-        $boundId = $this->boundWorkspaceId($user->id, $user->token()?->oauth_client_id);
+        // The workspaces the user picked for this connection on the consent
+        // screen (keyed by the token's OAuth client), if still theirs.
+        $boundIds = $this->boundWorkspaceIds($user->id, $user->token()?->oauth_client_id);
 
-        $workspace = $this->resolveWorkspace($workspaces, $boundId, $billing);
+        $allowed = $this->resolveWorkspaces($workspaces, $boundIds, $billing);
 
-        if ($workspace === null) {
+        if ($allowed->isEmpty()) {
             return response()->json(['error' => 'MCP access requires the Pro plan.'], 403);
         }
 
+        // Tools read this to offer/validate their `workspace` argument.
+        app()->instance('mcp.allowed_workspaces', $allowed);
+
+        $workspace = $allowed->first();
         tenancy()->initialize($workspace);
         app(PermissionRegistrar::class)->setPermissionsTeamId($workspace->id);
         auth()->setUser($user);
@@ -59,36 +63,57 @@ class ResolveMcpWorkspace
     }
 
     /**
-     * Choose the workspace for this request: the bound one when it is a
-     * MCP-enabled workspace the user belongs to, otherwise their first
-     * MCP-enabled workspace. Null when none of them has MCP access.
+     * The workspaces this request may operate on: every bound, MCP-enabled
+     * workspace the user still belongs to (in consent order), falling back to
+     * the user's first MCP-enabled workspace when nothing valid is bound.
+     * Empty when no workspace has MCP access.
      *
      * @param  Collection<int, Workspace>  $workspaces
+     * @param  array<int, string>  $boundIds
+     * @return Collection<int, Workspace>
      */
-    public function resolveWorkspace(Collection $workspaces, ?string $boundId, LocationBilling $billing): ?Workspace
+    public function resolveWorkspaces(Collection $workspaces, array $boundIds, LocationBilling $billing): Collection
     {
-        $bound = $boundId === null ? null : $workspaces->firstWhere('id', $boundId);
+        $bound = collect($boundIds)
+            ->map(fn (string $id): ?Workspace => $workspaces->firstWhere('id', $id))
+            ->filter(fn (?Workspace $w): bool => $w !== null && $billing->allows($w, Plans::MCP))
+            ->values();
 
-        if ($bound !== null && $billing->allows($bound, Plans::MCP)) {
+        if ($bound->isNotEmpty()) {
             return $bound;
         }
 
-        return $workspaces->first(fn (Workspace $w): bool => $billing->allows($w, Plans::MCP));
+        return $workspaces
+            ->filter(fn (Workspace $w): bool => $billing->allows($w, Plans::MCP))
+            ->take(1)
+            ->values();
     }
 
     /**
-     * The workspace id bound to this OAuth client on the consent screen, or
-     * null when nothing was bound (or the client is unknown).
+     * Kept for callers that only need one workspace (first of the allowed set).
      */
-    protected function boundWorkspaceId(int $userId, ?string $oauthClientId): ?string
+    public function resolveWorkspace(Collection $workspaces, ?string $boundId, LocationBilling $billing): ?Workspace
+    {
+        return $this->resolveWorkspaces($workspaces, $boundId === null ? [] : [$boundId], $billing)->first();
+    }
+
+    /**
+     * The workspace ids bound to this OAuth client on the consent screen, in
+     * the order they were saved. Empty when nothing was bound.
+     *
+     * @return array<int, string>
+     */
+    protected function boundWorkspaceIds(int $userId, ?string $oauthClientId): array
     {
         if ($oauthClientId === null) {
-            return null;
+            return [];
         }
 
         return McpWorkspaceSelection::query()
             ->where('user_id', $userId)
             ->where('oauth_client_id', $oauthClientId)
-            ->value('workspace_id');
+            ->orderBy('id')
+            ->pluck('workspace_id')
+            ->all();
     }
 }

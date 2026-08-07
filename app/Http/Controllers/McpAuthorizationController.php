@@ -39,10 +39,17 @@ class McpAuthorizationController
         // Consumes authToken/authRequest from the session (single use).
         $authRequest = $this->getAuthRequestFromSession($request);
 
-        $this->rememberWorkspace(
+        // Checkbox list (several workspaces) with the legacy single-radio
+        // field as a fallback for cached consent pages.
+        $picked = array_values(array_filter(array_map(
+            'strval',
+            (array) $request->input('workspace_ids', (array) $request->input('workspace_id', [])),
+        )));
+
+        $this->rememberWorkspaces(
             (int) $authRequest->getUser()->getIdentifier(),
             (string) $authRequest->getClient()->getIdentifier(),
-            (string) $request->input('workspace_id', ''),
+            $picked,
         );
 
         $authRequest->setAuthorizationApproved(true);
@@ -53,31 +60,43 @@ class McpAuthorizationController
     }
 
     /**
-     * Persist the picked workspace when it is a real Pro workspace the user
-     * belongs to. An invalid or missing value is ignored: ResolveMcpWorkspace
-     * then falls back to the user's first MCP-enabled workspace.
+     * Persist the picked workspaces (one row each), keeping only real Pro
+     * workspaces the user belongs to. Invalid values are dropped; when nothing
+     * valid remains the previous binding is kept, and ResolveMcpWorkspace
+     * falls back to the user's first MCP-enabled workspace if there is none.
+     *
+     * @param  array<int, string>  $workspaceIds
      */
-    protected function rememberWorkspace(int $userId, string $clientId, string $workspaceId): void
+    protected function rememberWorkspaces(int $userId, string $clientId, array $workspaceIds): void
     {
-        if ($workspaceId === '') {
-            return;
-        }
-
         $user = User::find($userId);
 
-        if ($user === null) {
+        if ($user === null || $workspaceIds === []) {
             return;
         }
 
-        $workspace = $user->workspaces()->whereKey($workspaceId)->first();
+        $valid = $user->workspaces()->whereKey($workspaceIds)->get()
+            ->filter(fn (Workspace $workspace): bool => $this->billing->allows($workspace, Plans::MCP))
+            // Keep the order the user picked them in — the first one becomes
+            // the connection's default workspace.
+            ->sortBy(fn (Workspace $workspace): int|false => array_search($workspace->getKey(), $workspaceIds, true))
+            ->values();
 
-        if (! $workspace instanceof Workspace || ! $this->billing->allows($workspace, Plans::MCP)) {
+        if ($valid->isEmpty()) {
             return;
         }
 
-        McpWorkspaceSelection::updateOrCreate(
-            ['user_id' => $userId, 'oauth_client_id' => $clientId],
-            ['workspace_id' => $workspace->getKey()],
-        );
+        McpWorkspaceSelection::query()
+            ->where('user_id', $userId)
+            ->where('oauth_client_id', $clientId)
+            ->delete();
+
+        foreach ($valid as $workspace) {
+            McpWorkspaceSelection::create([
+                'user_id' => $userId,
+                'oauth_client_id' => $clientId,
+                'workspace_id' => $workspace->getKey(),
+            ]);
+        }
     }
 }

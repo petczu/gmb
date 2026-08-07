@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Tools\Concerns\ResolvesRequestedWorkspace;
 use App\Models\Location;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -14,8 +15,14 @@ use Laravel\Mcp\Server\Tool;
 #[Description('List the workspace\'s connected business locations with their average rating, review count and monthly goal.')]
 class ListLocationsTool extends Tool
 {
+    use ResolvesRequestedWorkspace;
+
     public function handle(Request $request): Response
     {
+        if (($error = $this->switchWorkspace($request)) !== null) {
+            return $error;
+        }
+
         $locations = Location::query()->orderBy('name')->get()->map(fn (Location $location): array => [
             'id' => $location->id,
             'name' => $location->name,
@@ -36,6 +43,6 @@ class ListLocationsTool extends Tool
      */
     public function schema(JsonSchema $schema): array
     {
-        return [];
+        return $this->workspaceSchema($schema);
     }
 }

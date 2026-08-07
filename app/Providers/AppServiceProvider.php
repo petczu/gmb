@@ -106,12 +106,15 @@ class AppServiceProvider extends ServiceProvider
             $bound = McpWorkspaceSelection::query()
                 ->where('user_id', $user->getKey())
                 ->where('oauth_client_id', $parameters['client']->getKey())
-                ->value('workspace_id');
+                ->orderBy('id')
+                ->pluck('workspace_id')
+                ->all();
 
             return view('mcp.authorize', [
                 ...$parameters,
                 'workspaces' => $workspaces,
-                'selectedWorkspaceId' => $bound ?? $workspaces->first()?->getKey(),
+                // Previously bound set; first workspace pre-checked otherwise.
+                'selectedWorkspaceIds' => $bound !== [] ? $bound : array_filter([$workspaces->first()?->getKey()]),
             ]);
         });
 

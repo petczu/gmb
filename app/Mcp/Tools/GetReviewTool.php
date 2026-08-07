@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Tools\Concerns\ResolvesRequestedWorkspace;
 use App\Models\Review;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -14,8 +15,14 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Get the full detail of a single review by its id, including the original and Google-translated text and the current reply.')]
 class GetReviewTool extends Tool
 {
+    use ResolvesRequestedWorkspace;
+
     public function handle(Request $request): Response
     {
+        if (($error = $this->switchWorkspace($request)) !== null) {
+            return $error;
+        }
+
         $review = Review::query()->with('location')->find((int) $request->get('id'));
 
         if ($review === null) {
@@ -44,6 +51,6 @@ class GetReviewTool extends Tool
     {
         return [
             'id' => $schema->integer()->description('The review id (from list_reviews).')->required(),
-        ];
+        ] + $this->workspaceSchema($schema);
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Tools\Concerns\ResolvesRequestedWorkspace;
 use App\Models\Review;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -15,8 +16,14 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Aggregate review stats for the workspace: total, average rating, star distribution, reply rate, rating-only count and new reviews this month. Optional location/date filters.')]
 class ReviewStatsTool extends Tool
 {
+    use ResolvesRequestedWorkspace;
+
     public function handle(Request $request): Response
     {
+        if (($error = $this->switchWorkspace($request)) !== null) {
+            return $error;
+        }
+
         $base = Review::query();
 
         if ($locationId = $request->get('location_id')) {
@@ -60,6 +67,6 @@ class ReviewStatsTool extends Tool
             'location_id' => $schema->integer()->description('Limit stats to a single location id.'),
             'from' => $schema->string()->description('Earliest review date, YYYY-MM-DD.'),
             'to' => $schema->string()->description('Latest review date, YYYY-MM-DD.'),
-        ];
+        ] + $this->workspaceSchema($schema);
     }
 }

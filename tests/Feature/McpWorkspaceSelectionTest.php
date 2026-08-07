@@ -53,6 +53,17 @@ class McpWorkspaceSelectionTest extends TestCase
         $this->assertSame('b', $chosen?->id);
     }
 
+    public function test_resolve_keeps_every_bound_pro_workspace_in_consent_order(): void
+    {
+        $allowed = (new ResolveMcpWorkspace)->resolveWorkspaces(
+            $this->workspaces(['a', 'b', 'c']),
+            ['c', 'a', 'gone'],
+            $this->billingAllowing(['a', 'c']),
+        );
+
+        $this->assertSame(['c', 'a'], $allowed->pluck('id')->all());
+    }
+
     public function test_resolve_falls_back_to_first_pro_when_bound_is_not_pro(): void
     {
         // 'a' is bound but not Pro; 'b' is the first Pro one.
@@ -116,18 +127,19 @@ class McpWorkspaceSelectionTest extends TestCase
             'scopes' => [(object) ['description' => 'Use MCP server']],
             'authToken' => 'tok',
             'workspaces' => $workspaces,
-            'selectedWorkspaceId' => $workspaces->first()?->getKey(),
+            'selectedWorkspaceIds' => array_filter([$workspaces->first()?->getKey()]),
         ];
 
-        // Several workspaces: radio picker, and the form posts to our approve route.
+        // Several workspaces: checkbox picker (multi-select), and the form
+        // posts to our approve route.
         $multi = view('mcp.authorize', $params(collect([$mk('a', 'Acme'), $mk('b', 'Bistro')])))->render();
-        $this->assertStringContainsString('name="workspace_id"', $multi);
+        $this->assertStringContainsString('name="workspace_ids[]"', $multi);
         $this->assertStringContainsString(route('mcp.oauth.approve'), $multi);
-        $this->assertSame(2, substr_count($multi, 'type="radio"'));
+        $this->assertSame(2, substr_count($multi, 'type="checkbox" form="authorizeForm"'));
 
         // One workspace: no picker, but the single id is bound via a hidden field.
         $single = view('mcp.authorize', $params(collect([$mk('a', 'Acme')])))->render();
-        $this->assertStringNotContainsString('type="radio"', $single);
-        $this->assertStringContainsString('type="hidden" name="workspace_id" value="a"', $single);
+        $this->assertStringNotContainsString('type="checkbox" form="authorizeForm"', $single);
+        $this->assertStringContainsString('type="hidden" name="workspace_ids[]" value="a"', $single);
     }
 }

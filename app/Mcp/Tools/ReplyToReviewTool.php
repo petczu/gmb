@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Tools\Concerns\ResolvesRequestedWorkspace;
 use App\Models\Review;
 use App\Models\Workspace;
 use App\Services\Reviews\ReviewProviderFactory;
@@ -16,6 +17,8 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Publish a public reply to a review on Google. Permanent. Only available when the workspace has enabled MCP write access.')]
 class ReplyToReviewTool extends Tool
 {
+    use ResolvesRequestedWorkspace;
+
     /** Registered only when the workspace opted into MCP write access. */
     public function shouldRegister(): bool
     {
@@ -26,6 +29,10 @@ class ReplyToReviewTool extends Tool
 
     public function handle(Request $request): Response
     {
+        if (($error = $this->switchWorkspace($request)) !== null) {
+            return $error;
+        }
+
         $review = Review::query()->with('location')->find((int) $request->get('review_id'));
 
         if ($review === null) {
@@ -62,6 +69,6 @@ class ReplyToReviewTool extends Tool
         return [
             'review_id' => $schema->integer()->description('The review id to reply to (from list_reviews).')->required(),
             'reply' => $schema->string()->description('The reply text to publish publicly on Google.')->required(),
-        ];
+        ] + $this->workspaceSchema($schema);
     }
 }

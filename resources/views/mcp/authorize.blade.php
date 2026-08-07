@@ -157,6 +157,7 @@
         }
 
         .workspace-option input { accent-color: var(--primary); flex: none; }
+        .workspace-hint { color: #f87171 !important; margin-top: 8px; }
 
         .workspace-option .name { font-size: 0.875rem; font-weight: 500; }
 
@@ -244,34 +245,26 @@
         <p class="value">{{ $user->email }}</p>
     </div>
 
-    @if(count($scopes) > 0)
-        <div class="permissions">
-            <p class="label">Permissions:</p>
-            <ul>
-                @foreach($scopes as $scope)
-                    <li>
-                        <span class="dot-wrap"><span class="dot"></span></span>
-                        <span>{{ $scope->description }}</span>
-                    </li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    {{-- No "Permissions" list: the subtitle already says what access this
+         grants, and the single OAuth scope only repeated it. --}}
 
     @php($workspaces = $workspaces ?? collect())
+    @php($selectedWorkspaceIds = $selectedWorkspaceIds ?? array_filter([$selectedWorkspaceId ?? null]))
     @if($workspaces->count() > 1)
         {{-- The user belongs to several Pro workspaces: bind this connection to
-             one. Inputs use form="authorizeForm" so they submit with Approve. --}}
+             any subset (at least one). Inputs use form="authorizeForm" so they
+             submit with Approve. --}}
         <div class="workspaces">
-            <p class="label">Workspace:</p>
+            <p class="label">Workspaces:</p>
             @foreach($workspaces as $workspace)
                 <label class="workspace-option">
-                    <input type="radio" form="authorizeForm" name="workspace_id"
+                    <input type="checkbox" form="authorizeForm" name="workspace_ids[]"
                            value="{{ $workspace->getKey() }}"
-                           @checked(($selectedWorkspaceId ?? null) === $workspace->getKey())>
+                           @checked(in_array($workspace->getKey(), $selectedWorkspaceIds, true))>
                     <span class="name">{{ $workspace->name }}</span>
                 </label>
             @endforeach
+            <p class="label workspace-hint hidden" id="workspaceHint">Select at least one workspace.</p>
         </div>
     @endif
 
@@ -296,7 +289,7 @@
             <input type="hidden" name="client_id" value="{{ $client->id }}">
             <input type="hidden" name="auth_token" value="{{ $authToken }}">
             @if($workspaces->count() === 1)
-                <input type="hidden" name="workspace_id" value="{{ $workspaces->first()->getKey() }}">
+                <input type="hidden" name="workspace_ids[]" value="{{ $workspaces->first()->getKey() }}">
             @endif
             <button type="submit" class="btn-authorize" id="authorizeButton">
                 <span id="authorizeText">Authorize</span>
@@ -318,6 +311,16 @@
         const loadingSpinner = document.getElementById('loadingSpinner');
 
         form.addEventListener('submit', function(e) {
+            // At least one workspace must stay selected.
+            const boxes = document.querySelectorAll('input[name="workspace_ids[]"][type="checkbox"]');
+            const hint = document.getElementById('workspaceHint');
+            if (boxes.length > 0 && ![...boxes].some(function(b) { return b.checked; })) {
+                e.preventDefault();
+                if (hint) hint.classList.remove('hidden');
+                return;
+            }
+            if (hint) hint.classList.add('hidden');
+
             // Show loading state...
             button.disabled = true;
             authorizeText.textContent = 'Authorizing...';
