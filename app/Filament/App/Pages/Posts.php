@@ -1618,10 +1618,12 @@ class Posts extends Page implements HasTable
             return;
         }
 
-        // Reuse the CTA the business used last. Imported Google posts carry
-        // only the link (no button type), so fall back through: full CTA from
-        // our own posts → any past CTA link → the location's website.
+        // Reuse the CTA the business used last in a post WE sent; otherwise
+        // link the location's own website. Imported posts are excluded: their
+        // cta_url is Google's link to the post itself (local.google.com/...),
+        // useless as a button target.
         $lastCta = Post::query()
+            ->where('origin', '!=', 'imported')
             ->whereNotNull('cta_type')
             ->whereNotNull('cta_url')
             ->orderByDesc('id')
@@ -1630,8 +1632,7 @@ class Posts extends Page implements HasTable
         $ctaType = $lastCta?->cta_type;
         $ctaUrl = $lastCta?->cta_url;
         if (blank($ctaUrl)) {
-            $ctaUrl = Post::query()->whereNotNull('cta_url')->orderByDesc('id')->value('cta_url')
-                ?? $locations->first()?->website_url;
+            $ctaUrl = $locations->first()?->website_url;
             $ctaType = filled($ctaUrl) ? 'learn_more' : null;
         }
 
