@@ -87,7 +87,8 @@
             .dark .pc-card { background:#232326; border-color: rgb(255 255 255 / .1); }
             .pc-card:hover { border-color:#2d19ec55; }
             .pc-card.draft { border-style:dashed; }
-            .pc-card img { width:100%; height:2.6rem; object-fit:cover; border-radius:.3rem; margin-bottom:.25rem; }
+            .pc-card img { width:100%; height:2.6rem; object-fit:cover; border-radius:.3rem; margin-bottom:.25rem; -webkit-user-drag:none; user-select:none; }
+            .pc-thumb video { -webkit-user-drag:none; }
             .pc-thumb { position:relative; display:block; margin-bottom:.25rem; pointer-events:none; }
             .pc-thumb video { display:block; width:100%; height:2.6rem; object-fit:cover; border-radius:.3rem; }
             .pc-thumb-badge { position:absolute; inset:0; display:grid; place-items:center; }
@@ -468,7 +469,9 @@
                                         @dragend="$el.classList.remove('dragging')"
                                     @endif>
                                     @if ($post->image_url)
-                                        <img src="{{ $post->image_url }}" alt="" loading="lazy">
+                                        {{-- draggable=false: browsers natively drag <img>, which fakes
+                                             a card drag on published posts (only drafts really move). --}}
+                                        <img src="{{ $post->image_url }}" alt="" loading="lazy" draggable="false">
                                     @elseif ($post->video_url)
                                         {{-- First frame as the thumbnail (metadata preload only, never
                                              playable from the card) + a Planable-style video badge. --}}
