@@ -28,6 +28,8 @@ return [
     'blocks' => 'Bloques',
     'competitors_block_hint' => 'Todavía no sigues a ningún competidor. Añádelos primero en Fichas > Competidores.',
     'ai_instructions' => 'Instrucciones para la IA',
+    'ai_fallback_title' => 'Informe generado sin análisis de IA',
+    'ai_fallback_body' => 'La cuota mensual de informes con IA se ha agotado, por lo que este informe no tiene bloques de IA (resumen, personal, temas). Recarga créditos o mejora el plan para recuperarlos.',
     'ai_instructions_help' => 'Indicaciones opcionales para el texto de la IA. Son especialmente útiles para los nombres del personal: enumera a tu equipo y sus apodos para que las menciones se asignen a la persona correcta. Se guardan una vez y se aplican a todos los informes futuros, incluidos los programados.',
     'ai_instructions_placeholder' => 'Nuestro equipo: Eva, Alette, Suleyman (también escrito Suly), Lisa. Unifica los apodos con el nombre completo.',
     'ai_improve' => 'Mejorar con IA',

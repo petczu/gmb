@@ -28,6 +28,8 @@ return [
     'blocks' => 'Blocos',
     'competitors_block_hint' => 'Nenhum concorrente monitorado ainda. Adicione-os primeiro em Fichas > Concorrentes.',
     'ai_instructions' => 'Instruções para a IA',
+    'ai_fallback_title' => 'Relatório gerado sem análise de IA',
+    'ai_fallback_body' => 'A cota mensal de relatórios com IA acabou, então este relatório não tem os blocos de IA (resumo, equipe, tópicos). Recarregue créditos ou mude de plano para recuperá-los.',
     'ai_instructions_help' => 'Orientações opcionais para o texto gerado pela IA. Muito úteis para os nomes da equipe: liste seu time e os apelidos para que as menções sejam atribuídas à pessoa certa. Salvas uma vez e aplicadas a todos os relatórios futuros, incluindo os agendados.',
     'ai_instructions_placeholder' => 'Nossa equipe: Eva, Alette, Suleyman (também escrito Suly), Lisa. Unifique os apelidos com o nome completo.',
     'ai_improve' => 'Melhorar com IA',

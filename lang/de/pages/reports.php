@@ -28,6 +28,8 @@ return [
     'blocks' => 'Blöcke',
     'competitors_block_hint' => 'Noch keine Mitbewerber hinterlegt. Lege sie zuerst unter Einträge > Mitbewerber an.',
     'ai_instructions' => 'KI-Anweisungen',
+    'ai_fallback_title' => 'Bericht ohne KI-Analyse erstellt',
+    'ai_fallback_body' => 'Das monatliche Kontingent für KI-Berichte ist aufgebraucht, daher enthält dieser Bericht keine KI-Blöcke (Zusammenfassung, Personal, Themen). Lade Credits auf oder wechsle den Plan, um sie zurückzubekommen.',
     'ai_instructions_help' => 'Optionale Hinweise für den KI-Text. Besonders nützlich für Mitarbeiternamen: liste dein Team und Spitznamen auf, damit Erwähnungen der richtigen Person zugeordnet werden. Wird einmal gespeichert und gilt für alle künftigen Berichte, auch geplante.',
     'ai_instructions_placeholder' => 'Unser Team: Eva, Alette, Suleyman (auch Suly geschrieben), Lisa. Spitznamen dem vollen Namen zuordnen.',
     'ai_improve' => 'Mit KI verbessern',

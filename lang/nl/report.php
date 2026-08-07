@@ -19,6 +19,7 @@ return [
     'block_methodology' => 'Methodologie en opmerkingen',
     'preset_standard' => 'Standaard',
     'preset_full' => 'Volledig',
+    'preset_custom' => 'Aangepast',
     'preset_bonus' => 'Medewerkers en bonussen',
     'preset_compliance' => 'Naleving verzamelen',
     'performance_report' => 'Prestatierapport',

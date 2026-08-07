@@ -22,6 +22,7 @@ return [
     'block_methodology' => '方法論と注記',
     'preset_standard' => '標準',
     'preset_full' => 'フル',
+    'preset_custom' => 'カスタム',
     'preset_bonus' => 'スタッフとボーナス',
     'preset_compliance' => '収集コンプライアンス',
     'generated' => '作成日 :date',

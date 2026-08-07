@@ -19,6 +19,7 @@ return [
     'block_methodology' => 'Yöntem & notlar',
     'preset_standard' => 'Standart',
     'preset_full' => 'Tam',
+    'preset_custom' => 'Özel',
     'preset_bonus' => 'Personel & primler',
     'preset_compliance' => 'Toplama uyumu',
 

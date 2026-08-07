@@ -84,15 +84,32 @@ class Reports extends Page implements HasForms
         $workspace = Workspace::find(session('current_workspace_id'));
         $savedBlocks = $workspace?->report_blocks; // last-used selection, if any
 
+        $blocks = $this->stripUnavailableBlocks(ReportBlocks::normalize($savedBlocks));
+
         $this->form->fill([
             'period' => 'last_30',
             'location_id' => [],
             'compareMode' => 'previous',
             'language' => 'en',
-            'preset' => 'full',
-            'blocks' => $this->stripUnavailableBlocks(ReportBlocks::normalize($savedBlocks)),
+            // Show the preset the saved selection actually corresponds to;
+            // "Custom" when it matches none (hand-tuned, or saved before a
+            // newer block existed). Re-picking a preset resets the blocks.
+            'preset' => $this->presetFor($blocks),
+            'blocks' => $blocks,
             'ai_instructions' => (string) $workspace?->getAttribute('report_ai_instructions'),
         ]);
+    }
+
+    /** The preset key a block selection corresponds to, or 'custom'. */
+    private function presetFor(array $blocks): string
+    {
+        foreach (ReportBlocks::presets() as $key => $presetBlocks) {
+            if ($this->stripUnavailableBlocks(ReportBlocks::normalize($presetBlocks)) === $blocks) {
+                return $key;
+            }
+        }
+
+        return 'custom';
     }
 
     public function form(Schema $schema): Schema
@@ -165,7 +182,11 @@ class Reports extends Page implements HasForms
                             ->selectablePlaceholder(false)
                             ->live()
                             ->afterStateUpdated(function (?string $state, callable $set): void {
-                                $set('blocks', $this->stripUnavailableBlocks(ReportBlocks::presets()[$state] ?? ReportBlocks::default()));
+                                // "Custom" is a display state, not a selection —
+                                // picking it leaves the blocks as they are.
+                                if (isset(ReportBlocks::presets()[$state])) {
+                                    $set('blocks', $this->stripUnavailableBlocks(ReportBlocks::normalize(ReportBlocks::presets()[$state])));
+                                }
                             }),
 
                         CheckboxList::make('blocks')
@@ -177,7 +198,11 @@ class Reports extends Page implements HasForms
                             ->descriptions($this->competitorsConfigured() ? [] : ['competitors' => __('pages/reports.competitors_block_hint')])
                             ->columns(2)
                             ->bulkToggleable()
-                            ->live(),
+                            ->live()
+                            // Hand-editing the selection re-labels the preset.
+                            ->afterStateUpdated(function (?array $state, callable $set): void {
+                                $set('preset', $this->presetFor($this->stripUnavailableBlocks(ReportBlocks::normalize($state))));
+                            }),
 
                         // Owner guidance passed to the AI narrative — most useful
                         // for the staff roster and name aliases (Suly = Suleyman).
@@ -437,6 +462,18 @@ class Reports extends Page implements HasForms
         $workspace->save();
 
         $result = app(ReportGenerator::class)->generate($period, $report, $workspace, $language);
+
+        // Over the monthly AI-report allowance the generator falls back to a
+        // basic summary: the AI blocks (staff, topics, themes) come out empty.
+        // Say so loudly instead of letting blocks silently vanish.
+        if (! $result['ai']) {
+            Notification::make()
+                ->title(__('pages/reports.ai_fallback_title'))
+                ->body(__('pages/reports.ai_fallback_body'))
+                ->warning()
+                ->persistent()
+                ->send();
+        }
 
         // Save a snapshot (rendered HTML) so it can be re-viewed later without
         // spending another AI generation.

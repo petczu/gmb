@@ -140,6 +140,7 @@ return [
     'block_methodology' => 'Méthodologie et notes',
     'preset_standard' => 'Standard',
     'preset_full' => 'Complet',
+    'preset_custom' => 'Personnalisé',
     'preset_bonus' => 'Personnel et primes',
     'preset_compliance' => 'Conformité de la collecte',
     'block_posts' => 'Posts Google',

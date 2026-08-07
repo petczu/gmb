@@ -28,6 +28,8 @@ return [
     'blocks' => 'Blocs',
     'competitors_block_hint' => 'Aucun concurrent suivi pour l’instant. Ajoutez-en d’abord dans Fiches > Concurrents.',
     'ai_instructions' => 'Consignes pour l’IA',
+    'ai_fallback_title' => 'Rapport généré sans analyse IA',
+    'ai_fallback_body' => 'Le quota mensuel de rapports IA est épuisé, ce rapport ne contient donc pas les blocs IA (résumé, personnel, sujets). Rechargez des crédits ou changez de forfait pour les retrouver.',
     'ai_instructions_help' => 'Indications facultatives pour le texte rédigé par l’IA. Très utile pour les noms du personnel : listez votre équipe et les surnoms afin que les mentions soient attribuées à la bonne personne. Enregistrées une fois et appliquées à tous les rapports suivants, y compris programmés.',
     'ai_instructions_placeholder' => 'Notre équipe : Eva, Alette, Suleyman (parfois écrit Suly), Lisa. Regrouper les surnoms sous le nom complet.',
     'ai_improve' => 'Améliorer avec l’IA',

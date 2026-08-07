@@ -28,6 +28,8 @@ return [
     'blocks' => 'Bloklar',
     'competitors_block_hint' => 'Henüz takip edilen rakip yok. Önce İşletme kayıtları > Rakipler altından ekleyin.',
     'ai_instructions' => 'Yapay zeka talimatları',
+    'ai_fallback_title' => 'Rapor yapay zekâ analizi olmadan oluşturuldu',
+    'ai_fallback_body' => 'Aylık yapay zekâ raporu hakkı doldu; bu raporda yapay zekâ blokları yok (özet, personel, konular). Geri getirmek için kredi yükleyin veya planı yükseltin.',
     'ai_instructions_help' => 'Yapay zeka anlatısı için isteğe bağlı yönlendirme. En çok personel adları için faydalıdır: ekibinizi ve her türlü takma adı listeleyin, böylece anmalar doğru kişiyle eşleştirilir. Bir kez kaydedilir ve zamanlanmışlar dahil gelecekteki her rapora uygulanır.',
     'ai_instructions_placeholder' => 'Personelimiz: Eva, Alette, Suleyman (Suly olarak da yazılır), Lisa. Takma adları tam adla birleştir.',
     'ai_improve' => 'Yapay zeka ile iyileştir',

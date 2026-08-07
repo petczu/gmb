@@ -20,6 +20,7 @@ return [
     'block_methodology' => 'Metodologia i uwagi',
     'preset_standard' => 'Standardowy',
     'preset_full' => 'Pełny',
+    'preset_custom' => 'Niestandardowy',
     'preset_bonus' => 'Pracownicy i premie',
     'preset_compliance' => 'Zgodność zbierania',
 

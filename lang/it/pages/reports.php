@@ -28,6 +28,8 @@ return [
     'blocks' => 'Blocchi',
     'competitors_block_hint' => 'Ancora nessun concorrente monitorato. Aggiungili prima in Schede > Concorrenti.',
     'ai_instructions' => 'Istruzioni per l’IA',
+    'ai_fallback_title' => 'Report generato senza analisi IA',
+    'ai_fallback_body' => 'La quota mensile di report IA è esaurita, quindi questo report non contiene i blocchi IA (riepilogo, staff, argomenti). Ricarica i crediti o cambia piano per riaverli.',
     'ai_instructions_help' => 'Indicazioni facoltative per il testo redatto dall’IA. Molto utili per i nomi del personale: elenca il tuo team e gli eventuali soprannomi affinché le menzioni siano attribuite alla persona giusta. Salvate una volta e applicate a tutti i report futuri, compresi quelli programmati.',
     'ai_instructions_placeholder' => 'Il nostro personale: Eva, Alette, Suleyman (scritto anche Suly), Lisa. Unisci i soprannomi al nome completo.',
     'ai_improve' => 'Migliora con l’IA',

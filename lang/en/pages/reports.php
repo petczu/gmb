@@ -28,6 +28,8 @@ return [
     'blocks' => 'Blocks',
     'competitors_block_hint' => 'No competitors tracked yet. Add them under Listings > Competitors first.',
     'ai_instructions' => 'AI instructions',
+    'ai_fallback_title' => 'Report generated without AI analysis',
+    'ai_fallback_body' => 'The monthly AI report allowance is used up, so this report has no AI blocks (summary, staff mentions, topics, themes). Top up credits or upgrade the plan to bring them back.',
     'ai_instructions_help' => 'Optional guidance for the AI narrative. Most useful for staff names: list your team and any nicknames so mentions are matched to the right person. Saved once and applied to every future report, including scheduled ones.',
     'ai_instructions_placeholder' => 'Our staff: Eva, Alette, Suleyman (also written Suly), Lisa. Merge nicknames into the full name.',
     'ai_improve' => 'Improve with AI',

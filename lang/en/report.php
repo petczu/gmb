@@ -22,6 +22,7 @@ return [
     // Report builder presets (ReportBlocks::presetLabels)
     'preset_standard' => 'Standard',
     'preset_full' => 'Full',
+    'preset_custom' => 'Custom',
     'preset_bonus' => 'Staff & bonuses',
     'preset_compliance' => 'Collection compliance',
 

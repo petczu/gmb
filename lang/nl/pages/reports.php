@@ -28,6 +28,8 @@ return [
     'blocks' => 'Blokken',
     'competitors_block_hint' => 'Nog geen concurrenten gevolgd. Voeg ze eerst toe onder Vermeldingen > Concurrenten.',
     'ai_instructions' => 'AI-instructies',
+    'ai_fallback_title' => 'Rapport gegenereerd zonder AI-analyse',
+    'ai_fallback_body' => 'Het maandelijkse tegoed voor AI-rapporten is op, dus dit rapport bevat geen AI-blokken (samenvatting, personeel, onderwerpen). Vul credits aan of upgrade het plan om ze terug te krijgen.',
     'ai_instructions_help' => 'Optionele aanwijzingen voor het AI-verhaal. Vooral handig voor namen van medewerkers: noem je team en eventuele bijnamen zodat vermeldingen aan de juiste persoon worden gekoppeld. Wordt eenmalig opgeslagen en toegepast op elk toekomstig rapport, ook geplande.',
     'ai_instructions_placeholder' => 'Onze medewerkers: Eva, Alette, Suleyman (ook geschreven als Suly), Lisa. Voeg bijnamen samen tot de volledige naam.',
     'ai_improve' => 'Verbeteren met AI',

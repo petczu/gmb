@@ -75,6 +75,9 @@ class ReportBlocks
             'full' => __('report.preset_full'),
             'bonus' => __('report.preset_bonus'),
             'compliance' => __('report.preset_compliance'),
+            // Not a real preset: shown when the block selection matches none
+            // of the above (e.g. hand-tuned, or saved before a block existed).
+            'custom' => __('report.preset_custom'),
         ];
     }
 

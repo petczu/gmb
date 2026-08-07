@@ -142,6 +142,7 @@ return [
     // Report presets
     'preset_standard' => 'Padrão',
     'preset_full' => 'Completo',
+    'preset_custom' => 'Personalizado',
     'preset_bonus' => 'Equipe e bônus',
     'preset_compliance' => 'Conformidade da coleta',
     'block_posts' => 'Publicações do Google',

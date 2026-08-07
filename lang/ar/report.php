@@ -19,6 +19,7 @@ return [
     'block_methodology' => 'المنهجية والملاحظات',
     'preset_standard' => 'قياسي',
     'preset_full' => 'كامل',
+    'preset_custom' => 'مخصص',
     'preset_bonus' => 'الموظفون والمكافآت',
     'preset_compliance' => 'الامتثال في الجمع',
 

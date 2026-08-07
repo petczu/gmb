@@ -28,6 +28,8 @@ return [
     'blocks' => 'Bloki',
     'competitors_block_hint' => 'Nie śledzisz jeszcze żadnych konkurentów. Najpierw dodaj ich w Wizytówki > Konkurenci.',
     'ai_instructions' => 'Instrukcje dla AI',
+    'ai_fallback_title' => 'Raport wygenerowany bez analizy AI',
+    'ai_fallback_body' => 'Miesięczny limit raportów AI został wyczerpany, więc ten raport nie zawiera bloków AI (podsumowanie, personel, tematy). Doładuj kredyty lub zmień plan, aby je przywrócić.',
     'ai_instructions_help' => 'Opcjonalne wskazówki do tekstu tworzonego przez AI. Najbardziej przydatne przy nazwiskach pracowników: wypisz swój zespół i wszelkie pseudonimy, aby wzmianki były przypisane do właściwej osoby. Zapisywane raz i stosowane do każdego kolejnego raportu, w tym zaplanowanych.',
     'ai_instructions_placeholder' => 'Nasz zespół: Eva, Alette, Suleyman (pisany też Suly), Lisa. Połącz pseudonimy z pełnym imieniem.',
     'ai_improve' => 'Ulepsz z AI',
