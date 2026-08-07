@@ -90,7 +90,7 @@ class GeneratePostImagesJob implements ShouldQueue
             $headlineWords = max(2, min(8, (int) ($workspace->ai_image_headline_words ?? 5)));
 
             $styleLine = match ($refs->isNotEmpty() ? 'reference' : $baseStyle) {
-                'reference' => 'Style: the attached image(s) are the brand template. Copy these EXACTLY from them: (1) the color palette and grading, including background tones and lighting temperature; (2) the typography system: same font style, weight, letter case, text block placement and the accent color used on one word; (3) lighting effects and mood (e.g. backlight, smoke, negative space). At the same time invent a completely NEW scene for the subject: different people, poses, setting and camera angle; never reuse the people, objects or text of the references. The result must look like the SAME designer made another post from the SAME template.',
+                'reference' => 'Style: the attached image(s) are the brand template. Copy these EXACTLY from them: (1) the color palette and grading, including background tones and lighting temperature; (2) the typography system: same font style, weight, letter case, text block placement and the accent color used on one word; (3) lighting effects and mood (e.g. backlight, smoke, negative space); (4) the brand LOGO: reproduce it faithfully in the same position and size as in the references — the logo is part of the template and must always be present. At the same time invent a completely NEW scene for the subject: different people, poses, setting and camera angle; never reuse the people, scene objects or headline text of the references (the logo is the only element to copy as-is). The result must look like the SAME designer made another post from the SAME template.',
                 'illustration' => 'Style: high-quality flat illustration with the brand mood, clean shapes, consistent palette.',
                 'minimal' => 'Style: minimal and typographic, lots of negative space, one strong visual element, brand colors.',
                 default => 'Style: photorealistic, like a real photo: real people, natural light, candid, high detail. NOT an illustration, NOT a cartoon, NOT flat vector art.',
@@ -104,7 +104,7 @@ class GeneratePostImagesJob implements ShouldQueue
                 'Subject: '.$this->prompt,
                 $styleLine,
                 $headline
-                    ? 'Text in the image: exactly ONE short headline of '.$headlineWords.' words maximum about the occasion, in the same language as the subject, integrated tastefully. No other text: never sentences, paragraphs or lists.'
+                    ? 'Text in the image: exactly ONE short headline of '.$headlineWords.' words maximum about the occasion, in the same language as the subject, integrated tastefully. Never end the headline with a period. No other text: never sentences, paragraphs or lists.'
                     : 'Text in the image: none at all. No words, letters or logos.',
                 // The output is center-cropped to 4:3 for Google afterwards.
                 'Composition: keep all text and key elements inside the central 80% of the frame (safe area); the sides will be cropped.',
