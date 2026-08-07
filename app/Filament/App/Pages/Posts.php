@@ -1491,8 +1491,8 @@ class Posts extends Page implements HasTable
                     .'<div style="display:flex; align-items:center; justify-content:space-between; gap:.4rem; padding:.25rem .55rem; min-height:2.3rem;">'
                     .'<span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:#6b7280; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'.e((string) ($c['label'] ?? $c['provider'] ?? '')).'</span>'
                     .($inUse
-                        ? '<span style="display:inline-flex; align-items:center; gap:.35rem;">'
-                            .'<span style="display:inline-flex; align-items:center; gap:.25rem; color:#2d19ec; font-size:.75rem; font-weight:700;">'.svg('heroicon-m-check-circle', ['style' => 'width:.85rem; height:.85rem;'])->toHtml().e(__('pages/posts.ai_image_in_use')).'</span>'
+                        ? '<span style="display:inline-flex; align-items:center; gap:.3rem; white-space:nowrap; line-height:1;">'
+                            .'<span style="display:inline-flex; align-items:center; gap:.25rem; color:#2d19ec; font-size:.75rem; font-weight:700; line-height:1; white-space:nowrap;">'.svg('heroicon-m-check-circle', ['style' => 'width:.85rem; height:.85rem;'])->toHtml().e(__('pages/posts.ai_image_in_use')).'</span>'
                             .'<button type="button" title="'.e(__('pages/posts.delete')).'" style="display:inline-grid; place-items:center; width:1.3rem; height:1.3rem; background:none; border:none; color:#9ca3af; cursor:pointer;" wire:click="clearTriedImage">'.svg('heroicon-m-x-mark', ['style' => 'width:.85rem; height:.85rem;'])->toHtml().'</button>'
                             .'</span>'
                         : '<button type="button" style="background:#2d19ec; color:#fff; border:none; border-radius:.45rem; padding:.25rem .65rem; font-size:.75rem; font-weight:600; cursor:pointer;" wire:click="tryPostImage('.$i.')">'.e(__('pages/posts.ai_image_try')).'</button>')
@@ -3706,6 +3706,13 @@ class Posts extends Page implements HasTable
         } elseif (is_string($media) && filled($media)) {
             $url = url(Storage::disk('uploads')->url($media));
             $this->isVideoPath($media) ? $videoUrl = $url : $imageUrl = $url;
+        } else {
+            // A tried AI candidate lives on the draft's image_url only (the
+            // upload field stays reserved for the user's own files).
+            $aiImage = (string) Post::query()->whereKey($this->viewingPostId)->value('image_url');
+            if (str_contains($aiImage, '/ai-')) {
+                $imageUrl = $aiImage;
+            }
         }
 
         $type = (string) $get('type');
