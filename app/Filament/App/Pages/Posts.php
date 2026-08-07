@@ -1384,7 +1384,12 @@ class Posts extends Page implements HasTable
         $about = trim((string) array_shift($paragraphs));
         $ideas = trim(implode("\n\n", $paragraphs));
 
-        $html = '<div dir="auto" style="font-size:.9rem; line-height:1.6; white-space:pre-wrap;">'.e($about).'</div>';
+        // Date right under the heading, before the explainer text.
+        $html = '<div style="margin-bottom:.6rem; display:flex; align-items:center; gap:.35rem; font-size:.78rem; color:#6b7280;">'
+            .svg('heroicon-o-calendar', ['style' => 'width:.85rem; height:.85rem; flex:none;'])->toHtml()
+            .e($event->date->translatedFormat('l, j F Y'))
+            .'</div>'
+            .'<div dir="auto" style="font-size:.9rem; line-height:1.6; white-space:pre-wrap;">'.e($about).'</div>';
 
         if ($ideas !== '') {
             $html .= '<div style="margin-top:.8rem; padding:.7rem .85rem; border-radius:.65rem; background:#eef2ff; border:1px solid #e0e7ff;">'
@@ -1396,11 +1401,7 @@ class Posts extends Page implements HasTable
                 .'</div>';
         }
 
-        return $html
-            .'<div style="margin-top:.7rem; display:flex; align-items:center; gap:.35rem; font-size:.75rem; color:#9ca3af;">'
-            .svg('heroicon-o-calendar', ['style' => 'width:.85rem; height:.85rem; flex:none;'])->toHtml()
-            .e($event->date->translatedFormat('l, j F Y'))
-            .'</div>';
+        return $html;
     }
 
     /** Briefs are PLATFORM-wide: one hash per day + title + country + language,
