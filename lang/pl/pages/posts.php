@@ -145,6 +145,8 @@ return [
     'calendar_edit_heading' => 'Edytuj kalendarz',
     'holiday_info_failed' => 'Nie udało się teraz wczytać informacji. Spróbuj ponownie za chwilę.',
     'ai_image_button' => 'Wygeneruj obraz',
+    'ai_image_not_configured' => 'Styl obrazów AI nie jest jeszcze skonfigurowany dla tej przestrzeni. Najpierw dodaj projekty wzorcowe lub notatki o stylu, aby generacje pasowały do Twojej marki.',
+    'ai_image_configure' => 'Otwórz ustawienia',
     'ai_image_try' => 'Wypróbuj',
     'ai_image_in_use' => 'W użyciu',
     'ai_image_regenerate' => 'Wygeneruj ponownie',

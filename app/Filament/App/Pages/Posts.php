@@ -1389,12 +1389,24 @@ class Posts extends Page implements HasTable
     /** Prompt for the AI image generator in the composer. */
     public string $aiImagePrompt = '';
 
+    /** Style configured = at least reference designs or style notes saved
+     *  on Settings > AI images; without them generations come out off-brand. */
+    private function aiImageStyleConfigured(): bool
+    {
+        $workspace = Workspace::find(session('current_workspace_id'));
+
+        $refs = collect((array) ($workspace?->ai_image_refs ?? []))
+            ->filter(fn ($path): bool => is_string($path) && Storage::disk('uploads')->exists($path));
+
+        return $refs->isNotEmpty() || filled($workspace?->ai_image_notes ?? null);
+    }
+
     public function generatePostImages(): void
     {
         $draft = Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->first();
         $prompt = trim($this->aiImagePrompt) !== '' ? trim($this->aiImagePrompt) : trim((string) $draft?->caption);
 
-        if ($draft === null || $prompt === '') {
+        if ($draft === null || $prompt === '' || ! $this->aiImageStyleConfigured()) {
             return;
         }
 
@@ -1486,6 +1498,23 @@ class Posts extends Page implements HasTable
     {
         $label = $regenerate ? __('pages/posts.ai_image_regenerate') : __('pages/posts.ai_image_button');
 
+        // No brand style configured yet: explain and link to the settings
+        // instead of offering an off-brand generation.
+        $panelBody = null;
+        if (! $this->aiImageStyleConfigured()) {
+            $panelBody = '<div style="display:flex; gap:.5rem; align-items:flex-start; font-size:.82rem; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:.55rem; padding:.55rem .7rem;">'
+                .svg('heroicon-o-exclamation-triangle', ['style' => 'width:1rem; height:1rem; flex:none; margin-top:.1rem;'])->toHtml()
+                .'<span>'.e(__('pages/posts.ai_image_not_configured')).'</span>'
+                .'</div>'
+                .'<div style="display:flex; justify-content:flex-end; gap:.4rem; margin-top:.55rem;">'
+                .'<button type="button" style="border:1px solid #d1d5db; background:transparent; border-radius:.5rem; padding:.35rem .8rem; font-size:.8rem; font-weight:600; color:inherit; cursor:pointer;" @click="open = false">'.e(__('pages/posts.close')).'</button>'
+                .'<a href="'.e(url('/ai-images')).'" style="display:inline-flex; align-items:center; gap:.3rem; background:#2d19ec; color:#fff; border-radius:.5rem; padding:.35rem .8rem; font-size:.8rem; font-weight:600; text-decoration:none;">'
+                .svg('heroicon-m-cog-6-tooth', ['style' => 'width:.8rem; height:.8rem;'])->toHtml()
+                .e(__('pages/posts.ai_image_configure'))
+                .'</a>'
+                .'</div>';
+        }
+
         // Just the button; the description is asked in a floating panel on
         // top of the composer (nested Filament modals would swap, not stack).
         return '<div x-data="{ open: false }" style="display:flex; justify-content:flex-start; position:relative;">'
@@ -1497,7 +1526,7 @@ class Posts extends Page implements HasTable
             .'</button>'
             .'<div x-ref="pop" x-show="open" x-cloak @click.outside="open = false" class="pcg-pop">'
             .'<div style="font-size:.85rem; font-weight:700; margin-bottom:.15rem;">'.e(__('pages/posts.ai_image_panel_title')).'</div>'
-            .'<div style="font-size:.75rem; color:#6b7280; margin-bottom:.5rem;">'.e(__('pages/posts.ai_image_panel_hint')).'</div>'
+            .($panelBody ?? '<div style="font-size:.75rem; color:#6b7280; margin-bottom:.5rem;">'.e(__('pages/posts.ai_image_panel_hint')).'</div>'
             .'<textarea wire:model="aiImagePrompt" rows="3" placeholder="'.e(__('pages/posts.ai_image_prompt_ph')).'"'
             .' style="width:100%; border:1px solid #d1d5db; border-radius:.5rem; padding:.45rem .6rem; font-size:.82rem; background:transparent; color:inherit; resize:vertical;"></textarea>'
             .'<div style="display:flex; justify-content:flex-end; gap:.4rem; margin-top:.55rem;">'
@@ -1506,7 +1535,7 @@ class Posts extends Page implements HasTable
             .svg('heroicon-m-sparkles', ['style' => 'width:.8rem; height:.8rem;'])->toHtml()
             .e(__('pages/posts.calendar_ai_submit'))
             .'</button>'
-            .'</div>'
+            .'</div>')
             .'<style>.pcg-pop { position:fixed; z-index:80; width:20rem; background:#fff; border:1px solid #e5e7eb; border-radius:.7rem; padding:.75rem .85rem; box-shadow:0 12px 30px -8px rgb(0 0 0 / .25); } .dark .pcg-pop { background:#1b1b21; border-color:rgb(255 255 255 / .12); }</style>'
             .'</div>'
             .'</div>';

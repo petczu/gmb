@@ -145,6 +145,8 @@ return [
     'calendar_edit_heading' => 'Kalender bewerken',
     'holiday_info_failed' => 'De informatie kon nu niet worden geladen. Probeer het zo opnieuw.',
     'ai_image_button' => 'Afbeelding genereren',
+    'ai_image_not_configured' => 'De AI-afbeeldingsstijl is nog niet ingesteld voor deze workspace. Voeg eerst referentieontwerpen of stijlnotities toe zodat generaties bij je merk passen.',
+    'ai_image_configure' => 'Instellingen openen',
     'ai_image_try' => 'Proberen',
     'ai_image_in_use' => 'In gebruik',
     'ai_image_regenerate' => 'Opnieuw genereren',

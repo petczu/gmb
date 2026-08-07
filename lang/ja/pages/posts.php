@@ -145,6 +145,8 @@ return [
     'calendar_edit_heading' => 'カレンダーを編集',
     'holiday_info_failed' => '情報を読み込めませんでした。しばらくしてからもう一度お試しください。',
     'ai_image_button' => '画像を生成',
+    'ai_image_not_configured' => 'このワークスペースでは AI 画像スタイルがまだ設定されていません。ブランドに合った生成のため、まず参照デザインかスタイルメモを追加してください。',
+    'ai_image_configure' => '設定を開く',
     'ai_image_try' => '試す',
     'ai_image_in_use' => '使用中',
     'ai_image_regenerate' => '再生成',

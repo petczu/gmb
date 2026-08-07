@@ -196,6 +196,8 @@ return [
     'calendar_edit_heading' => 'Edit calendar',
     'holiday_info_failed' => 'Could not load the information right now. Please try again in a moment.',
     'ai_image_button' => 'Generate image',
+    'ai_image_not_configured' => 'The AI image style is not set up for this workspace yet. Add reference designs or style notes first, so generations match your brand.',
+    'ai_image_configure' => 'Open settings',
     'ai_image_try' => 'Try',
     'ai_image_in_use' => 'In use',
     'ai_image_regenerate' => 'Regenerate',

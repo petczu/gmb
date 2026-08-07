@@ -145,6 +145,8 @@ return [
     'calendar_edit_heading' => 'Takvimi düzenle',
     'holiday_info_failed' => 'Bilgiler şu anda yüklenemedi. Birazdan tekrar deneyin.',
     'ai_image_button' => 'Görsel oluştur',
+    'ai_image_not_configured' => 'Bu çalışma alanı için yapay zekâ görsel stili henüz ayarlanmadı. Üretimlerin markana uyması için önce referans tasarımlar veya stil notları ekle.',
+    'ai_image_configure' => 'Ayarları aç',
     'ai_image_try' => 'Dene',
     'ai_image_in_use' => 'Kullanımda',
     'ai_image_regenerate' => 'Yeniden oluştur',

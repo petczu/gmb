@@ -145,6 +145,8 @@ return [
     'calendar_edit_heading' => 'Modifier le calendrier',
     'holiday_info_failed' => 'Impossible de charger les informations pour le moment. Réessayez dans un instant.',
     'ai_image_button' => 'Générer une image',
+    'ai_image_not_configured' => 'Le style d\'images IA n\'est pas encore configuré pour cet espace. Ajoutez d\'abord des designs de référence ou des notes de style pour des générations fidèles à votre marque.',
+    'ai_image_configure' => 'Ouvrir les réglages',
     'ai_image_try' => 'Essayer',
     'ai_image_in_use' => 'Utilisée',
     'ai_image_regenerate' => 'Régénérer',

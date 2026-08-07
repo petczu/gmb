@@ -196,6 +196,8 @@ return [
     'calendar_edit_heading' => 'Kalender bearbeiten',
     'holiday_info_failed' => 'Die Informationen konnten gerade nicht geladen werden. Versuche es gleich noch einmal.',
     'ai_image_button' => 'Bild generieren',
+    'ai_image_not_configured' => 'Der KI-Bildstil ist für diesen Workspace noch nicht eingerichtet. Hinterlege zuerst Referenz-Designs oder Stil-Notizen, damit die Ergebnisse zu deiner Marke passen.',
+    'ai_image_configure' => 'Einstellungen öffnen',
     'ai_image_try' => 'Ausprobieren',
     'ai_image_in_use' => 'Aktiv',
     'ai_image_regenerate' => 'Neu generieren',
