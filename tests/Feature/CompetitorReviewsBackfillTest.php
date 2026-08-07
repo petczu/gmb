@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Jobs\BackfillPlaceReviewsJob;
 use App\Models\PlaceReview;
 use App\Services\Competitors\DataForSeoReviewsClient;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -120,6 +121,21 @@ class CompetitorReviewsBackfillTest extends TestCase
         // Re-running upserts, not duplicates.
         (new BackfillPlaceReviewsJob('place-x', null, 'task-1'))->handle(app(DataForSeoReviewsClient::class));
         $this->assertSame(2, PlaceReview::query()->count());
+    }
+
+    public function test_a_poll_network_timeout_reschedules_instead_of_failing(): void
+    {
+        // A stalled DataForSEO response (cURL error 28) must behave exactly
+        // like "task not ready": schedule the next poll, no exception.
+        Http::fake(fn () => throw new ConnectionException('cURL error 28: Operation timed out'));
+        Bus::fake();
+
+        (new BackfillPlaceReviewsJob('place-x', null, 'task-1', 3))->handle(app(DataForSeoReviewsClient::class));
+
+        Bus::assertDispatched(
+            BackfillPlaceReviewsJob::class,
+            fn (BackfillPlaceReviewsJob $job): bool => $job->taskId === 'task-1' && $job->poll === 4,
+        );
     }
 
     public function test_command_dispatches_one_job_per_place(): void

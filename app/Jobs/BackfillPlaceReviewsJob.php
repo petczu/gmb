@@ -10,8 +10,10 @@ use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Backfill one place's reviews from DataForSEO without blocking a worker.
@@ -61,8 +63,20 @@ class BackfillPlaceReviewsJob implements ShouldQueue
             return;
         }
 
-        // Phase 2 — poll until DataForSEO has the results ready.
-        $reviews = $client->getTask($this->taskId);
+        // Phase 2 — poll until DataForSEO has the results ready. A network
+        // timeout on one poll is not a failure: treat it exactly like "not
+        // ready yet" and let the next delayed poll try again.
+        try {
+            $reviews = $client->getTask($this->taskId);
+        } catch (ConnectionException $e) {
+            Log::info('DataForSEO reviews poll timed out; will retry', [
+                'place' => $this->placeId,
+                'task' => $this->taskId,
+                'poll' => $this->poll,
+                'error' => $e->getMessage(),
+            ]);
+            $reviews = null;
+        }
 
         if ($reviews === null) {
             if ($this->poll + 1 < self::MAX_POLLS) {

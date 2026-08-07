@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Competitors;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
@@ -135,6 +136,10 @@ class DataForSeoReviewsClient
         )
             ->acceptJson()
             ->timeout(30)
-            ->connectTimeout(5);
+            ->connectTimeout(5)
+            // DataForSEO occasionally stalls past the 30s wall (cURL error
+            // 28); one quick in-process retry rides out the blip before the
+            // caller's own queue-level handling kicks in.
+            ->retry(2, 2000, fn (\Throwable $e): bool => $e instanceof ConnectionException, throw: true);
     }
 }
