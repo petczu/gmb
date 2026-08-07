@@ -1406,7 +1406,7 @@ class Posts extends Page implements HasTable
     }
 
     /** Use one generated candidate as the draft's image and drop the rest. */
-    public function choosePostImage(int $index): void
+    public function tryPostImage(int $index): void
     {
         $draft = Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->first();
         $candidate = $draft?->image_candidates[$index] ?? null;
@@ -1415,13 +1415,14 @@ class Posts extends Page implements HasTable
             return;
         }
 
+        // Candidates stay: trying one image must not burn the other, the
+        // user flips between them until the draft is published.
         $draft->forceFill([
             'image_url' => $this->mediaUrl((string) $candidate['path']),
             'video_url' => null,
-            'image_candidates' => null,
         ])->save();
 
-        // Remount so the media field rehydrates with the chosen image.
+        // Remount so the media field and preview rehydrate with this image.
         $this->replaceMountedAction('editDraft');
     }
 
@@ -1455,18 +1456,35 @@ class Posts extends Page implements HasTable
         $candidates = collect($draft->image_candidates ?? [])->values();
 
         if ($candidates->isNotEmpty()) {
-            $cards = $candidates->map(fn (array $c, int $i): string => '<div style="flex:1; min-width:0; border:1px solid #e5e7eb; border-radius:.6rem; overflow:hidden;">'
-                .'<img src="'.e((string) $this->mediaUrl((string) $c['path'])).'" alt="" style="width:100%; height:7.5rem; object-fit:cover; display:block;">'
-                .'<div style="display:flex; align-items:center; justify-content:space-between; gap:.4rem; padding:.4rem .55rem;">'
-                .'<span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:#6b7280;">'.e((string) ($c['provider'] ?? '')).'</span>'
-                .'<button type="button" style="background:#2d19ec; color:#fff; border:none; border-radius:.45rem; padding:.25rem .65rem; font-size:.75rem; font-weight:600; cursor:pointer;" wire:click="choosePostImage('.$i.')">'.e(__('pages/posts.ai_image_use')).'</button>'
-                .'</div></div>')->implode('');
+            $cards = $candidates->map(function (array $c, int $i) use ($draft): string {
+                $url = (string) $this->mediaUrl((string) $c['path']);
+                $inUse = $draft->image_url === $url;
+
+                return '<div style="flex:1; min-width:0; border:2px solid '.($inUse ? '#2d19ec' : '#e5e7eb').'; border-radius:.6rem; overflow:hidden;">'
+                    .'<img src="'.e($url).'" alt="" style="width:100%; height:7.5rem; object-fit:cover; display:block;">'
+                    .'<div style="display:flex; align-items:center; justify-content:space-between; gap:.4rem; padding:.4rem .55rem;">'
+                    .'<span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:#6b7280;">'.e((string) ($c['provider'] ?? '')).'</span>'
+                    .($inUse
+                        ? '<span style="display:inline-flex; align-items:center; gap:.25rem; color:#2d19ec; font-size:.75rem; font-weight:700;">'.svg('heroicon-m-check-circle', ['style' => 'width:.85rem; height:.85rem;'])->toHtml().e(__('pages/posts.ai_image_in_use')).'</span>'
+                        : '<button type="button" style="background:#2d19ec; color:#fff; border:none; border-radius:.45rem; padding:.25rem .65rem; font-size:.75rem; font-weight:600; cursor:pointer;" wire:click="tryPostImage('.$i.')">'.e(__('pages/posts.ai_image_try')).'</button>')
+                    .'</div></div>';
+            })->implode('');
 
             return '<div style="margin-top:.35rem;">'
                 .'<div style="font-size:.78rem; font-weight:600; color:#374151; margin-bottom:.4rem;">'.e(__('pages/posts.ai_image_pick')).'</div>'
-                .'<div style="display:flex; gap:.6rem;">'.$cards.'</div>'
+                .'<div style="display:flex; gap:.6rem; margin-bottom:.5rem;">'.$cards.'</div>'
+                .$this->aiImageGenerateButtonHtml(regenerate: true)
                 .'</div>';
         }
+
+        return $this->aiImageGenerateButtonHtml(regenerate: false);
+    }
+
+    /** The generate/regenerate button with its floating prompt panel (a
+     *  nested Filament modal would swap the composer away, so it floats). */
+    private function aiImageGenerateButtonHtml(bool $regenerate): string
+    {
+        $label = $regenerate ? __('pages/posts.ai_image_regenerate') : __('pages/posts.ai_image_button');
 
         // Just the button; the description is asked in a floating panel on
         // top of the composer (nested Filament modals would swap, not stack).
@@ -1475,7 +1493,7 @@ class Posts extends Page implements HasTable
             .' @click="open = ! open; $nextTick(() => { if (! open) return; const r = $refs.btn.getBoundingClientRect();'
             .' $refs.pop.style.top = (r.bottom + 8) + \'px\'; $refs.pop.style.left = Math.max(8, r.left) + \'px\'; })">'
             .svg('heroicon-m-sparkles', ['style' => 'width:.85rem; height:.85rem; color:#2d19ec;'])->toHtml()
-            .e(__('pages/posts.ai_image_button'))
+            .e($label)
             .'</button>'
             .'<div x-ref="pop" x-show="open" x-cloak @click.outside="open = false" class="pcg-pop">'
             .'<div style="font-size:.85rem; font-weight:700; margin-bottom:.15rem;">'.e(__('pages/posts.ai_image_panel_title')).'</div>'

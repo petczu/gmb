@@ -710,12 +710,17 @@ class PostsCalendarTest extends TestCase
 
         $component = Livewire::test(Posts::class);
         $component->set('viewingPostId', $draft->id);
-        $component->call('choosePostImage', 1);
+        $component->call('tryPostImage', 1);
 
         $draft->refresh();
         $this->assertStringContainsString('ai-openai-def.png', (string) $draft->image_url);
-        $this->assertNull($draft->image_candidates);
+        // Candidates survive so the user can flip between them.
+        $this->assertCount(2, $draft->image_candidates);
         $component->assertActionMounted('editDraft');
+
+        $component->call('tryPostImage', 0);
+        $draft->refresh();
+        $this->assertStringContainsString('ai-gemini-abc.png', (string) $draft->image_url);
     }
 
     public function test_a_post_uid_deep_link_opens_the_dialog(): void
