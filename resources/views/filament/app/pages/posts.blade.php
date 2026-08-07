@@ -277,7 +277,8 @@
                                                 @if ($section['mode'] === 'locations') wire:click="toggleLocationFilter({{ (int) $option['value'] }})"
                                                 @elseif ($section['mode'] === 'tags') wire:click="toggleNoteTagFilter(@js($option['value']))"
                                                 @else wire:click="toggleArrayFilter('{{ $section['key'] }}', {{ \Illuminate\Support\Js::from((string) $option['value']) }})" @endif>
-                                            <span class="nm">{{ $option['label'] }}</span>
+                                            {{-- Long location names get clipped; the full name lives in the tooltip. --}}
+                                            <span class="nm" title="{{ $option['label'] }}">{{ \Illuminate\Support\Str::limit((string) $option['label'], 28) }}</span>
                                             <span class="cnt">{{ $option['count'] }}</span>
                                         </label>
                                     @endforeach
@@ -490,7 +491,7 @@
                                         @endif
                                     </span>
                                     @if (filled($post->caption) || filled($post->title))
-                                        <span class="cap">{{ \Illuminate\Support\Str::limit($post->title ?: $post->caption, 60) }}</span>
+                                        <span class="cap" dir="auto">{{ \Illuminate\Support\Str::limit($post->title ?: $post->caption, 60) }}</span>
                                     @endif
                                     @if (! empty($post->label_ids))
                                         <span style="display:flex; flex-wrap:wrap; gap:.2rem; margin-top:.25rem;">

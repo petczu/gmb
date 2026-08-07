@@ -2839,8 +2839,9 @@ class Posts extends Page implements HasTable
 
         $html .= '<div style="padding:.9rem .9rem .35rem;">';
 
+        // dir=auto: RTL captions/titles (Arabic, Hebrew) align right on their own.
         if (filled($d['title'] ?? null)) {
-            $html .= '<div style="font-weight:700; font-size:.95rem; margin-bottom:.25rem;">'.e((string) $d['title']).'</div>';
+            $html .= '<div dir="auto" style="font-weight:700; font-size:.95rem; margin-bottom:.25rem;">'.e((string) $d['title']).'</div>';
         }
         if (filled($d['dates'] ?? null)) {
             $html .= '<div style="font-size:.8rem; color:#5f6368; margin-bottom:.35rem;">'.e((string) $d['dates']).'</div>';
@@ -2848,7 +2849,7 @@ class Posts extends Page implements HasTable
         if (filled($d['caption'] ?? null)) {
             // Collapse the 3+ blank lines Google/imported posts often carry.
             $caption = (string) preg_replace('/\n{3,}/', "\n\n", (string) $d['caption']);
-            $html .= '<div style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit($caption, 600)).'</div>';
+            $html .= '<div dir="auto" style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit($caption, 600)).'</div>';
         } elseif (! empty($d['captionPlaceholder'])) {
             $html .= '<div style="font-size:.9rem; color:#c0c3c9;">'.e(__('pages/posts.preview_placeholder')).'</div>';
         }
