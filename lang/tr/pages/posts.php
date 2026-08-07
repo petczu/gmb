@@ -144,6 +144,7 @@ return [
     'calendar_ai_button' => 'Yapay zekâ ile takvim oluştur',
     'calendar_edit_heading' => 'Takvimi düzenle',
     'holiday_info_failed' => 'Bilgiler şu anda yüklenemedi. Birazdan tekrar deneyin.',
+    'holiday_info_ideas' => 'Gönderi fikirleri',
     'holiday_info_loading' => 'Yapay zekâ kısa bir özet yazıyor...',
     'save' => 'Kaydet',
     'calendar_ai_edit_heading' => 'Yapay zekâ takvimini düzenle',

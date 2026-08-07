@@ -144,6 +144,7 @@ return [
     'calendar_ai_button' => 'إنشاء تقويم بالذكاء الاصطناعي',
     'calendar_edit_heading' => 'تعديل التقويم',
     'holiday_info_failed' => 'تعذر تحميل المعلومات الآن. حاول مرة أخرى بعد قليل.',
+    'holiday_info_ideas' => 'أفكار للمنشورات',
     'holiday_info_loading' => 'الذكاء الاصطناعي يكتب ملخصًا قصيرًا...',
     'save' => 'حفظ',
     'calendar_ai_edit_heading' => 'تعديل تقويم الذكاء الاصطناعي',

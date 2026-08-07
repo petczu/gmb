@@ -144,6 +144,7 @@ return [
     'calendar_ai_button' => 'Kalender genereren met AI',
     'calendar_edit_heading' => 'Kalender bewerken',
     'holiday_info_failed' => 'De informatie kon nu niet worden geladen. Probeer het zo opnieuw.',
+    'holiday_info_ideas' => 'Postideeën',
     'holiday_info_loading' => 'De AI schrijft een korte toelichting...',
     'save' => 'Opslaan',
     'calendar_ai_edit_heading' => 'AI-kalender bewerken',

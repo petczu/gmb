@@ -54,7 +54,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Image;
 use Illuminate\Support\Facades\Log;
@@ -1376,10 +1375,28 @@ class Posts extends Page implements HasTable
         return $text === null ? null : $this->wrapHolidayInfo((string) $text, $event);
     }
 
-    /** Escape + layout for the explainer text (cache stores plain text). */
+    /** Escape + layout for the explainer text (stored as plain text). The
+     *  brief is two paragraphs: what the day is, then post ideas — the ideas
+     *  get their own highlighted card so the structure reads at a glance. */
     private function wrapHolidayInfo(string $text, ExternalCalendarEvent $event): string
     {
-        return '<div dir="auto" style="font-size:.9rem; line-height:1.6; white-space:pre-wrap;">'.e($text).'</div>'
+        $paragraphs = preg_split('/\n{2,}/', trim($text)) ?: [trim($text)];
+        $about = trim((string) array_shift($paragraphs));
+        $ideas = trim(implode("\n\n", $paragraphs));
+
+        $html = '<div dir="auto" style="font-size:.9rem; line-height:1.6; white-space:pre-wrap;">'.e($about).'</div>';
+
+        if ($ideas !== '') {
+            $html .= '<div style="margin-top:.8rem; padding:.7rem .85rem; border-radius:.65rem; background:#eef2ff; border:1px solid #e0e7ff;">'
+                .'<div style="display:flex; align-items:center; gap:.35rem; font-size:.72rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:#2d19ec; margin-bottom:.35rem;">'
+                .svg('heroicon-m-light-bulb', ['style' => 'width:.85rem; height:.85rem; flex:none;'])->toHtml()
+                .e(__('pages/posts.holiday_info_ideas'))
+                .'</div>'
+                .'<div dir="auto" style="font-size:.88rem; line-height:1.6; white-space:pre-wrap; color:#312e81;">'.e($ideas).'</div>'
+                .'</div>';
+        }
+
+        return $html
             .'<div style="margin-top:.7rem; font-size:.75rem; color:#9ca3af;">'.e($event->date->translatedFormat('l, j F Y')).'</div>';
     }
 

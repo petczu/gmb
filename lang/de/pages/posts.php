@@ -194,6 +194,7 @@ return [
     'calendar_ai_button' => 'Kalender mit KI erstellen',
     'calendar_edit_heading' => 'Kalender bearbeiten',
     'holiday_info_failed' => 'Die Informationen konnten gerade nicht geladen werden. Versuche es gleich noch einmal.',
+    'holiday_info_ideas' => 'Post-Ideen',
     'holiday_info_loading' => 'Die KI schreibt eine kurze Info...',
     'save' => 'Speichern',
     'calendar_ai_edit_heading' => 'KI-Kalender bearbeiten',

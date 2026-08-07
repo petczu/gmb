@@ -144,6 +144,7 @@ return [
     'calendar_ai_button' => 'AI でカレンダーを生成',
     'calendar_edit_heading' => 'カレンダーを編集',
     'holiday_info_failed' => '情報を読み込めませんでした。しばらくしてからもう一度お試しください。',
+    'holiday_info_ideas' => '投稿アイデア',
     'holiday_info_loading' => 'AI が概要を作成しています...',
     'save' => '保存',
     'calendar_ai_edit_heading' => 'AI カレンダーを編集',

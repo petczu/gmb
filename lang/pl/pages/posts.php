@@ -144,6 +144,7 @@ return [
     'calendar_ai_button' => 'Wygeneruj kalendarz z AI',
     'calendar_edit_heading' => 'Edytuj kalendarz',
     'holiday_info_failed' => 'Nie udało się teraz wczytać informacji. Spróbuj ponownie za chwilę.',
+    'holiday_info_ideas' => 'Pomysły na posty',
     'holiday_info_loading' => 'AI pisze krótką notatkę...',
     'save' => 'Zapisz',
     'calendar_ai_edit_heading' => 'Edytuj kalendarz AI',

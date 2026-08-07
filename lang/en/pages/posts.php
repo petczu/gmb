@@ -194,6 +194,7 @@ return [
     'calendar_ai_button' => 'Generate calendar with AI',
     'calendar_edit_heading' => 'Edit calendar',
     'holiday_info_failed' => 'Could not load the information right now. Please try again in a moment.',
+    'holiday_info_ideas' => 'Post ideas',
     'holiday_info_loading' => 'The AI is writing a short brief...',
     'save' => 'Save',
     'calendar_ai_edit_heading' => 'Edit AI calendar',

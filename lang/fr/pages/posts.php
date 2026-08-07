@@ -144,6 +144,7 @@ return [
     'calendar_ai_button' => 'Générer un calendrier avec l\'IA',
     'calendar_edit_heading' => 'Modifier le calendrier',
     'holiday_info_failed' => 'Impossible de charger les informations pour le moment. Réessayez dans un instant.',
+    'holiday_info_ideas' => 'Idées de post',
     'holiday_info_loading' => 'L\'IA rédige un court résumé...',
     'save' => 'Enregistrer',
     'calendar_ai_edit_heading' => 'Modifier le calendrier IA',
