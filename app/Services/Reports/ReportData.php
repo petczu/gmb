@@ -142,6 +142,11 @@ class ReportData
 
         $byType = $current->countBy('type')->sortDesc()->all();
 
+        // Location line only helps when the workspace has several locations;
+        // with a single one it would repeat the report's own header.
+        $locationNames = Location::query()->pluck('name', 'id');
+        $multiLocation = $locationNames->count() > 1;
+
         return [
             'total' => $current->count(),
             'prev' => $prev,
@@ -153,10 +158,13 @@ class ReportData
                 ->map(fn (Post $p): array => [
                     'date' => ($p->scheduled_at ?? $p->created_at)->translatedFormat('M j'),
                     'type' => (string) $p->type,
-                    'caption' => Str::limit(trim((string) ($p->title ?: $p->caption)), 110),
+                    'caption' => Str::limit(trim((string) ($p->title ?: $p->caption)), 220),
                     'hasMedia' => filled($p->image_url) || filled($p->video_url),
                     'image' => $p->image_url,
                     'isVideo' => filled($p->video_url),
+                    'location' => $multiLocation
+                        ? $locationNames->only(array_map('intval', $p->location_ids ?? []))->implode(' · ')
+                        : '',
                 ])
                 ->values()
                 ->all(),

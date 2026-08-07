@@ -24,6 +24,12 @@ class ReportPostsBlockTest extends TestCase
     {
         parent::setUp();
 
+        Schema::create('locations', function ($table): void {
+            $table->increments('id');
+            $table->string('name');
+            $table->timestamps();
+        });
+
         Schema::create('posts', function ($table): void {
             $table->increments('id');
             $table->string('type', 20);

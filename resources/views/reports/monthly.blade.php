@@ -235,16 +235,17 @@
                     <tbody>
                         @foreach($posts['recent'] as $row)
                             <tr @if(! $loop->first) style="border-top:1px solid #eef0f4;" @endif>
-                                <td style="padding:12px 12px 12px 0; width:96px;">
+                                <td style="padding:12px 14px 12px 0; width:148px;">
+                                    {{-- Landscape tile: Google post photos are wide, a square crops them hard. --}}
                                     @if (! empty($row['image']))
-                                        <img src="{{ $row['image'] }}" alt="" style="width:84px; height:84px; object-fit:cover; border-radius:10px; display:block;">
+                                        <img src="{{ $row['image'] }}" alt="" style="width:134px; height:88px; object-fit:cover; border-radius:10px; display:block;">
                                     @elseif (! empty($row['isVideo']))
                                         {{-- Video posts have no still frame in a static report; show a play tile. --}}
-                                        <span style="width:84px; height:84px; border-radius:10px; background:#eef0f4; color:#6b7280; display:flex; align-items:center; justify-content:center;">
+                                        <span style="width:134px; height:88px; border-radius:10px; background:#eef0f4; color:#6b7280; display:flex; align-items:center; justify-content:center;">
                                             <svg style="width:26px; height:26px;" viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"/></svg>
                                         </span>
                                     @else
-                                        <span style="width:84px; height:84px; border-radius:10px; background:#f6f7f9; display:block;"></span>
+                                        <span style="width:134px; height:88px; border-radius:10px; background:#f6f7f9; display:block;"></span>
                                     @endif
                                 </td>
                                 <td style="padding:12px 12px 12px 0; vertical-align:top;">
@@ -252,7 +253,10 @@
                                         <span style="background:#eef2ff; color:#2d19ec; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:600;">{{ __('pages/posts.type_'.$row['type']) }}</span>
                                         <span style="color:#6b7280; white-space:nowrap;">{{ $row['date'] }}</span>
                                     </div>
-                                    <div style="color:#374151; line-height:1.5;">{{ $row['caption'] !== '' ? $row['caption'] : '—' }}</div>
+                                    <div style="color:#374151; line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">{{ $row['caption'] !== '' ? $row['caption'] : '—' }}</div>
+                                    @if (! empty($row['location']))
+                                        <div style="color:#9ca3af; font-size:11px; margin-top:4px; display:flex; align-items:center; gap:3px;">@svg('heroicon-o-map-pin', ['style' => 'width:12px; height:12px; flex:none;']) {{ $row['location'] }}</div>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
