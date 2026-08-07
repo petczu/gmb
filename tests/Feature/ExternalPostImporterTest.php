@@ -54,6 +54,7 @@ class ExternalPostImporterTest extends TestCase
             $table->json('external_ids')->nullable();
             $table->string('created_by_name')->nullable();
             $table->string('uid', 32)->nullable();
+            $table->json('image_candidates')->nullable();
             $table->timestamps();
         });
     }

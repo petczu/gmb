@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Posts;
 
 use App\Models\ExternalCalendar;
+use App\Models\Workspace;
+use App\Services\Ai\AiCreditService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Throwable;
@@ -170,6 +172,20 @@ class HolidayCalendarSync
             ),
             model: (string) config('services.ai.model', 'claude-sonnet-4-6'),
         );
+
+        // Visible in the super-admin AI usage ledger like every other AI call.
+        if (($workspace = tenant()) instanceof Workspace) {
+            app(AiCreditService::class)->logUsage(
+                $workspace,
+                'holiday_calendar',
+                (string) config('services.ai.model', 'claude-sonnet-4-6'),
+                (int) ($response->usage->promptTokens ?? 0),
+                (int) ($response->usage->completionTokens ?? 0),
+                0,
+                'external_calendar',
+                (string) $calendar->id,
+            );
+        }
 
         $events = collect($response['events'] ?? [])
             ->filter(fn ($e): bool => is_array($e) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($e['date'] ?? '')) === 1 && filled($e['title'] ?? null))

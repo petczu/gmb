@@ -190,6 +190,7 @@ class Company extends Page implements HasForms
                             ->disabled(! $canBrand),
                     ])
                     ->columns(2),
+
             ]);
     }
 

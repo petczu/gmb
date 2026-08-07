@@ -13,6 +13,7 @@ use App\Models\PostLabel;
 use App\Models\PostNote;
 use App\Models\PostShare;
 use App\Models\User;
+use App\Services\Posts\PostWriter;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -43,6 +44,18 @@ class PostsCalendarTest extends TestCase
             'prefix' => '',
         ]);
         DB::purge('mysql');
+
+        // Central knowledge base read by the holiday info popup.
+        Schema::connection('mysql')->create('holiday_briefs', function ($table): void {
+            $table->increments('id');
+            $table->string('key_hash', 40)->unique();
+            $table->string('country', 120);
+            $table->date('date');
+            $table->string('title', 160);
+            $table->string('locale', 8);
+            $table->text('brief');
+            $table->timestamps();
+        });
 
         Schema::connection('mysql')->create('users', function ($table): void {
             $table->increments('id');
@@ -143,6 +156,7 @@ class PostsCalendarTest extends TestCase
             $table->string('origin', 20)->default('app');
             $table->string('platform_post_id')->nullable();
             $table->string('uid', 32)->nullable();
+            $table->json('image_candidates')->nullable();
             $table->json('external_ids')->nullable();
             $table->text('error')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
@@ -593,6 +607,82 @@ class PostsCalendarTest extends TestCase
 
         $mounted = array_map(fn ($a) => $a->getName(), $component->instance()->getMountedActions());
         $this->assertSame(['viewPost'], $mounted);
+    }
+
+    public function test_the_holiday_popup_drafts_a_post_in_the_company_style(): void
+    {
+        PostWriter::fake([
+            ['caption' => 'Frohe Feiertage von GAME OVER! Kommt vorbei.'],
+        ]);
+
+        $location = $this->location();
+        $calendar = ExternalCalendar::create(['name' => 'Holidays: Austria', 'url' => 'ai://holidays/Austria?sets=official', 'color' => 'pink', 'enabled' => true]);
+        $event = $calendar->events()->create(['date' => '2026-12-24', 'title' => 'Christmas Eve (Heiligabend)']);
+
+        $component = Livewire::test(Posts::class);
+        $component->call('showHolidayEvent', $event->id);
+        $component->call('createHolidayPostDraft');
+
+        $draft = Post::query()->where('status', 'draft')->latest('id')->first();
+        $this->assertNotNull($draft);
+        $this->assertSame('Frohe Feiertage von GAME OVER! Kommt vorbei.', $draft->caption);
+        // Scheduled AHEAD of the day (3 days early) so followers see it in time.
+        $this->assertSame('2026-12-21', $draft->scheduled_at->toDateString());
+        $this->assertSame([$location->id], $draft->location_ids);
+
+        // The composer opens on the fresh draft.
+        $component->assertActionMounted('editDraft');
+    }
+
+    public function test_the_emoji_palette_appends_to_the_open_composer_caption(): void
+    {
+        $location = $this->location();
+        $draft = Post::create([
+            'type' => 'update', 'caption' => 'Hello', 'location_ids' => [$location->id],
+            'source_ids' => [], 'status' => 'draft',
+        ]);
+
+        $component = Livewire::test(Posts::class);
+        $component->call('showPost', $draft->id);
+
+        // No caret reported yet: append at the end.
+        $component->call('insertCaptionEmoji', '🎉');
+        $this->assertSame('Hello🎉', data_get($component->get('mountedActions'), '0.data.caption'));
+
+        // Caret inside the text: insert exactly there (UTF-16 units, like JS).
+        $component->set('captionCursor', 2);
+        $component->call('insertCaptionEmoji', '🔥');
+        $this->assertSame('He🔥llo🎉', data_get($component->get('mountedActions'), '0.data.caption'));
+
+        // The next emoji lands right after the previous one.
+        $component->call('insertCaptionEmoji', '💡');
+        $this->assertSame('He🔥💡llo🎉', data_get($component->get('mountedActions'), '0.data.caption'));
+
+        // Unknown emojis are ignored (the palette is the whitelist).
+        $component->call('insertCaptionEmoji', '<script>');
+        $this->assertSame('He🔥💡llo🎉', data_get($component->get('mountedActions'), '0.data.caption'));
+    }
+
+    public function test_choosing_an_ai_image_candidate_sets_the_draft_image(): void
+    {
+        $location = $this->location();
+        $draft = Post::create([
+            'type' => 'update', 'caption' => 'Pic me', 'location_ids' => [$location->id],
+            'source_ids' => [], 'status' => 'draft',
+            'image_candidates' => [
+                ['provider' => 'gemini', 'path' => 'posts/ai-gemini-abc.png'],
+                ['provider' => 'openai', 'path' => 'posts/ai-openai-def.png'],
+            ],
+        ]);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingPostId', $draft->id);
+        $component->call('choosePostImage', 1);
+
+        $draft->refresh();
+        $this->assertStringContainsString('ai-openai-def.png', (string) $draft->image_url);
+        $this->assertNull($draft->image_candidates);
+        $component->assertActionMounted('editDraft');
     }
 
     public function test_a_post_uid_deep_link_opens_the_dialog(): void

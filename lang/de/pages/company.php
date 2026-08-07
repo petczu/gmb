@@ -62,4 +62,17 @@ return [
 
     // i18n label backfill
     'website' => 'Website',
+    'ai_image_section' => 'KI-Bilder',
+    'ai_image_desc' => 'Wie generierte Beitragsbilder aussehen sollen. Lade echte Designs als Referenzen hoch, die KI übernimmt ihren Stil.',
+    'ai_image_refs' => 'Referenz-Designs',
+    'ai_image_refs_helper' => 'Bis zu 3 Bilder von Posts deines Designers. Komposition, Typografie und Farben leiten jede Generierung.',
+    'ai_image_notes' => 'Stil-Notizen',
+    'ai_image_notes_ph' => 'z. B. dunkelblaue Kino-Szenen, orange Akzentfarbe, fette schmale Versalien-Headlines',
+    'ai_image_style' => 'Grundstil',
+    'ai_image_style_photo' => 'Fotorealistisch',
+    'ai_image_style_reference' => 'Referenzen folgen',
+    'ai_image_style_illustration' => 'Illustration',
+    'ai_image_style_minimal' => 'Minimal & typografisch',
+    'ai_image_headline' => 'Headline auf dem Bild',
+    'ai_image_headline_words' => 'Max. Wörter der Headline',
 ];

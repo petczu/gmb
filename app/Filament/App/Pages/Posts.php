@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Jobs\GenerateHolidayBriefJob;
 use App\Jobs\GenerateHolidayCalendarJob;
+use App\Jobs\GeneratePostImagesJob;
 use App\Models\ActivityEntry;
 use App\Models\ExternalCalendar;
 use App\Models\ExternalCalendarEvent;
-use App\Models\HolidayBrief;
 use App\Models\Location;
 use App\Models\Post;
 use App\Models\PostComment;
@@ -18,10 +19,13 @@ use App\Models\PostShare;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
+use App\Services\Ai\AiCreditService;
+use App\Services\Posts\HolidayBriefWriter;
 use App\Services\Posts\HolidayCalendarSync;
 use App\Services\Posts\IcsCalendarSync;
 use App\Services\Posts\PostCommentNotifier;
 use App\Services\Posts\PostPublisher;
+use App\Services\Posts\PostWriter;
 use App\Services\Zernio\ZernioRestClient;
 use App\Support\Locales;
 use BackedEnum;
@@ -61,12 +65,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Js;
 use Illuminate\Support\Str;
-use Laravel\Ai\Enums\Lab;
 use Livewire\Attributes\Url;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
-
-use function Laravel\Ai\agent;
 
 /**
  * Google Business Profile posts (updates, offers, events, photos), published
@@ -1311,6 +1312,187 @@ class Posts extends Page implements HasTable
             });
     }
 
+    /** Emojis offered for the caption (also the wire:click whitelist). */
+    private const CAPTION_EMOJIS = [
+        '😊', '😀', '😄', '😍', '🤩', '😎', '🥳', '😉',
+        '🎉', '🎊', '✨', '🌟', '🔥', '❤️', '💙', '🍀',
+        '👍', '🙌', '👏', '💪', '🤝', '🙏', '💡', '🎯',
+        '📍', '🗓️', '⏰', '🎁', '🎈', '🥂', '☕', '🍕',
+        '🕹️', '🧩', '🚀', '📸', '🎵', '☀️', '❄️', '🎄',
+    ];
+
+    /** Last known caret position in the composer caption (field-reported). */
+    public ?int $captionCursor = null;
+
+    /** Insert an emoji into the open composer's caption at the caret.
+     *  Server-side on the mounted action's entangled state
+     *  (mountedActions.{i}.data.caption), which survives any DOM/id changes
+     *  a client-side insert tripped over. */
+    public function insertCaptionEmoji(string $emoji): void
+    {
+        $index = array_key_last($this->mountedActions);
+        if ($index === null || ! in_array($emoji, self::CAPTION_EMOJIS, true)) {
+            return;
+        }
+
+        $caption = (string) data_get($this->mountedActions, $index.'.data.caption', '');
+        if (mb_strlen($caption) + mb_strlen($emoji) > 1500) {
+            return;
+        }
+
+        // The browser reports the caret in UTF-16 code units (JS string
+        // semantics); clamp and slice accordingly so emojis in the existing
+        // text do not shift the position.
+        $utf16 = mb_convert_encoding($caption, 'UTF-16BE', 'UTF-8');
+        $units = intdiv(strlen($utf16), 2);
+        $at = min(max($this->captionCursor ?? $units, 0), $units);
+
+        $head = mb_convert_encoding(substr($utf16, 0, $at * 2), 'UTF-8', 'UTF-16BE');
+        $tail = mb_convert_encoding(substr($utf16, $at * 2), 'UTF-8', 'UTF-16BE');
+
+        data_set($this->mountedActions, $index.'.data.caption', $head.$emoji.$tail);
+
+        // Next emoji lands right after this one.
+        $this->captionCursor = $at + intdiv(strlen(mb_convert_encoding($emoji, 'UTF-16BE', 'UTF-8')), 2);
+    }
+
+    /** One subtle emoji button under the caption; the palette opens on
+     *  demand and appends via Livewire. */
+    private function captionEmojiBarHtml(): string
+    {
+        $buttons = implode('', array_map(
+            fn (string $em): string => '<button type="button" class="pce-btn" @click="open = false" wire:click="insertCaptionEmoji(\''.$em.'\')">'.$em.'</button>',
+            self::CAPTION_EMOJIS,
+        ));
+
+        return '<div x-data="{ open: false }" style="position:relative; display:flex; justify-content:flex-end;">'
+            .'<style>'
+            .'.pce-toggle { display:inline-grid; place-items:center; width:1.6rem; height:1.6rem; background:none; border:none; border-radius:.4rem; color:#9ca3af; cursor:pointer; }'
+            .'.pce-toggle:hover { color:#2d19ec; background:#eef2ff; }'
+            .'.pce-pop { position:fixed; z-index:80; display:grid; grid-template-columns:repeat(8, 1fr); gap:.05rem; width:15.5rem; background:#fff; border:1px solid #e5e7eb; border-radius:.6rem; padding:.4rem; box-shadow:0 10px 26px -6px rgb(0 0 0 / .18); }'
+            .'.dark .pce-pop { background:#1b1b21; border-color:rgb(255 255 255 / .12); }'
+            .'.pce-btn { background:none; border:none; cursor:pointer; font-size:1.05rem; line-height:1; padding:.2rem; border-radius:.35rem; }'
+            .'.pce-btn:hover { background:#f4f5f7; } .dark .pce-btn:hover { background:rgb(255 255 255 / .06); }'
+            .'</style>'
+            .'<button type="button" class="pce-toggle" x-ref="btn" title="Emoji"'
+            .' @click="open = ! open; $nextTick(() => { if (! open) return; const r = $refs.btn.getBoundingClientRect();'
+            .' $refs.pop.style.top = (r.bottom + 6) + \'px\'; $refs.pop.style.left = Math.max(8, r.right - 248) + \'px\'; })">'
+            .svg('heroicon-o-face-smile', ['style' => 'width:1.05rem; height:1.05rem;'])->toHtml()
+            .'</button>'
+            .'<span class="pce-pop" x-ref="pop" x-show="open" x-cloak @click.outside="open = false">'
+            .$buttons
+            .'</span>'
+            .'</div>';
+    }
+
+    /** Prompt for the AI image generator in the composer. */
+    public string $aiImagePrompt = '';
+
+    public function generatePostImages(): void
+    {
+        $draft = Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->first();
+        $prompt = trim($this->aiImagePrompt) !== '' ? trim($this->aiImagePrompt) : trim((string) $draft?->caption);
+
+        if ($draft === null || $prompt === '') {
+            return;
+        }
+
+        // [] = "generating" marker: the composer panel polls until the job
+        // replaces it with real candidates (or null on failure).
+        $draft->forceFill(['image_candidates' => []])->save();
+
+        GeneratePostImagesJob::dispatch((string) session('current_workspace_id'), (int) $draft->id, $prompt, auth()->id());
+    }
+
+    /** Use one generated candidate as the draft's image and drop the rest. */
+    public function choosePostImage(int $index): void
+    {
+        $draft = Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->first();
+        $candidate = $draft?->image_candidates[$index] ?? null;
+
+        if ($draft === null || ! is_array($candidate) || blank($candidate['path'] ?? null)) {
+            return;
+        }
+
+        $draft->forceFill([
+            'image_url' => $this->mediaUrl((string) $candidate['path']),
+            'video_url' => null,
+            'image_candidates' => null,
+        ])->save();
+
+        // Remount so the media field rehydrates with the chosen image.
+        $this->replaceMountedAction('editDraft');
+    }
+
+    /** The composer's AI-image block: prompt + generate, or the candidates. */
+    private function aiImagePanelHtml(): string
+    {
+        $draft = Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->first();
+        if ($draft === null) {
+            return '';
+        }
+
+        $providersConfigured = collect(GeneratePostImagesJob::PROVIDERS)
+            ->keys()
+            ->filter(fn (string $provider): bool => filled(config('ai.providers.'.$provider.'.key')));
+
+        if ($providersConfigured->isEmpty()) {
+            return '';
+        }
+
+        // [] (not null) means a generation is running: poll until it lands.
+        if ($draft->image_candidates === []) {
+            return '<div wire:poll.4s style="display:flex; align-items:center; gap:.5rem; margin-top:.35rem; padding:.5rem .65rem; border:1px dashed #c7d2fe; border-radius:.6rem; color:#4b5563; font-size:.8rem;">'
+                .'<svg style="width:1rem; height:1rem; color:#2d19ec; animation:spin .8s linear infinite;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+                .'<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.3"/>'
+                .'<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>'
+                .e(__('pages/posts.ai_image_generating'))
+                .'<style>@keyframes spin { to { transform: rotate(360deg); } }</style>'
+                .'</div>';
+        }
+
+        $candidates = collect($draft->image_candidates ?? [])->values();
+
+        if ($candidates->isNotEmpty()) {
+            $cards = $candidates->map(fn (array $c, int $i): string => '<div style="flex:1; min-width:0; border:1px solid #e5e7eb; border-radius:.6rem; overflow:hidden;">'
+                .'<img src="'.e((string) $this->mediaUrl((string) $c['path'])).'" alt="" style="width:100%; height:7.5rem; object-fit:cover; display:block;">'
+                .'<div style="display:flex; align-items:center; justify-content:space-between; gap:.4rem; padding:.4rem .55rem;">'
+                .'<span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:#6b7280;">'.e((string) ($c['provider'] ?? '')).'</span>'
+                .'<button type="button" style="background:#2d19ec; color:#fff; border:none; border-radius:.45rem; padding:.25rem .65rem; font-size:.75rem; font-weight:600; cursor:pointer;" wire:click="choosePostImage('.$i.')">'.e(__('pages/posts.ai_image_use')).'</button>'
+                .'</div></div>')->implode('');
+
+            return '<div style="margin-top:.35rem;">'
+                .'<div style="font-size:.78rem; font-weight:600; color:#374151; margin-bottom:.4rem;">'.e(__('pages/posts.ai_image_pick')).'</div>'
+                .'<div style="display:flex; gap:.6rem;">'.$cards.'</div>'
+                .'</div>';
+        }
+
+        // Just the button; the description is asked in a floating panel on
+        // top of the composer (nested Filament modals would swap, not stack).
+        return '<div x-data="{ open: false }" style="display:flex; justify-content:flex-start; position:relative;">'
+            .'<button type="button" x-ref="btn" style="display:inline-flex; align-items:center; gap:.3rem; border:1px solid #d1d5db; background:transparent; border-radius:.5rem; padding:.4rem .7rem; font-size:.8rem; font-weight:600; color:inherit; cursor:pointer; white-space:nowrap;"'
+            .' @click="open = ! open; $nextTick(() => { if (! open) return; const r = $refs.btn.getBoundingClientRect();'
+            .' $refs.pop.style.top = (r.bottom + 8) + \'px\'; $refs.pop.style.left = Math.max(8, r.left) + \'px\'; })">'
+            .svg('heroicon-m-sparkles', ['style' => 'width:.85rem; height:.85rem; color:#2d19ec;'])->toHtml()
+            .e(__('pages/posts.ai_image_button'))
+            .'</button>'
+            .'<div x-ref="pop" x-show="open" x-cloak @click.outside="open = false" class="pcg-pop">'
+            .'<div style="font-size:.85rem; font-weight:700; margin-bottom:.15rem;">'.e(__('pages/posts.ai_image_panel_title')).'</div>'
+            .'<div style="font-size:.75rem; color:#6b7280; margin-bottom:.5rem;">'.e(__('pages/posts.ai_image_panel_hint')).'</div>'
+            .'<textarea wire:model="aiImagePrompt" rows="3" placeholder="'.e(__('pages/posts.ai_image_prompt_ph')).'"'
+            .' style="width:100%; border:1px solid #d1d5db; border-radius:.5rem; padding:.45rem .6rem; font-size:.82rem; background:transparent; color:inherit; resize:vertical;"></textarea>'
+            .'<div style="display:flex; justify-content:flex-end; gap:.4rem; margin-top:.55rem;">'
+            .'<button type="button" style="border:1px solid #d1d5db; background:transparent; border-radius:.5rem; padding:.35rem .8rem; font-size:.8rem; font-weight:600; color:inherit; cursor:pointer;" @click="open = false">'.e(__('pages/posts.close')).'</button>'
+            .'<button type="button" style="display:inline-flex; align-items:center; gap:.3rem; background:#2d19ec; color:#fff; border:none; border-radius:.5rem; padding:.35rem .8rem; font-size:.8rem; font-weight:600; cursor:pointer;" @click="open = false" wire:click="generatePostImages">'
+            .svg('heroicon-m-sparkles', ['style' => 'width:.8rem; height:.8rem;'])->toHtml()
+            .e(__('pages/posts.calendar_ai_submit'))
+            .'</button>'
+            .'</div>'
+            .'<style>.pcg-pop { position:fixed; z-index:80; width:20rem; background:#fff; border:1px solid #e5e7eb; border-radius:.7rem; padding:.75rem .85rem; box-shadow:0 12px 30px -8px rgb(0 0 0 / .25); } .dark .pcg-pop { background:#1b1b21; border-color:rgb(255 255 255 / .12); }</style>'
+            .'</div>'
+            .'</div>';
+    }
+
     /** The external-calendar event whose info popup is open. */
     public ?int $viewingEventId = null;
 
@@ -1320,16 +1502,33 @@ class Posts extends Page implements HasTable
     public function showHolidayEvent(int $eventId): void
     {
         $this->viewingEventId = $eventId;
-        // Cached answers show instantly; otherwise the modal opens with a
-        // loader and wire:init fetches the text (the AI takes a few seconds).
+        // Stored answers show instantly; otherwise a QUEUED job writes the
+        // brief (an inline AI call would block every other Livewire click on
+        // this page for seconds) and the modal loader polls until it lands.
         $this->holidayInfo = $this->cachedHolidayInfo();
+
+        if ($this->holidayInfo === null) {
+            GenerateHolidayBriefJob::dispatch((string) session('current_workspace_id'), $eventId, app()->getLocale());
+        }
+
         $this->mountAction('holidayInfo');
     }
 
-    /** wire:init target from the modal's loader. */
-    public function loadHolidayInfo(): void
+    /** wire:poll target from the modal's loader: promote the stored brief
+     *  (or a failure marker) into the open popup. */
+    public function refreshHolidayInfo(): void
     {
-        $this->holidayInfo = $this->generateHolidayInfo();
+        if ($this->holidayInfo !== null) {
+            return;
+        }
+
+        $this->holidayInfo = $this->cachedHolidayInfo();
+
+        $event = ExternalCalendarEvent::find($this->viewingEventId);
+        if ($this->holidayInfo === null && $event !== null
+            && Cache::get(app(HolidayBriefWriter::class)->failureKey($event, app()->getLocale()))) {
+            $this->holidayInfo = '<div style="color:#991b1b; font-size:.85rem;">'.e(__('pages/posts.holiday_info_failed')).'</div>';
+        }
     }
 
     /** Click on a holiday chip: a short AI explainer of the day (what it is,
@@ -1347,13 +1546,128 @@ class Posts extends Page implements HasTable
                 Placeholder::make('holiday_info')
                     ->hiddenLabel()
                     ->content(fn (): HtmlString => new HtmlString($this->holidayInfo ?? $this->holidayInfoLoaderHtml())),
+            ])
+            // Content is the hard part: one click turns the occasion into a
+            // draft written in the company's own voice, opened in the composer.
+            ->extraModalFooterActions(fn (): array => [
+                Action::make('draftHolidayPost')
+                    ->label(__('pages/posts.holiday_post_button'))
+                    ->icon(Heroicon::OutlinedSparkles)
+                    ->action(fn () => $this->createHolidayPostDraft()),
             ]);
+    }
+
+    /** Write a draft for the open holiday in the company's style and jump
+     *  into the composer with it. Style = the last published captions. */
+    public function createHolidayPostDraft(): void
+    {
+        $event = ExternalCalendarEvent::find($this->viewingEventId);
+        if ($event === null) {
+            return;
+        }
+
+        // The company's voice: recent real captions, newest first.
+        $examples = Post::query()
+            ->whereIn('status', ['published', 'scheduled'])
+            ->whereNotNull('caption')
+            ->orderByDesc('id')
+            ->limit(8)
+            ->pluck('caption')
+            ->map(fn ($c): string => Str::limit(trim((string) $c), 600))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $locations = Location::query()->orderBy('id')->get(['id', 'name']);
+        $language = Locales::ALL[app()->getLocale()]['name'] ?? 'English';
+
+        try {
+            $response = (new PostWriter)->prompt(
+                implode("\n\n", array_filter([
+                    'Business: '.($locations->pluck('name')->unique()->implode(', ') ?: (string) Workspace::find(session('current_workspace_id'))?->name),
+                    sprintf('Occasion: %s on %s.', (string) $event->title, $event->date->translatedFormat('j F Y')),
+                    $this->holidayInfo !== null ? 'Background about the occasion: '.Str::limit(strip_tags($this->holidayInfo), 700) : null,
+                    $examples->isNotEmpty()
+                        ? "Style examples (recent posts):\n- ".$examples->implode("\n- ")
+                        : 'No previous posts exist; write in '.$language.'.',
+                ])),
+                model: (string) config('services.ai.model', 'claude-sonnet-4-6'),
+            );
+
+            if (($workspace = tenant()) instanceof Workspace) {
+                app(AiCreditService::class)->logUsage(
+                    $workspace,
+                    'holiday_post',
+                    (string) config('services.ai.model', 'claude-sonnet-4-6'),
+                    (int) ($response->usage->promptTokens ?? 0),
+                    (int) ($response->usage->completionTokens ?? 0),
+                );
+            }
+
+            // Belt and suspenders on the no-em-dash house rule.
+            $caption = trim((string) preg_replace(
+                ['/\s*—\s*/u', '/ {2,}/'],
+                [', ', ' '],
+                (string) $response['caption'],
+            ));
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('pages/posts.holiday_post_failed'))->danger()->send();
+
+            return;
+        }
+
+        // Reuse the CTA the business used last. Imported Google posts carry
+        // only the link (no button type), so fall back through: full CTA from
+        // our own posts → any past CTA link → the location's website.
+        $lastCta = Post::query()
+            ->whereNotNull('cta_type')
+            ->whereNotNull('cta_url')
+            ->orderByDesc('id')
+            ->first();
+
+        $ctaType = $lastCta?->cta_type;
+        $ctaUrl = $lastCta?->cta_url;
+        if (blank($ctaUrl)) {
+            $ctaUrl = Post::query()->whereNotNull('cta_url')->orderByDesc('id')->value('cta_url')
+                ?? $locations->first()?->website_url;
+            $ctaType = filled($ctaUrl) ? 'learn_more' : null;
+        }
+
+        // Holiday posts work best published AHEAD of the day: default to
+        // three days before at 10:00, clamped so it never lands in the past.
+        $publishAt = $event->date->copy()->subDays(3)->setTime(10, 0);
+        if ($publishAt->isPast()) {
+            $publishAt = $event->date->copy()->setTime(10, 0);
+        }
+        if ($publishAt->isPast()) {
+            $publishAt = now()->addHour()->startOfHour();
+        }
+
+        $draft = Post::create([
+            'type' => 'update',
+            'caption' => $caption,
+            'cta_type' => $ctaType,
+            'cta_url' => $ctaUrl,
+            'location_ids' => $locations->pluck('id')->all(),
+            'source_ids' => [],
+            'status' => 'draft',
+            'scheduled_at' => $publishAt,
+            'created_by' => auth()->id(),
+            'created_by_name' => auth()->user()?->name,
+        ]);
+
+        ActivityLogger::log('post.draft_created', ['via' => 'holiday_ai'], $draft);
+
+        // Straight into the composer to review, add media and schedule.
+        $this->viewingPostId = $draft->id;
+        $this->replaceMountedAction('editDraft');
     }
 
     /** Spinner shown while the AI writes; wire:init kicks off the fetch. */
     private function holidayInfoLoaderHtml(): string
     {
-        return '<div wire:init="loadHolidayInfo" style="display:flex; align-items:center; gap:.6rem; padding:.4rem 0; color:#6b7280; font-size:.85rem;">'
+        return '<div wire:poll.2s="refreshHolidayInfo" style="display:flex; align-items:center; gap:.6rem; padding:.4rem 0; color:#6b7280; font-size:.85rem;">'
             .'<svg style="width:1.1rem; height:1.1rem; color:#2d19ec; animation:spin .8s linear infinite;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
             .'<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.3"/>'
             .'<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>'
@@ -1370,7 +1684,7 @@ class Posts extends Page implements HasTable
             return null;
         }
 
-        $text = HolidayBrief::query()->where('key_hash', $this->holidayBriefHash($event))->value('brief');
+        $text = app(HolidayBriefWriter::class)->stored($event, app()->getLocale());
 
         return $text === null ? null : $this->wrapHolidayInfo((string) $text, $event);
     }
@@ -1404,73 +1718,6 @@ class Posts extends Page implements HasTable
         return $html;
     }
 
-    /** Briefs are PLATFORM-wide: one hash per day + title + country + language,
-     *  so an answer written for one workspace serves every other one too. */
-    private function holidayBriefHash(ExternalCalendarEvent $event): string
-    {
-        return sha1(implode('|', [
-            mb_strtolower(trim($this->holidayCountryOf($event))),
-            $event->date->toDateString(),
-            mb_strtolower(trim((string) $event->title)),
-            app()->getLocale(),
-        ]));
-    }
-
-    private function holidayCountryOf(ExternalCalendarEvent $event): string
-    {
-        return $event->calendar && HolidayCalendarSync::isAiCalendar($event->calendar)
-            ? HolidayCalendarSync::countryOf($event->calendar)
-            : '';
-    }
-
-    private function generateHolidayInfo(): string
-    {
-        $event = ExternalCalendarEvent::find($this->viewingEventId);
-        if ($event === null) {
-            return '';
-        }
-
-        $locale = app()->getLocale();
-        $language = Locales::ALL[$locale]['name'] ?? 'English';
-        $country = $this->holidayCountryOf($event);
-        $hash = $this->holidayBriefHash($event);
-
-        try {
-            // Platform-wide knowledge base: the first workspace to ask pays
-            // the AI call; everyone else reads the stored brief.
-            $text = HolidayBrief::query()->where('key_hash', $hash)->value('brief');
-
-            if ($text === null) {
-                $response = agent(instructions: implode("\n", [
-                    'You explain calendar days to local-business owners planning Google Business posts.',
-                    "Answer in {$language}, plain text, no markdown, under 120 words, in two short paragraphs:",
-                    '1) What this day is, who observes it and why it matters'.($country !== '' ? ' in '.$country : '').'.',
-                    '2) One or two concrete Google-post ideas a local business could publish for it.',
-                ]))->prompt(
-                    sprintf('Day: %s on %s%s.', (string) $event->title, $event->date->toDateString(), $country !== '' ? ' ('.$country.')' : ''),
-                    provider: Lab::Anthropic,
-                    model: (string) config('services.ai.model', 'claude-sonnet-4-6'),
-                );
-
-                $text = trim((string) $response->text);
-
-                HolidayBrief::query()->firstOrCreate(['key_hash' => $hash], [
-                    'country' => mb_substr($country, 0, 120),
-                    'date' => $event->date->toDateString(),
-                    'title' => mb_substr((string) $event->title, 0, 160),
-                    'locale' => $locale,
-                    'brief' => $text,
-                ]);
-            }
-        } catch (\Throwable $e) {
-            report($e);
-
-            return '<div style="color:#991b1b; font-size:.85rem;">'.e(__('pages/posts.holiday_info_failed')).'</div>';
-        }
-
-        return $this->wrapHolidayInfo((string) $text, $event);
-    }
-
     /** The post whose details modal is open (calendar card click). The URL
      *  mirrors it as /posts/{uid} so the dialog can be deep-linked. */
     public ?int $viewingPostId = null;
@@ -1486,6 +1733,8 @@ class Posts extends Page implements HasTable
 
     public function showPost(int $postId): void
     {
+        $this->captionCursor = null;
+
         $this->viewingPostId = $postId;
         $this->resetCommentComposer();
 
@@ -3168,10 +3417,26 @@ class Posts extends Page implements HasTable
                 ->maxLength(1500)
                 // Hard stop in the browser + a live counter in the label row.
                 ->extraInputAttributes(['maxlength' => 1500])
+                // Track the caret (deferred, no network) so the emoji palette
+                // can insert at the cursor server-side.
+                ->extraAlpineAttributes([
+                    'x-on:keyup' => '$wire.set(\'captionCursor\', $el.selectionStart, false)',
+                    'x-on:click' => '$wire.set(\'captionCursor\', $el.selectionStart, false)',
+                    'x-on:blur' => '$wire.set(\'captionCursor\', $el.selectionStart, false)',
+                ])
                 ->hint(fn (?string $state): string => mb_strlen((string) $state).' / 1500')
                 ->hintColor(fn (?string $state): string => mb_strlen((string) $state) >= 1500 ? 'danger' : 'gray')
                 ->required()
                 ->live(debounce: 300),
+
+            // Emoji palette for the caption: inserts at the cursor and fires
+            // an input event so Livewire picks the change up like typing.
+            Placeholder::make('caption_emoji')
+                ->hiddenLabel()
+                // Lift the whole field wrapper (its box clips anything pulled
+                // above its own top edge, so inner negative margins vanish).
+                ->extraAttributes(['style' => 'margin-top:-20px; position:relative; z-index:1;'])
+                ->content(fn (): HtmlString => new HtmlString($this->captionEmojiBarHtml())),
 
             // One media slot: an image OR a video (a Google post carries a
             // single media item). The stored file's extension decides which of
@@ -3193,6 +3458,15 @@ class Posts extends Page implements HasTable
                 ->maxSize(102400)
                 ->live()
                 ->helperText(__('pages/posts.field_media_helper')),
+
+            // No photo at hand? Generate one per configured AI image provider
+            // (Gemini + OpenAI) and let the user pick. Drafts only: the job
+            // needs a saved post to attach the candidates to.
+            Placeholder::make('ai_image')
+                ->hiddenLabel()
+                ->visible(fn (): bool => Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->exists())
+                ->extraAttributes(['style' => 'margin-top:-12px; position:relative; z-index:1;'])
+                ->content(fn (): HtmlString => new HtmlString($this->aiImagePanelHtml())),
 
             DateTimePicker::make('starts_at')
                 ->label(__('pages/posts.field_starts'))
@@ -3299,9 +3573,9 @@ class Posts extends Page implements HasTable
         if ($videoUrl !== null) {
             $html .= '<video src="'.e($videoUrl).'" controls playsinline style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover; background:#000;"></video>';
         } elseif ($imageUrl !== null) {
-            $html .= '<img src="'.e($imageUrl).'" alt="" style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover;">';
+            $html .= '<img src="'.e($imageUrl).'" alt="" style="display:block; width:100%; aspect-ratio:4/3; object-fit:cover;">';
         } else {
-            $html .= '<div style="width:100%; aspect-ratio:2/1; background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 12px,#e5e7eb 12px,#e5e7eb 24px); display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:.8rem;">'.e(__('pages/posts.preview_no_image')).'</div>';
+            $html .= '<div style="width:100%; aspect-ratio:4/3; background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 12px,#e5e7eb 12px,#e5e7eb 24px); display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:.8rem;">'.e(__('pages/posts.preview_no_image')).'</div>';
         }
 
         $html .= '<div style="padding:.9rem .9rem .35rem;">';
@@ -3316,7 +3590,7 @@ class Posts extends Page implements HasTable
         if (filled($d['caption'] ?? null)) {
             // Collapse the 3+ blank lines Google/imported posts often carry.
             $caption = (string) preg_replace('/\n{3,}/', "\n\n", (string) $d['caption']);
-            $html .= '<div dir="auto" style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit($caption, 600)).'</div>';
+            $html .= '<div dir="auto" style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit($caption, 1500)).'</div>';
         } elseif (! empty($d['captionPlaceholder'])) {
             $html .= '<div style="font-size:.9rem; color:#c0c3c9;">'.e(__('pages/posts.preview_placeholder')).'</div>';
         }
@@ -3401,9 +3675,9 @@ class Posts extends Page implements HasTable
         if ($videoUrl !== null) {
             $html .= '<video src="'.e($videoUrl).'" controls playsinline style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover; background:#000;"></video>';
         } elseif ($imageUrl !== null) {
-            $html .= '<img src="'.e($imageUrl).'" alt="" style="display:block; width:100%; aspect-ratio:2/1; object-fit:cover;">';
+            $html .= '<img src="'.e($imageUrl).'" alt="" style="display:block; width:100%; aspect-ratio:4/3; object-fit:cover;">';
         } else {
-            $html .= '<div style="width:100%; aspect-ratio:2/1; background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 12px,#e5e7eb 12px,#e5e7eb 24px); display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:.8rem;">'.e(__('pages/posts.preview_no_image')).'</div>';
+            $html .= '<div style="width:100%; aspect-ratio:4/3; background:repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6 12px,#e5e7eb 12px,#e5e7eb 24px); display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:.8rem;">'.e(__('pages/posts.preview_no_image')).'</div>';
         }
 
         $html .= '<div style="padding:.9rem .9rem .35rem;">';
@@ -3415,7 +3689,7 @@ class Posts extends Page implements HasTable
             $html .= '<div style="font-size:.8rem; color:#5f6368; margin-bottom:.35rem;">'.e($dates).'</div>';
         }
         if (filled($get('caption'))) {
-            $html .= '<div style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit((string) $get('caption'), 600)).'</div>';
+            $html .= '<div style="font-size:.9rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;">'.e(Str::limit((string) $get('caption'), 1500)).'</div>';
         } else {
             $html .= '<div style="font-size:.9rem; color:#c0c3c9;">'.e(__('pages/posts.preview_placeholder')).'</div>';
         }

@@ -62,4 +62,17 @@ return [
 
     // i18n label backfill
     'website' => 'Sitio web',
+    'ai_image_section' => 'Imágenes de IA',
+    'ai_image_desc' => 'Cómo deben verse las imágenes generadas. Sube diseños reales como referencia y la IA imitará su estilo.',
+    'ai_image_refs' => 'Diseños de referencia',
+    'ai_image_refs_helper' => 'Hasta 3 imágenes de publicaciones de tu diseñador. Su composición, tipografía y colores guían cada generación.',
+    'ai_image_notes' => 'Notas de estilo',
+    'ai_image_notes_ph' => 'p. ej. escenas cinematográficas azul oscuro, acento naranja, titulares en mayúsculas condensadas',
+    'ai_image_style' => 'Estilo base',
+    'ai_image_style_photo' => 'Fotorrealista',
+    'ai_image_style_reference' => 'Seguir referencias',
+    'ai_image_style_illustration' => 'Ilustración',
+    'ai_image_style_minimal' => 'Minimalista y tipográfico',
+    'ai_image_headline' => 'Titular en la imagen',
+    'ai_image_headline_words' => 'Máx. palabras del titular',
 ];

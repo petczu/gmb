@@ -61,4 +61,17 @@ return [
     'settings_saved' => 'Impostazioni dell’azienda salvate',
 
     'website' => 'Sito web',
+    'ai_image_section' => 'Immagini IA',
+    'ai_image_desc' => 'Come devono apparire le immagini generate. Carica design reali come riferimento e l\'IA ne imiterà lo stile.',
+    'ai_image_refs' => 'Design di riferimento',
+    'ai_image_refs_helper' => 'Fino a 3 immagini di post del tuo designer. Composizione, tipografia e colori guidano ogni generazione.',
+    'ai_image_notes' => 'Note di stile',
+    'ai_image_notes_ph' => 'es. scene cinematografiche blu scuro, accento arancione, titoli condensati in maiuscolo',
+    'ai_image_style' => 'Stile base',
+    'ai_image_style_photo' => 'Fotorealistico',
+    'ai_image_style_reference' => 'Segui i riferimenti',
+    'ai_image_style_illustration' => 'Illustrazione',
+    'ai_image_style_minimal' => 'Minimale e tipografico',
+    'ai_image_headline' => 'Titolo sull\'immagine',
+    'ai_image_headline_words' => 'Parole max del titolo',
 ];
