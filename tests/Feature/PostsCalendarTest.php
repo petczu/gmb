@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Filament\App\Pages\Posts;
 use App\Models\ExternalCalendar;
+use App\Models\HolidayBrief;
 use App\Models\Location;
 use App\Models\Post;
 use App\Models\PostComment;
@@ -13,8 +14,10 @@ use App\Models\PostLabel;
 use App\Models\PostNote;
 use App\Models\PostShare;
 use App\Models\User;
+use App\Services\Posts\HolidayBriefWriter;
 use App\Services\Posts\PostWriter;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
@@ -632,6 +635,36 @@ class PostsCalendarTest extends TestCase
 
         // The composer opens on the fresh draft.
         $component->assertActionMounted('editDraft');
+    }
+
+    public function test_the_holiday_popup_polls_the_brief_and_surfaces_failures(): void
+    {
+        $calendar = ExternalCalendar::create(['name' => 'AI', 'url' => 'ai://holidays/Austria?sets=official', 'color' => 'pink', 'enabled' => true]);
+        $event = $calendar->events()->create(['date' => '2026-08-15', 'title' => 'Assumption of Mary']);
+
+        $component = Livewire::test(Posts::class);
+        $component->set('viewingEventId', $event->id);
+
+        // Nothing stored yet: the poll keeps waiting (no crash, no content).
+        $component->call('refreshHolidayInfo');
+        $this->assertNull($component->get('holidayInfo'));
+
+        // Stored brief: the poll promotes it into the popup.
+        $writer = app(HolidayBriefWriter::class);
+        HolidayBrief::create([
+            'key_hash' => $writer->hashFor($event->fresh(), app()->getLocale()),
+            'country' => 'Austria', 'date' => '2026-08-15', 'title' => 'Assumption of Mary',
+            'locale' => app()->getLocale(), 'brief' => 'A big day in Austria.',
+        ]);
+        $component->call('refreshHolidayInfo');
+        $this->assertStringContainsString('A big day in Austria.', (string) $component->get('holidayInfo'));
+
+        // A failure marker renders the friendly error instead of spinning forever.
+        $component->set('holidayInfo', null);
+        Cache::put($writer->failureKey($event->fresh(), app()->getLocale()), true, 60);
+        HolidayBrief::query()->delete();
+        $component->call('refreshHolidayInfo');
+        $this->assertStringContainsString(__('pages/posts.holiday_info_failed'), (string) $component->get('holidayInfo'));
     }
 
     public function test_the_emoji_palette_appends_to_the_open_composer_caption(): void
