@@ -207,7 +207,9 @@ return [
             'maxJobs' => 0,
             'memory' => 128,
             'tries' => 3,
-            'timeout' => 120,
+            // Must exceed the longest job (GenerateHolidayCalendarJob: 600s of
+            // web-searched AI generation) and stay under redis retry_after (960).
+            'timeout' => 900,
             'nice' => 0,
         ],
     ],
