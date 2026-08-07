@@ -37,7 +37,7 @@ class GeneratePostImagesJob implements ShouldQueue
 
     /** provider key => image model. Only configured providers actually run. */
     public const PROVIDERS = [
-        'gemini' => 'gemini-2.5-flash-image',
+        'gemini' => 'gemini-3-pro-image',
         'openai' => 'gpt-image-2',
     ];
 
