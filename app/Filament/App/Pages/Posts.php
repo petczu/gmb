@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\App\Pages;
 
+use App\Jobs\GenerateHolidayCalendarJob;
 use App\Models\ActivityEntry;
 use App\Models\ExternalCalendar;
 use App\Models\ExternalCalendarEvent;
+use App\Models\HolidayBrief;
 use App\Models\Location;
 use App\Models\Post;
 use App\Models\PostComment;
@@ -16,14 +18,18 @@ use App\Models\PostShare;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ActivityLog\ActivityLogger;
+use App\Services\Posts\HolidayCalendarSync;
 use App\Services\Posts\IcsCalendarSync;
 use App\Services\Posts\PostCommentNotifier;
 use App\Services\Posts\PostPublisher;
 use App\Services\Zernio\ZernioRestClient;
+use App\Support\Locales;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
@@ -48,6 +54,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Image;
 use Illuminate\Support\Facades\Log;
@@ -55,9 +62,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Js;
 use Illuminate\Support\Str;
+use Laravel\Ai\Enums\Lab;
 use Livewire\Attributes\Url;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
+
+use function Laravel\Ai\agent;
 
 /**
  * Google Business Profile posts (updates, offers, events, photos), published
@@ -597,7 +607,9 @@ class Posts extends Page implements HasTable
         $events = ExternalCalendarEvent::query()
             ->whereBetween('date', [$gridStart->toDateString(), $gridEnd->toDateString()])
             ->whereHas('calendar', fn (Builder $q) => $q->where('enabled', true))
-            ->with('calendar:id,color')
+            // url included: the grid needs it to tell AI calendars (ai://
+            // marker → sparkles icon) from ICS ones (plain dot).
+            ->with('calendar:id,color,url')
             ->orderBy('id')
             ->get()
             ->groupBy(fn ($event): string => $event->date->format('Y-m-d'));
@@ -904,8 +916,27 @@ class Posts extends Page implements HasTable
 
     public function refreshCalendars(): void
     {
+        // AI calendars re-generate on the queue (minutes of web-searched
+        // verification, way past HTTP timeouts); ICS feeds re-fetch inline.
+        [$ai, $ics] = $this->externalCalendars()->partition(fn (ExternalCalendar $c): bool => HolidayCalendarSync::isAiCalendar($c));
+
+        foreach ($ai as $calendar) {
+            GenerateHolidayCalendarJob::dispatch((string) session('current_workspace_id'), (int) $calendar->id, auth()->id());
+        }
+        if ($ai->isNotEmpty()) {
+            Notification::make()
+                ->title(__('pages/posts.calendar_ai_started_title'))
+                ->body(__('pages/posts.calendar_ai_started_body'))
+                ->success()
+                ->send();
+        }
+
         $sync = app(IcsCalendarSync::class);
-        $failed = $this->externalCalendars()->reject(fn (ExternalCalendar $c): bool => $sync->sync($c));
+        $failed = $ics->reject(fn (ExternalCalendar $c): bool => $sync->sync($c));
+
+        if ($ics->isEmpty()) {
+            return;
+        }
 
         if ($failed->isEmpty()) {
             Notification::make()->title(__('pages/posts.calendars_synced'))->success()->send();
@@ -916,6 +947,205 @@ class Posts extends Page implements HasTable
                 ->warning()
                 ->send();
         }
+    }
+
+    /** The ICS calendar whose edit modal is open. */
+    public ?int $editingIcsCalendarId = null;
+
+    public function editIcsCalendar(int $calendarId): void
+    {
+        $this->editingIcsCalendarId = $calendarId;
+        $this->mountAction('editIcsCalendar');
+    }
+
+    /** Edit a feed calendar: name, ICS link, color. A changed link re-syncs. */
+    public function editIcsCalendarAction(): Action
+    {
+        return Action::make('editIcsCalendar')
+            ->modalHeading(__('pages/posts.calendar_edit_heading'))
+            ->modalSubmitActionLabel(__('pages/posts.save'))
+            ->modalWidth(Width::Medium)
+            ->fillForm(function (): array {
+                $calendar = ExternalCalendar::find($this->editingIcsCalendarId);
+
+                return $calendar === null ? [] : [
+                    'name' => $calendar->name,
+                    'url' => $calendar->url,
+                    'color' => $calendar->color,
+                ];
+            })
+            ->schema([
+                TextInput::make('name')
+                    ->label(__('pages/posts.calendar_name'))
+                    ->maxLength(100)
+                    ->required(),
+
+                TextInput::make('url')
+                    ->label(__('pages/posts.calendar_url'))
+                    ->url()
+                    ->required()
+                    ->helperText(__('pages/posts.calendar_url_helper')),
+
+                Select::make('color')
+                    ->label(__('pages/posts.calendar_color'))
+                    ->options(collect(PostNote::COLORS)->mapWithKeys(
+                        fn (array $c, string $key): array => [$key => '<span style="display:inline-flex; align-items:center; gap:.55rem;">'
+                            .'<span style="display:inline-block; width:.75rem; height:.75rem; border-radius:999px; background:'.$c[1].';"></span>'
+                            .e(__('pages/posts.color_'.$key)).'</span>'],
+                    )->all())
+                    ->allowHtml()
+                    ->native(false)
+                    ->required()
+                    ->selectablePlaceholder(false),
+            ])
+            ->action(function (array $data): void {
+                $calendar = ExternalCalendar::find($this->editingIcsCalendarId);
+                if ($calendar === null) {
+                    return;
+                }
+
+                $urlChanged = (string) $calendar->url !== (string) $data['url'];
+                $calendar->forceFill(['name' => $data['name'], 'url' => $data['url'], 'color' => $data['color']])->save();
+
+                if (! $urlChanged) {
+                    Notification::make()->title(__('pages/posts.calendar_ai_saved'))->success()->send();
+
+                    return;
+                }
+
+                if (app(IcsCalendarSync::class)->sync($calendar)) {
+                    Notification::make()
+                        ->title(__('pages/posts.calendar_ai_saved'))
+                        ->body(trans_choice('pages/posts.calendar_events_count', $calendar->events()->count(), ['count' => $calendar->events()->count()]))
+                        ->success()
+                        ->send();
+                } else {
+                    Notification::make()
+                        ->title(__('pages/posts.calendar_sync_error'))
+                        ->body((string) $calendar->sync_error)
+                        ->warning()
+                        ->send();
+                }
+            });
+    }
+
+    /** The AI calendar whose edit modal is open. */
+    public ?int $editingHolidayCalendarId = null;
+
+    public function editHolidayCalendar(int $calendarId): void
+    {
+        $this->editingHolidayCalendarId = $calendarId;
+        $this->mountAction('editHolidayCalendar');
+    }
+
+    /** Edit an AI calendar: name, color, categories and window. Widening the
+     *  window appends the missing months; other setting changes regenerate. */
+    public function editHolidayCalendarAction(): Action
+    {
+        return Action::make('editHolidayCalendar')
+            ->modalHeading(__('pages/posts.calendar_ai_edit_heading'))
+            ->modalSubmitActionLabel(__('pages/posts.save'))
+            ->modalIcon(Heroicon::OutlinedSparkles)
+            ->modalWidth(Width::Medium)
+            ->fillForm(function (): array {
+                $calendar = ExternalCalendar::find($this->editingHolidayCalendarId);
+                if ($calendar === null) {
+                    return [];
+                }
+                [$from, $to] = HolidayCalendarSync::windowOf($calendar);
+
+                return [
+                    'name' => $calendar->name,
+                    'country' => HolidayCalendarSync::countryOf($calendar),
+                    'sets' => HolidayCalendarSync::setsOf($calendar),
+                    'from' => $from->toDateString(),
+                    'to' => $to->toDateString(),
+                    'color' => $calendar->color,
+                ];
+            })
+            ->schema([
+                TextInput::make('name')
+                    ->label(__('pages/posts.calendar_name'))
+                    ->maxLength(100)
+                    ->required(),
+
+                TextInput::make('country')
+                    ->label(__('pages/posts.calendar_ai_country'))
+                    ->maxLength(80)
+                    ->required(),
+
+                CheckboxList::make('sets')
+                    ->label(__('pages/posts.calendar_ai_sets'))
+                    ->options(collect(HolidayCalendarSync::SETS)->mapWithKeys(
+                        fn (string $set): array => [$set => __('pages/posts.calendar_ai_set_'.$set)],
+                    )->all())
+                    ->required(),
+
+                Grid::make(2)->schema([
+                    DatePicker::make('from')
+                        ->label(__('pages/posts.calendar_ai_from'))
+                        ->required(),
+                    DatePicker::make('to')
+                        ->label(__('pages/posts.calendar_ai_to'))
+                        ->after('from')
+                        ->required(),
+                ]),
+
+                Select::make('color')
+                    ->label(__('pages/posts.calendar_color'))
+                    ->options(collect(PostNote::COLORS)->mapWithKeys(
+                        fn (array $c, string $key): array => [$key => '<span style="display:inline-flex; align-items:center; gap:.55rem;">'
+                            .'<span style="display:inline-block; width:.75rem; height:.75rem; border-radius:999px; background:'.$c[1].';"></span>'
+                            .e(__('pages/posts.color_'.$key)).'</span>'],
+                    )->all())
+                    ->allowHtml()
+                    ->native(false)
+                    ->required()
+                    ->selectablePlaceholder(false),
+            ])
+            ->action(function (array $data): void {
+                $calendar = ExternalCalendar::find($this->editingHolidayCalendarId);
+                if ($calendar === null) {
+                    return;
+                }
+
+                $oldUrl = (string) $calendar->url;
+                [$oldFrom, $oldTo] = HolidayCalendarSync::windowOf($calendar);
+                $newUrl = HolidayCalendarSync::urlFor(
+                    trim((string) $data['country']),
+                    (array) ($data['sets'] ?? []),
+                    (string) $data['from'],
+                    (string) $data['to'],
+                );
+
+                $calendar->forceFill(['name' => $data['name'], 'color' => $data['color'], 'url' => $newUrl])->save();
+
+                if ($newUrl === $oldUrl) {
+                    Notification::make()->title(__('pages/posts.calendar_ai_saved'))->success()->send();
+
+                    return;
+                }
+
+                // Same country/categories/start with a later end = append the
+                // missing months only; anything else = full regeneration.
+                $sameSettings = HolidayCalendarSync::countryOf($calendar) === HolidayCalendarSync::countryOf(new ExternalCalendar(['url' => $oldUrl]))
+                    && HolidayCalendarSync::setsOf($calendar) === HolidayCalendarSync::setsOf(new ExternalCalendar(['url' => $oldUrl]))
+                    && $data['from'] === $oldFrom->toDateString();
+                $extendOnly = $sameSettings && $data['to'] > $oldTo->toDateString();
+
+                GenerateHolidayCalendarJob::dispatch(
+                    (string) session('current_workspace_id'),
+                    (int) $calendar->id,
+                    auth()->id(),
+                    extend: $extendOnly,
+                );
+
+                Notification::make()
+                    ->title(__('pages/posts.calendar_ai_started_title'))
+                    ->body(__('pages/posts.calendar_ai_started_body'))
+                    ->success()
+                    ->send();
+            });
     }
 
     public function deleteCalendar(int $calendarId): void
@@ -1002,6 +1232,222 @@ class Posts extends Page implements HasTable
                         ->send();
                 }
             });
+    }
+
+    /** "Holidays AI" modal: country in, generated holiday calendar out. */
+    public function addHolidayCalendarAction(): Action
+    {
+        return Action::make('addHolidayCalendar')
+            ->modalHeading(__('pages/posts.calendar_ai_heading'))
+            ->modalDescription(__('pages/posts.calendar_ai_desc'))
+            ->modalSubmitActionLabel(__('pages/posts.calendar_ai_submit'))
+            ->modalIcon(Heroicon::OutlinedSparkles)
+            ->modalWidth(Width::Medium)
+            ->schema([
+                TextInput::make('country')
+                    ->label(__('pages/posts.calendar_ai_country'))
+                    ->placeholder(__('pages/posts.calendar_ai_country_placeholder'))
+                    ->maxLength(80)
+                    ->required(),
+
+                CheckboxList::make('sets')
+                    ->label(__('pages/posts.calendar_ai_sets'))
+                    ->options(collect(HolidayCalendarSync::SETS)->mapWithKeys(
+                        fn (string $set): array => [$set => __('pages/posts.calendar_ai_set_'.$set)],
+                    )->all())
+                    ->default(HolidayCalendarSync::SETS)
+                    ->required(),
+
+                Grid::make(2)->schema([
+                    DatePicker::make('from')
+                        ->label(__('pages/posts.calendar_ai_from'))
+                        ->default(now()->toDateString())
+                        ->required(),
+                    DatePicker::make('to')
+                        ->label(__('pages/posts.calendar_ai_to'))
+                        ->default(now()->addYear()->toDateString())
+                        ->after('from')
+                        ->required(),
+                ]),
+
+                Select::make('color')
+                    ->label(__('pages/posts.calendar_color'))
+                    ->options(collect(PostNote::COLORS)->mapWithKeys(
+                        fn (array $c, string $key): array => [$key => '<span style="display:inline-flex; align-items:center; gap:.55rem;">'
+                            .'<span style="display:inline-block; width:.75rem; height:.75rem; border-radius:999px; background:'.$c[1].';"></span>'
+                            .e(__('pages/posts.color_'.$key)).'</span>'],
+                    )->all())
+                    ->allowHtml()
+                    ->native(false)
+                    ->default('pink')
+                    ->required()
+                    ->selectablePlaceholder(false),
+            ])
+            ->action(function (array $data): void {
+                $country = trim((string) $data['country']);
+
+                $calendar = ExternalCalendar::firstOrCreate(
+                    ['url' => HolidayCalendarSync::urlFor(
+                        $country,
+                        (array) ($data['sets'] ?? []),
+                        (string) ($data['from'] ?? ''),
+                        (string) ($data['to'] ?? ''),
+                    )],
+                    ['name' => __('pages/posts.calendar_ai_name', ['country' => $country]), 'color' => $data['color'], 'enabled' => true],
+                );
+
+                // Generation verifies dates via web search and takes minutes:
+                // strictly a queue job, never the request (nginx 502 otherwise).
+                GenerateHolidayCalendarJob::dispatch(
+                    (string) session('current_workspace_id'),
+                    (int) $calendar->id,
+                    auth()->id(),
+                );
+
+                Notification::make()
+                    ->title(__('pages/posts.calendar_ai_started_title'))
+                    ->body(__('pages/posts.calendar_ai_started_body'))
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /** The external-calendar event whose info popup is open. */
+    public ?int $viewingEventId = null;
+
+    /** Rendered explainer HTML once loaded (null while the AI is writing). */
+    public ?string $holidayInfo = null;
+
+    public function showHolidayEvent(int $eventId): void
+    {
+        $this->viewingEventId = $eventId;
+        // Cached answers show instantly; otherwise the modal opens with a
+        // loader and wire:init fetches the text (the AI takes a few seconds).
+        $this->holidayInfo = $this->cachedHolidayInfo();
+        $this->mountAction('holidayInfo');
+    }
+
+    /** wire:init target from the modal's loader. */
+    public function loadHolidayInfo(): void
+    {
+        $this->holidayInfo = $this->generateHolidayInfo();
+    }
+
+    /** Click on a holiday chip: a short AI explainer of the day (what it is,
+     *  who observes it) plus post ideas, in the user's own language. Cached
+     *  per event + language so the AI runs once. */
+    public function holidayInfoAction(): Action
+    {
+        return Action::make('holidayInfo')
+            ->modalHeading(fn (): string => (string) ExternalCalendarEvent::find($this->viewingEventId)?->title)
+            ->modalIcon(Heroicon::OutlinedSparkles)
+            ->modalWidth(Width::Medium)
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel(__('pages/posts.close'))
+            ->schema(fn (): array => [
+                Placeholder::make('holiday_info')
+                    ->hiddenLabel()
+                    ->content(fn (): HtmlString => new HtmlString($this->holidayInfo ?? $this->holidayInfoLoaderHtml())),
+            ]);
+    }
+
+    /** Spinner shown while the AI writes; wire:init kicks off the fetch. */
+    private function holidayInfoLoaderHtml(): string
+    {
+        return '<div wire:init="loadHolidayInfo" style="display:flex; align-items:center; gap:.6rem; padding:.4rem 0; color:#6b7280; font-size:.85rem;">'
+            .'<svg style="width:1.1rem; height:1.1rem; color:#2d19ec; animation:spin .8s linear infinite;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">'
+            .'<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.3"/>'
+            .'<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>'
+            .e(__('pages/posts.holiday_info_loading'))
+            .'<style>@keyframes spin { to { transform: rotate(360deg); } }</style>'
+            .'</div>';
+    }
+
+    /** The stored explainer for the open event, if any tenant already asked. */
+    private function cachedHolidayInfo(): ?string
+    {
+        $event = ExternalCalendarEvent::find($this->viewingEventId);
+        if ($event === null) {
+            return null;
+        }
+
+        $text = HolidayBrief::query()->where('key_hash', $this->holidayBriefHash($event))->value('brief');
+
+        return $text === null ? null : $this->wrapHolidayInfo((string) $text, $event);
+    }
+
+    /** Escape + layout for the explainer text (cache stores plain text). */
+    private function wrapHolidayInfo(string $text, ExternalCalendarEvent $event): string
+    {
+        return '<div dir="auto" style="font-size:.9rem; line-height:1.6; white-space:pre-wrap;">'.e($text).'</div>'
+            .'<div style="margin-top:.7rem; font-size:.75rem; color:#9ca3af;">'.e($event->date->translatedFormat('l, j F Y')).'</div>';
+    }
+
+    /** Briefs are PLATFORM-wide: one hash per day + title + country + language,
+     *  so an answer written for one workspace serves every other one too. */
+    private function holidayBriefHash(ExternalCalendarEvent $event): string
+    {
+        return sha1(implode('|', [
+            mb_strtolower(trim($this->holidayCountryOf($event))),
+            $event->date->toDateString(),
+            mb_strtolower(trim((string) $event->title)),
+            app()->getLocale(),
+        ]));
+    }
+
+    private function holidayCountryOf(ExternalCalendarEvent $event): string
+    {
+        return $event->calendar && HolidayCalendarSync::isAiCalendar($event->calendar)
+            ? HolidayCalendarSync::countryOf($event->calendar)
+            : '';
+    }
+
+    private function generateHolidayInfo(): string
+    {
+        $event = ExternalCalendarEvent::find($this->viewingEventId);
+        if ($event === null) {
+            return '';
+        }
+
+        $locale = app()->getLocale();
+        $language = Locales::ALL[$locale]['name'] ?? 'English';
+        $country = $this->holidayCountryOf($event);
+        $hash = $this->holidayBriefHash($event);
+
+        try {
+            // Platform-wide knowledge base: the first workspace to ask pays
+            // the AI call; everyone else reads the stored brief.
+            $text = HolidayBrief::query()->where('key_hash', $hash)->value('brief');
+
+            if ($text === null) {
+                $response = agent(instructions: implode("\n", [
+                    'You explain calendar days to local-business owners planning Google Business posts.',
+                    "Answer in {$language}, plain text, no markdown, under 120 words, in two short paragraphs:",
+                    '1) What this day is, who observes it and why it matters'.($country !== '' ? ' in '.$country : '').'.',
+                    '2) One or two concrete Google-post ideas a local business could publish for it.',
+                ]))->prompt(
+                    sprintf('Day: %s on %s%s.', (string) $event->title, $event->date->toDateString(), $country !== '' ? ' ('.$country.')' : ''),
+                    provider: Lab::Anthropic,
+                    model: (string) config('services.ai.model', 'claude-sonnet-4-6'),
+                );
+
+                $text = trim((string) $response->text);
+
+                HolidayBrief::query()->firstOrCreate(['key_hash' => $hash], [
+                    'country' => mb_substr($country, 0, 120),
+                    'date' => $event->date->toDateString(),
+                    'title' => mb_substr((string) $event->title, 0, 160),
+                    'locale' => $locale,
+                    'brief' => $text,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+
+            return '<div style="color:#991b1b; font-size:.85rem;">'.e(__('pages/posts.holiday_info_failed')).'</div>';
+        }
+
+        return $this->wrapHolidayInfo((string) $text, $event);
     }
 
     /** The post whose details modal is open (calendar card click). The URL

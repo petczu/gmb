@@ -299,12 +299,23 @@
                 </div>
 
                 @if ($this->mode === 'calendar')
-                    {{-- External calendars: direct add when none yet, else a popover --}}
+                    {{-- External calendars: with none yet, a small dropdown offering
+                         both ways in (ICS feed or Holidays AI); else the full popover --}}
                     @if ($calendars->isEmpty())
-                        <button type="button" class="pc-btn" wire:click="mountAction('addCalendar')" style="display:inline-flex; align-items:center; gap:.35rem;">
-                            <svg style="width:1rem; height:1rem; opacity:.7;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                            {{ __('pages/posts.calendars_connect') }}
-                        </button>
+                        <div x-data="{ open: false }" style="position:relative;">
+                            <button type="button" class="pc-btn" @click="open = !open" style="display:inline-flex; align-items:center; gap:.35rem;">
+                                <svg style="width:1rem; height:1rem; opacity:.7;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                {{ __('pages/posts.calendars_connect') }}
+                            </button>
+                            <div class="pc-pop" x-show="open" x-cloak @click.outside="open = false">
+                                <button type="button" class="foot" style="border-top:0;" wire:click="mountAction('addCalendar')" @click="open = false">
+                                    <span style="font-size:1rem; line-height:1;">+</span> {{ __('pages/posts.calendar_add') }}
+                                </button>
+                                <button type="button" class="foot" wire:click="mountAction('addHolidayCalendar')" @click="open = false" style="display:inline-flex; align-items:center; gap:.35rem;">
+                                    @svg('heroicon-o-sparkles', ['style' => 'width:.9rem; height:.9rem;']) {{ __('pages/posts.calendar_ai_button') }}
+                                </button>
+                            </div>
+                        </div>
                     @else
                     <div x-data="{ open: false }" style="position:relative;">
                         <button type="button" class="pc-btn" @click="open = !open" style="display:inline-flex; align-items:center; gap:.4rem;">
@@ -331,8 +342,25 @@
                             @forelse ($calendars as $calendar)
                                 <div class="row">
                                     <input type="checkbox" @checked($calendar->enabled) wire:click="toggleCalendar({{ $calendar->id }})" style="cursor:pointer;">
-                                    <span class="dot" style="background:{{ $noteColors[$calendar->color][1] ?? '#16a34a' }};"></span>
+                                    {{-- AI-generated calendars wear a sparkles icon in their color
+                                         instead of the plain dot, so they read as AI at a glance. --}}
+                                    @if (\App\Services\Posts\HolidayCalendarSync::isAiCalendar($calendar))
+                                        @svg('heroicon-m-sparkles', ['style' => 'width:.85rem; height:.85rem; flex:none; color:'.($noteColors[$calendar->color][1] ?? '#16a34a').';'])
+                                    @else
+                                        <span class="dot" style="background:{{ $noteColors[$calendar->color][1] ?? '#16a34a' }};"></span>
+                                    @endif
                                     <span class="nm" title="{{ $calendar->sync_error ?: $calendar->name }}">{{ $calendar->name }}@if ($calendar->sync_error) ⚠️ @endif</span>
+                                    @if (\App\Services\Posts\HolidayCalendarSync::isAiCalendar($calendar))
+                                        {{-- Edit settings; widening the window appends the missing months. --}}
+                                        <button type="button" class="pc-iconbtn" wire:click="editHolidayCalendar({{ $calendar->id }})" @click="open = false" title="{{ __('pages/posts.calendar_ai_edit_heading') }}">
+                                            @svg('heroicon-o-pencil-square', ['style' => 'width:.95rem; height:.95rem;'])
+                                        </button>
+                                    @else
+                                        {{-- Feed calendars: edit name, ICS link or color. --}}
+                                        <button type="button" class="pc-iconbtn" wire:click="editIcsCalendar({{ $calendar->id }})" @click="open = false" title="{{ __('pages/posts.calendar_edit_heading') }}">
+                                            @svg('heroicon-o-pencil-square', ['style' => 'width:.95rem; height:.95rem;'])
+                                        </button>
+                                    @endif
                                     <button type="button" class="pc-iconbtn" wire:click="confirmDeleteCalendar({{ $calendar->id }})" @click="open = false" title="{{ __('pages/posts.calendar_delete') }}">
                                         <svg style="width:.95rem; height:.95rem;" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
                                     </button>
@@ -343,6 +371,10 @@
 
                             <button type="button" class="foot" wire:click="mountAction('addCalendar')" @click="open = false">
                                 <span style="font-size:1rem; line-height:1;">+</span> {{ __('pages/posts.calendar_add') }}
+                            </button>
+                            {{-- AI-generated holiday calendar: no ICS URL needed. --}}
+                            <button type="button" class="foot" wire:click="mountAction('addHolidayCalendar')" @click="open = false" style="display:inline-flex; align-items:center; gap:.35rem;">
+                                @svg('heroicon-o-sparkles', ['style' => 'width:.9rem; height:.9rem;']) {{ __('pages/posts.calendar_ai_button') }}
                             </button>
                         </div>
                     </div>
@@ -414,8 +446,14 @@
 
                             @foreach ($day['events'] as $event)
                                 @php [$evtBg, $evtAccent] = $noteColors[$event->calendar->color ?? 'green'] ?? ['#dcfce7', '#16a34a']; @endphp
-                                <div class="pc-evt" style="background:{{ $evtBg }}; color:{{ $evtAccent }};" title="{{ $event->title }}">
-                                    <span class="dot" style="background:{{ $evtAccent }};"></span>
+                                {{-- Click: AI explainer popup for the day (user's language). --}}
+                                <div class="pc-evt" style="background:{{ $evtBg }}; color:{{ $evtAccent }}; cursor:pointer;" title="{{ $event->title }}"
+                                    wire:click="showHolidayEvent({{ $event->id }})">
+                                    @if ($event->calendar && \App\Services\Posts\HolidayCalendarSync::isAiCalendar($event->calendar))
+                                        @svg('heroicon-m-sparkles', ['style' => 'width:.7rem; height:.7rem; flex:none; margin-top:.14rem; color:'.$evtAccent.';'])
+                                    @else
+                                        <span class="dot" style="background:{{ $evtAccent }};"></span>
+                                    @endif
                                     <span class="t">{{ $event->title }}</span>
                                 </div>
                             @endforeach
