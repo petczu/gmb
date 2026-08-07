@@ -1474,7 +1474,7 @@ class Posts extends Page implements HasTable
 
                 return '<div style="flex:1; min-width:0; border:2px solid '.($inUse ? '#2d19ec' : '#e5e7eb').'; border-radius:.6rem; overflow:hidden;">'
                     .'<img src="'.e($url).'" alt="" style="width:100%; height:7.5rem; object-fit:cover; display:block;">'
-                    .'<div style="display:flex; align-items:center; justify-content:space-between; gap:.4rem; padding:.4rem .55rem;">'
+                    .'<div style="display:flex; align-items:center; justify-content:space-between; gap:.4rem; padding:.25rem .55rem; min-height:2.3rem;">'
                     .'<span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:#6b7280;">'.e((string) ($c['provider'] ?? '')).'</span>'
                     .($inUse
                         ? '<span style="display:inline-flex; align-items:center; gap:.25rem; color:#2d19ec; font-size:.75rem; font-weight:700;">'.svg('heroicon-m-check-circle', ['style' => 'width:.85rem; height:.85rem;'])->toHtml().e(__('pages/posts.ai_image_in_use')).'</span>'
