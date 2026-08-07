@@ -8,15 +8,11 @@ use App\Models\AiCreditLedger;
 use App\Models\Workspace;
 use App\Services\Ai\AiSpend;
 use BackedEnum;
-use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Tables\Enums\FiltersLayout;
-use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -45,12 +41,44 @@ class AiUsage extends Page implements HasTable
         return 'AI usage';
     }
 
+    /** Dashboard-wide filters: they scope the cards, chart, breakdowns AND
+     *  the call log below (the whole page reads through them). */
+    public ?string $fWorkspace = null;
+
+    public ?string $fReason = null;
+
+    public ?string $fModel = null;
+
+    public ?string $fFrom = null;
+
+    public ?string $fUntil = null;
+
+    /** @return array<string, ?string> */
+    private function pageFilters(): array
+    {
+        return [
+            'workspace_id' => $this->fWorkspace ?: null,
+            'reason' => $this->fReason ?: null,
+            'model' => $this->fModel ?: null,
+            'from' => $this->fFrom ?: null,
+            'until' => $this->fUntil ?: null,
+        ];
+    }
+
+    /** Reset table pagination when any dashboard filter changes. */
+    public function updated(string $property): void
+    {
+        if (str_starts_with($property, 'f')) {
+            $this->resetTable();
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
     protected function getViewData(): array
     {
-        $spend = app(AiSpend::class);
+        $spend = app(AiSpend::class)->filtered($this->pageFilters());
         $stats = $spend->stats();
         $budget = $spend->budget();
 
@@ -62,6 +90,12 @@ class AiUsage extends Page implements HasTable
             ->pluck('name', 'id');
 
         return [
+            'filterOptions' => [
+                'workspaces' => Workspace::query()->orderBy('name')->pluck('name', 'id')->all(),
+                'reasons' => AiCreditLedger::query()->distinct()->orderBy('reason')->pluck('reason', 'reason')->all(),
+                'models' => AiCreditLedger::query()->whereNotNull('model')->distinct()->orderBy('model')->pluck('model', 'model')->all(),
+            ],
+            'hasPeriod' => filled($this->fFrom) || filled($this->fUntil),
             'stats' => $stats,
             'budget' => $budget,
             'budgetPercent' => $budget !== null ? min(100, (int) round($stats['this_month'] / $budget * 100)) : null,
@@ -80,7 +114,13 @@ class AiUsage extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => AiCreditLedger::query()->with('workspace'))
+            ->query(fn (): Builder => AiCreditLedger::query()
+                ->with('workspace')
+                ->when($this->fWorkspace, fn (Builder $q, string $id) => $q->where('workspace_id', $id))
+                ->when($this->fReason, fn (Builder $q, string $r) => $q->where('reason', $r))
+                ->when($this->fModel, fn (Builder $q, string $m) => $q->where('model', $m))
+                ->when($this->fFrom, fn (Builder $q, string $from) => $q->where('created_at', '>=', $from))
+                ->when($this->fUntil, fn (Builder $q, string $until) => $q->where('created_at', '<=', $until.' 23:59:59')))
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading('No AI activity yet')
             ->columns([
@@ -131,35 +171,6 @@ class AiUsage extends Page implements HasTable
                     })
                     ->alignRight(),
             ])
-            ->filters([
-                SelectFilter::make('workspace_id')
-                    ->label('Workspace')
-                    ->options(fn (): array => Workspace::query()->orderBy('name')->pluck('name', 'id')->all()),
-
-                SelectFilter::make('reason')
-                    ->label('Feature')
-                    ->options(fn (): array => AiCreditLedger::query()
-                        ->distinct()
-                        ->pluck('reason', 'reason')
-                        ->all()),
-
-                SelectFilter::make('model')
-                    ->label('Model')
-                    ->options(fn (): array => AiCreditLedger::query()
-                        ->whereNotNull('model')
-                        ->distinct()
-                        ->pluck('model', 'model')
-                        ->all()),
-
-                Filter::make('date')
-                    ->schema([
-                        DatePicker::make('from')->native(false)->maxDate(now())->prefixIcon('heroicon-o-calendar'),
-                        DatePicker::make('until')->native(false)->maxDate(now())->prefixIcon('heroicon-o-calendar'),
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when($data['from'] ?? null, fn (Builder $q, string $from) => $q->where('created_at', '>=', $from))
-                        ->when($data['until'] ?? null, fn (Builder $q, string $until) => $q->where('created_at', '<=', $until.' 23:59:59'))),
-            ])
-            ->filtersLayout(FiltersLayout::AboveContent);
+            ->paginated([25, 50, 100]);
     }
 }

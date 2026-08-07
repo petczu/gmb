@@ -16,6 +16,43 @@ use Illuminate\Support\Collection;
  */
 class AiSpend
 {
+    /**
+     * Optional dashboard filters applied to every aggregate: workspace_id,
+     * reason, model, from (Y-m-d), until (Y-m-d).
+     *
+     * @var array<string, ?string>
+     */
+    private array $filters = [];
+
+    /** @param  array<string, ?string>  $filters */
+    public function filtered(array $filters): static
+    {
+        $this->filters = $filters;
+
+        return $this;
+    }
+
+    private function applyFilters(Builder $query): Builder
+    {
+        return $query
+            ->when($this->filters['workspace_id'] ?? null, fn (Builder $q, string $id) => $q->where('workspace_id', $id))
+            ->when($this->filters['reason'] ?? null, fn (Builder $q, string $reason) => $q->where('reason', $reason))
+            ->when($this->filters['model'] ?? null, fn (Builder $q, string $model) => $q->where('model', $model));
+    }
+
+    /** True when an explicit from/until period overrides the default window. */
+    private function hasPeriod(): bool
+    {
+        return filled($this->filters['from'] ?? null) || filled($this->filters['until'] ?? null);
+    }
+
+    private function applyPeriod(Builder $query): Builder
+    {
+        return $query
+            ->when($this->filters['from'] ?? null, fn (Builder $q, string $from) => $q->where('created_at', '>=', $from))
+            ->when($this->filters['until'] ?? null, fn (Builder $q, string $until) => $q->where('created_at', '<=', $until.' 23:59:59'));
+    }
+
     /** The global monthly USD budget, or null when not configured. */
     public function budget(): ?float
     {
@@ -45,7 +82,7 @@ class AiSpend
         return [
             'this_month' => (float) $current->cost,
             'last_month' => $this->monthSpendUsd($now->subMonthNoOverflow()),
-            'total' => (float) AiCreditLedger::query()->sum('cost_usd'),
+            'total' => (float) $this->applyFilters(AiCreditLedger::query())->sum('cost_usd'),
             'calls' => (int) $current->calls,
             'input_tokens' => (int) $current->input,
             'output_tokens' => (int) $current->output,
@@ -99,10 +136,17 @@ class AiSpend
      */
     public function byDay(int $days = 30): array
     {
-        $start = CarbonImmutable::today()->subDays($days - 1);
+        $start = filled($this->filters['from'] ?? null)
+            ? CarbonImmutable::parse($this->filters['from'])
+            : CarbonImmutable::today()->subDays($days - 1);
+        $end = filled($this->filters['until'] ?? null)
+            ? CarbonImmutable::parse($this->filters['until'])
+            : CarbonImmutable::today();
+        $days = max(1, (int) $start->diffInDays($end) + 1);
 
-        $rows = AiCreditLedger::query()
+        $rows = $this->applyFilters(AiCreditLedger::query())
             ->where('created_at', '>=', $start)
+            ->where('created_at', '<=', $end->endOfDay())
             ->get(['created_at', 'cost_usd'])
             ->groupBy(fn (AiCreditLedger $row): string => $row->created_at->toDateString())
             ->map(fn (Collection $group): float => (float) $group->sum('cost_usd'));
@@ -116,11 +160,18 @@ class AiSpend
         return $out;
     }
 
+    /** The default window (a calendar month) unless from/until override it. */
     protected function monthQuery(?CarbonImmutable $month = null): Builder
     {
+        $query = $this->applyFilters(AiCreditLedger::query());
+
+        if ($this->hasPeriod()) {
+            return $this->applyPeriod($query);
+        }
+
         $month ??= CarbonImmutable::now();
 
-        return AiCreditLedger::query()
+        return $query
             ->where('created_at', '>=', $month->startOfMonth())
             ->where('created_at', '<=', $month->endOfMonth());
     }
