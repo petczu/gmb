@@ -35,10 +35,18 @@ class GeneratePostImagesJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    /** provider key => image model. Only configured providers actually run. */
-    public const PROVIDERS = [
-        'gemini' => 'gemini-3-pro-image',
-        'openai' => 'gpt-image-2',
+    /**
+     * One candidate per variant; only variants whose provider is configured
+     * actually run. Several Gemini tiers side by side while we A/B which one
+     * fits the product best.
+     */
+    public const VARIANTS = [
+        // quality null = model default; 'high' requests 4K, which the flash
+        // tiers reject with a 400.
+        ['provider' => 'gemini', 'model' => 'gemini-3.1-flash-lite-image', 'label' => 'Nano Banana 2 Lite', 'quality' => null],
+        ['provider' => 'gemini', 'model' => 'gemini-3.1-flash-image', 'label' => 'Nano Banana 2', 'quality' => null],
+        ['provider' => 'gemini', 'model' => 'gemini-3-pro-image', 'label' => 'Nano Banana Pro', 'quality' => 'high'],
+        ['provider' => 'openai', 'model' => 'gpt-image-2', 'label' => 'GPT Image 2', 'quality' => 'high'],
     ];
 
     public int $tries = 1;
@@ -115,18 +123,23 @@ class GeneratePostImagesJob implements ShouldQueue
                 ->all();
 
             $candidates = [];
-            foreach (self::PROVIDERS as $provider => $model) {
+            foreach (self::VARIANTS as $variant) {
+                $provider = $variant['provider'];
+                $model = $variant['model'];
+
                 if (blank(config('ai.providers.'.$provider.'.key'))) {
                     continue;
                 }
 
                 try {
-                    $image = Image::of($prompt)
+                    $pending = Image::of($prompt)
                         ->attachments($attachments)
                         ->landscape()
-                        ->quality('high')
-                        ->timeout(240)
-                        ->generate(provider: $provider, model: $model);
+                        ->timeout(240);
+                    if (filled($variant['quality'])) {
+                        $pending->quality($variant['quality']);
+                    }
+                    $image = $pending->generate(provider: $provider, model: $model);
 
                     // Google post media must be 4:3 (1200x900), JPG/PNG, 10KB-5MB:
                     // center-crop and recompress so every candidate is ready as-is.
@@ -137,7 +150,7 @@ class GeneratePostImagesJob implements ShouldQueue
                         ->storePubliclyAs('posts', 'ai-'.$provider.'-'.Str::random(12).'.jpg', 'uploads');
 
                     if (is_string($path)) {
-                        $candidates[] = ['provider' => $provider, 'path' => $path];
+                        $candidates[] = ['provider' => $provider, 'label' => $variant['label'], 'path' => $path];
                     }
 
                     // Ledger entry so image generations show up in the AI

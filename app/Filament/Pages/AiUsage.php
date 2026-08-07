@@ -14,6 +14,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -158,6 +159,7 @@ class AiUsage extends Page implements HasTable
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when($data['from'] ?? null, fn (Builder $q, string $from) => $q->where('created_at', '>=', $from))
                         ->when($data['until'] ?? null, fn (Builder $q, string $until) => $q->where('created_at', '<=', $until.' 23:59:59'))),
-            ]);
+            ])
+            ->filtersLayout(FiltersLayout::AboveContent);
     }
 }
