@@ -205,7 +205,7 @@ return [
     'ai_image_panel_hint' => 'Beschreibe, was auf dem Bild zu sehen sein soll, oder lass es leer, dann wird es aus dem Beitragstext erstellt.',
     'ai_image_generating' => 'Die KI generiert die Bilder, sie erscheinen gleich hier...',
     'ai_image_prompt_ph' => 'Beschreibe das Bild (leer = aus dem Text)',
-    'ai_image_pick' => 'KI-Vorschläge: wähle ein Bild',
+    'ai_image_pick' => 'KI-Vorschläge',
     'ai_image_use' => 'Verwenden',
     'ai_image_started_title' => 'Bilder werden generiert',
     'ai_image_started_body' => 'Pro KI-Anbieter wird ein Bild erstellt. Du bekommst eine Benachrichtigung; öffne den Entwurf dann erneut.',

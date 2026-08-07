@@ -1438,6 +1438,19 @@ class Posts extends Page implements HasTable
         $this->replaceMountedAction('editDraft');
     }
 
+    /** Drop the tried AI image from the draft (candidates stay offered). */
+    public function clearTriedImage(): void
+    {
+        $draft = Post::query()->whereKey($this->viewingPostId)->where('status', 'draft')->first();
+
+        if ($draft === null || ! str_contains((string) $draft->image_url, '/ai-')) {
+            return;
+        }
+
+        $draft->forceFill(['image_url' => null])->save();
+        $this->replaceMountedAction('editDraft');
+    }
+
     /** The composer's AI-image block: prompt + generate, or the candidates. */
     private function aiImagePanelHtml(): string
     {
@@ -1446,8 +1459,9 @@ class Posts extends Page implements HasTable
             return '';
         }
 
-        $providersConfigured = collect(GeneratePostImagesJob::PROVIDERS)
-            ->keys()
+        $providersConfigured = collect(GeneratePostImagesJob::VARIANTS)
+            ->pluck('provider')
+            ->unique()
             ->filter(fn (string $provider): bool => filled(config('ai.providers.'.$provider.'.key')));
 
         if ($providersConfigured->isEmpty()) {
@@ -1472,19 +1486,22 @@ class Posts extends Page implements HasTable
                 $url = (string) $this->mediaUrl((string) $c['path']);
                 $inUse = $draft->image_url === $url;
 
-                return '<div style="flex:1; min-width:0; border:2px solid '.($inUse ? '#2d19ec' : '#e5e7eb').'; border-radius:.6rem; overflow:hidden;">'
+                return '<div style="min-width:0; border:2px solid '.($inUse ? '#2d19ec' : '#e5e7eb').'; border-radius:.6rem; overflow:hidden;">'
                     .'<img src="'.e($url).'" alt="" style="width:100%; height:7.5rem; object-fit:cover; display:block;">'
                     .'<div style="display:flex; align-items:center; justify-content:space-between; gap:.4rem; padding:.25rem .55rem; min-height:2.3rem;">'
-                    .'<span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:#6b7280;">'.e((string) ($c['provider'] ?? '')).'</span>'
+                    .'<span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:#6b7280; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'.e((string) ($c['label'] ?? $c['provider'] ?? '')).'</span>'
                     .($inUse
-                        ? '<span style="display:inline-flex; align-items:center; gap:.25rem; color:#2d19ec; font-size:.75rem; font-weight:700;">'.svg('heroicon-m-check-circle', ['style' => 'width:.85rem; height:.85rem;'])->toHtml().e(__('pages/posts.ai_image_in_use')).'</span>'
+                        ? '<span style="display:inline-flex; align-items:center; gap:.35rem;">'
+                            .'<span style="display:inline-flex; align-items:center; gap:.25rem; color:#2d19ec; font-size:.75rem; font-weight:700;">'.svg('heroicon-m-check-circle', ['style' => 'width:.85rem; height:.85rem;'])->toHtml().e(__('pages/posts.ai_image_in_use')).'</span>'
+                            .'<button type="button" title="'.e(__('pages/posts.delete')).'" style="display:inline-grid; place-items:center; width:1.3rem; height:1.3rem; background:none; border:none; color:#9ca3af; cursor:pointer;" wire:click="clearTriedImage">'.svg('heroicon-m-x-mark', ['style' => 'width:.85rem; height:.85rem;'])->toHtml().'</button>'
+                            .'</span>'
                         : '<button type="button" style="background:#2d19ec; color:#fff; border:none; border-radius:.45rem; padding:.25rem .65rem; font-size:.75rem; font-weight:600; cursor:pointer;" wire:click="tryPostImage('.$i.')">'.e(__('pages/posts.ai_image_try')).'</button>')
                     .'</div></div>';
             })->implode('');
 
             return '<div style="margin-top:.35rem;">'
                 .'<div style="font-size:.78rem; font-weight:600; color:#374151; margin-bottom:.4rem;">'.e(__('pages/posts.ai_image_pick')).'</div>'
-                .'<div style="display:flex; gap:.6rem; margin-bottom:.5rem;">'.$cards.'</div>'
+                .'<div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.6rem; margin-bottom:.5rem;">'.$cards.'</div>'
                 .$this->aiImageGenerateButtonHtml(regenerate: true)
                 .'</div>';
         }
@@ -2574,7 +2591,11 @@ class Posts extends Page implements HasTable
             'type' => $post->type,
             'locations' => $post->location_ids ?? [],
             'caption' => $post->caption,
-            'media' => $this->imagePathFromUrl($post->video_url ?: $post->image_url),
+            // AI-tried images stay out of the upload field: that field is for
+            // the user's own files; the AI pick lives on image_url directly.
+            'media' => str_contains((string) ($post->video_url ?: $post->image_url), '/ai-')
+                ? null
+                : $this->imagePathFromUrl($post->video_url ?: $post->image_url),
             'title' => $post->title,
             'starts_at' => $post->starts_at?->format('Y-m-d H:i'),
             'ends_at' => $post->ends_at?->format('Y-m-d H:i'),
@@ -3799,13 +3820,19 @@ class Posts extends Page implements HasTable
 
         $media = $this->normalizedMediaPath($data['media'] ?? null);
 
+        // The upload field is only for the user's own files; a tried AI image
+        // lives on image_url and must survive a save with an empty field.
+        $keptAiImage = blank($media) && str_contains((string) $existing?->image_url, '/ai-')
+            ? $existing->image_url
+            : null;
+
         $attributes = [
             'type' => $data['type'],
             'caption' => $data['caption'] ?? null,
             'title' => $data['title'] ?? null,
             'cta_type' => $data['cta_type'] ?? null,
             'cta_url' => $data['cta_url'] ?? null,
-            'image_url' => $this->isVideoPath($media) ? null : $this->mediaUrl($media),
+            'image_url' => $this->isVideoPath($media) ? null : ($this->mediaUrl($media) ?? $keptAiImage),
             'video_url' => $this->isVideoPath($media) ? $this->mediaUrl($media) : null,
             'starts_at' => $data['starts_at'] ?? null,
             'ends_at' => $data['ends_at'] ?? null,

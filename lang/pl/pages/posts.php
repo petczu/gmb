@@ -154,7 +154,7 @@ return [
     'ai_image_panel_hint' => 'Opisz, co ma być na obrazie, albo zostaw puste, aby powstał z treści posta.',
     'ai_image_generating' => 'AI generuje obrazy, pojawią się tutaj...',
     'ai_image_prompt_ph' => 'Opisz obraz (puste = z treści)',
-    'ai_image_pick' => 'Propozycje AI: wybierz obraz',
+    'ai_image_pick' => 'Propozycje AI',
     'ai_image_use' => 'Użyj tego',
     'ai_image_started_title' => 'Generowanie obrazów',
     'ai_image_started_body' => 'Po jednym obrazie na dostawcę AI. Dostaniesz powiadomienie; otwórz szkic ponownie, aby wybrać.',

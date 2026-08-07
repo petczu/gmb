@@ -154,7 +154,7 @@ return [
     'ai_image_panel_hint' => 'Beschrijf wat er op de afbeelding moet staan, of laat leeg om deze uit de tekst van de post te maken.',
     'ai_image_generating' => 'De AI genereert de afbeeldingen, ze verschijnen zo hier...',
     'ai_image_prompt_ph' => 'Beschrijf de afbeelding (leeg = uit de tekst)',
-    'ai_image_pick' => 'AI-suggesties: kies een afbeelding',
+    'ai_image_pick' => 'AI-suggesties',
     'ai_image_use' => 'Gebruiken',
     'ai_image_started_title' => 'Afbeeldingen worden gegenereerd',
     'ai_image_started_body' => 'Per AI-aanbieder wordt één afbeelding gemaakt. Je krijgt een melding; open het concept opnieuw om te kiezen.',

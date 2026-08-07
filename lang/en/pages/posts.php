@@ -205,7 +205,7 @@ return [
     'ai_image_panel_hint' => 'Describe what should be in the picture, or leave it empty to build it from the post text.',
     'ai_image_generating' => 'The AI is generating images, they will appear right here...',
     'ai_image_prompt_ph' => 'Describe the image (empty = from the caption)',
-    'ai_image_pick' => 'AI suggestions: pick an image',
+    'ai_image_pick' => 'AI suggestions',
     'ai_image_use' => 'Use this',
     'ai_image_started_title' => 'Generating images',
     'ai_image_started_body' => 'One image per AI provider is being generated. You will get a notification; reopen the draft to pick one.',

@@ -154,7 +154,7 @@ return [
     'ai_image_panel_hint' => 'Décrivez ce que l\'image doit montrer, ou laissez vide pour la créer à partir du texte du post.',
     'ai_image_generating' => 'L\'IA génère les images, elles apparaîtront ici même...',
     'ai_image_prompt_ph' => 'Décrivez l\'image (vide = à partir du texte)',
-    'ai_image_pick' => 'Suggestions IA : choisissez une image',
+    'ai_image_pick' => 'Suggestions IA',
     'ai_image_use' => 'Utiliser',
     'ai_image_started_title' => 'Génération des images',
     'ai_image_started_body' => 'Une image par fournisseur d\'IA est en cours de génération. Vous serez notifié ; rouvrez le brouillon pour choisir.',

@@ -98,7 +98,7 @@ class GeneratePostImagesJob implements ShouldQueue
             $headlineWords = max(2, min(8, (int) ($workspace->ai_image_headline_words ?? 5)));
 
             $styleLine = match ($refs->isNotEmpty() ? 'reference' : $baseStyle) {
-                'reference' => 'Style: the attached image(s) are the brand template. Copy these EXACTLY from them: (1) the color palette and grading, including background tones and lighting temperature; (2) the typography system: same font style, weight, letter case, text block placement and the accent color used on one word; (3) lighting effects and mood (e.g. backlight, smoke, negative space); (4) the brand LOGO: reproduce it faithfully in the same position and size as in the references — the logo is part of the template and must always be present. At the same time invent a completely NEW scene for the subject: different people, poses, setting and camera angle; never reuse the people, scene objects or headline text of the references (the logo is the only element to copy as-is). The result must look like the SAME designer made another post from the SAME template.',
+                'reference' => 'Style: the attached image(s) are the brand template. Copy these EXACTLY from them: (1) the color palette and grading, including background tones and lighting temperature; (2) the typography system: same font style, weight, letter case, text block placement and the accent color used on one word; (3) lighting effects and mood (e.g. backlight, smoke, negative space); (4) spacing: the text block and every element keep the SAME margins and distances from the edges as in the references. At the same time invent a completely NEW scene for the subject: different people, poses, setting and camera angle; never reuse the people, scene objects or headline text of the references. NEVER draw any logo, brand mark or watermark: leave the logo area of the template empty, the real logo file is stamped on afterwards. The result must look like the SAME designer made another post from the SAME template.',
                 'illustration' => 'Style: high-quality flat illustration with the brand mood, clean shapes, consistent palette.',
                 'minimal' => 'Style: minimal and typographic, lots of negative space, one strong visual element, brand colors.',
                 default => 'Style: photorealistic, like a real photo: real people, natural light, candid, high detail. NOT an illustration, NOT a cartoon, NOT flat vector art.',
@@ -150,6 +150,12 @@ class GeneratePostImagesJob implements ShouldQueue
                         ->storePubliclyAs('posts', 'ai-'.$provider.'-'.Str::random(12).'.jpg', 'uploads');
 
                     if (is_string($path)) {
+                        // Template mode: stamp the REAL workspace logo — a
+                        // generated logo is always a redrawn approximation.
+                        if ($refs->isNotEmpty()) {
+                            $this->stampLogo($path, $workspace);
+                        }
+
                         $candidates[] = ['provider' => $provider, 'label' => $variant['label'], 'path' => $path];
                     }
 
@@ -177,6 +183,35 @@ class GeneratePostImagesJob implements ShouldQueue
 
         } finally {
             $previous !== null ? tenancy()->initialize($previous) : tenancy()->end();
+        }
+    }
+
+    /**
+     * Composite the workspace's actual logo onto a stored candidate
+     * (top-left, template margins). Pixel-perfect where generation only
+     * ever redraws an approximation. Best-effort.
+     */
+    private function stampLogo(string $relativePath, Workspace $workspace): void
+    {
+        $logoRel = (string) ($workspace->logo_path ?? '');
+        if ($logoRel === '' || ! Storage::disk('uploads')->exists($logoRel)) {
+            return;
+        }
+
+        try {
+            $canvas = new \Imagick(Storage::disk('uploads')->path($relativePath));
+            $logo = new \Imagick(Storage::disk('uploads')->path($logoRel));
+
+            // Height 84px on the 1200x900 canvas, 48px template margin.
+            $logo->thumbnailImage(0, 84);
+            $canvas->compositeImage($logo, \Imagick::COMPOSITE_OVER, 48, 48);
+            $canvas->setImageFormat('jpeg');
+            $canvas->setImageCompressionQuality(88);
+            $canvas->writeImage(Storage::disk('uploads')->path($relativePath));
+            $canvas->destroy();
+            $logo->destroy();
+        } catch (Throwable $e) {
+            Log::warning('Logo stamp failed', ['path' => $relativePath, 'error' => $e->getMessage()]);
         }
     }
 

@@ -154,7 +154,7 @@ return [
     'ai_image_panel_hint' => '画像に入れたい内容を記述してください。空欄の場合は投稿本文から作成します。',
     'ai_image_generating' => 'AI が画像を生成しています。まもなくここに表示されます...',
     'ai_image_prompt_ph' => '画像の内容を記述(空欄なら本文から)',
-    'ai_image_pick' => 'AI の提案: 画像を選択',
+    'ai_image_pick' => 'AI の提案',
     'ai_image_use' => 'これを使う',
     'ai_image_started_title' => '画像を生成しています',
     'ai_image_started_body' => 'AI プロバイダーごとに 1 枚ずつ生成します。通知が届いたら下書きを開き直して選んでください。',

@@ -154,7 +154,7 @@ return [
     'ai_image_panel_hint' => 'Görselde ne olması gerektiğini tarif et veya boş bırak, gönderi metninden oluşturulsun.',
     'ai_image_generating' => 'Yapay zekâ görselleri oluşturuyor, birazdan burada görünecekler...',
     'ai_image_prompt_ph' => 'Görseli tarif et (boş = metinden)',
-    'ai_image_pick' => 'Yapay zekâ önerileri: bir görsel seç',
+    'ai_image_pick' => 'Yapay zekâ önerileri',
     'ai_image_use' => 'Bunu kullan',
     'ai_image_started_title' => 'Görseller oluşturuluyor',
     'ai_image_started_body' => 'Her yapay zekâ sağlayıcısı için bir görsel oluşturuluyor. Bildirim alacaksın; seçmek için taslağı yeniden aç.',

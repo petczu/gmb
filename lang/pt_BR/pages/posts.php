@@ -154,7 +154,7 @@ return [
     'ai_image_panel_hint' => 'Descreva o que deve aparecer na imagem ou deixe vazio para criá-la a partir do texto da publicação.',
     'ai_image_generating' => 'A IA está gerando as imagens, elas aparecerão aqui mesmo...',
     'ai_image_prompt_ph' => 'Descreva a imagem (vazio = do texto)',
-    'ai_image_pick' => 'Sugestões de IA: escolha uma imagem',
+    'ai_image_pick' => 'Sugestões de IA',
     'ai_image_use' => 'Usar esta',
     'ai_image_started_title' => 'Gerando imagens',
     'ai_image_started_body' => 'Uma imagem por provedor de IA está sendo gerada. Você receberá uma notificação; reabra o rascunho para escolher.',
