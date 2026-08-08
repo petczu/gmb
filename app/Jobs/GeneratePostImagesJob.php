@@ -43,7 +43,6 @@ class GeneratePostImagesJob implements ShouldQueue
     public const VARIANTS = [
         // quality null = model default; 'high' requests 4K, which the flash
         // tiers reject with a 400.
-        ['provider' => 'gemini', 'model' => 'gemini-3.1-flash-lite-image', 'label' => 'Nano Banana 2 Lite', 'quality' => null],
         ['provider' => 'gemini', 'model' => 'gemini-3.1-flash-image', 'label' => 'Nano Banana 2', 'quality' => null],
         ['provider' => 'gemini', 'model' => 'gemini-3-pro-image', 'label' => 'Nano Banana Pro', 'quality' => 'high'],
         ['provider' => 'openai', 'model' => 'gpt-image-2', 'label' => 'GPT Image 2', 'quality' => 'high'],
